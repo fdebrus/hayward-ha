@@ -105,6 +105,12 @@ class Aquarite:
         pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 1, "rhs": 0}]
         await self.__send_command(pool_data)
 
+    def __update_pool_data(self, pool_data, value_path, value):
+        nested_dict = pool_data["pool"]
+        for key in value_path[:-1]:
+            nested_dict = nested_dict.setdefault(key, {})
+        nested_dict[value_path[-1]] = value
+
     async def set_pump_mode(self, pool_id, pumpMode)-> None:
         """Set pump mode"""
         pool_data = self.__get_pool_as_json(pool_id)
@@ -132,12 +138,6 @@ class Aquarite:
         poolName = pooldict["form"]["name"]
         _LOGGER.debug(poolName)
         return poolName
-
-    def __update_pool_data(self, pool_data, value_path, value):
-        nested_dict = pool_data["pool"]
-        for key in value_path[:-1]:
-            nested_dict = nested_dict.setdefault(key, {})
-        nested_dict[value_path[-1]] = value
     
     def __get_pool_as_json(self, pool_id):
         pool = self.get_pool(pool_id)        
