@@ -1,41 +1,28 @@
-"""Aquarite light entity."""
 from homeassistant.components.light import LightEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, BRAND, MODEL
-from .aquarite import Aquarite, UnauthorizedException
-
-async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> bool:
-    """Set up a config entry."""
-    dataservice = hass.data[DOMAIN].get(entry.entry_id)
-
-    entities = []
-
-    entities.append(AquariteLightEntity(hass, dataservice, "Light", "light.status"))
-
-    async_add_entities(entities)
 
 class AquariteLightEntity(CoordinatorEntity, LightEntity):
-    """Aquarite Light Sensor Entity."""
+    """Aquarite Light Entity."""
 
-    def __init__(self, hass : HomeAssistant, dataservice, name, value_path) -> None:
-        """Initialize a Aquarite Light Sensor Entity."""
+    def __init__(self, hass: HomeAssistant, dataservice, name, value_path) -> None:
+        """Initialize a Aquarite Light Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id") 
-        self._attr_name = dataservice.get_pool_name(self._pool_id) + "_" +  name
+        self._pool_id = dataservice.get_value("id")
+        self._attr_name = f"{dataservice.get_pool_name(self._pool_id)}_{name}"
         self._value_path = value_path
-        self._unique_id = dataservice.get_value("id") + name
+        self._unique_id = f"{self._pool_id}{name}"
 
     @property
     def device_info(self):
         """Return the device info."""
+        pool_name = self._dataservice.get_pool_name(self._pool_id)
         return {
-            "identifiers": {
-                (DOMAIN, self._pool_id)
-            },
-            "name": self._dataservice.get_pool_name(self._pool_id),
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }
