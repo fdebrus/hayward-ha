@@ -106,20 +106,6 @@ class Aquarite:
         doc_ref.on_snapshot(self.__on_snapshot)
         self.handlers.append(handler)
 
-    async def turn_on_light(self, pool_id)-> None:
-        """Turn on light."""
-        pool_data = self.__get_pool_as_json(pool_id)
-        pool_data['pool']['light']['status'] = 1
-        pool_data['changes'] = [{"kind": "E", "path": ["light", "status"], "lhs": 0, "rhs": 1}]
-        await self.__send_command(pool_data)
-
-    async def turn_off_light(self, pool_id)-> None:
-        """Turn off light."""
-        pool_data = self.__get_pool_as_json(pool_id)
-        pool_data['pool']['light']['status'] = 0
-        pool_data['changes'] = [{"kind": "E", "path": ["light", "status"], "lhs": 1, "rhs": 0}]
-        await self.__send_command(pool_data)
-
     async def turn_on_switch(self, pool_id, value_path) -> None:
         """Turn on switch"""
         # Fetch pool data
