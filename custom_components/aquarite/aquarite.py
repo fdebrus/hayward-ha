@@ -1,20 +1,18 @@
-"""Module for handling Aquarite API."""
 import datetime
-from http import HTTPStatus
 import json
+from http import HTTPStatus
 from typing import Any
 
 import aiohttp
-import logging
-from aiohttp import ClientResponseError
-from aiohttp.client import ClientResponse
+from aiohttp import ClientResponseError, ClientSession
 from google.cloud.firestore import Client, DocumentSnapshot
 from google.oauth2.credentials import Credentials
+import logging
 import requests
 from requests import HTTPError
 
 __title__ = "Aquarite"
-__version__ = "1.0.0"
+__version__ = "0.0.3"
 __author__ = "Tobias Laursen"
 __license__ = "MIT"
 
@@ -27,54 +25,44 @@ _LOGGER = logging.getLogger(__name__)
 class Aquarite:
     """Aquarite API."""
 
-    def __init__(self, aiohttp_session: aiohttp.ClientSession, username : str, password : str)-> None:
-        """Init Aquarite API."""
-        self.aiohttp_session: aiohttp.ClientSession = aiohttp_session
+    def __init__(self, aiohttp_session: ClientSession, username: str, password: str) -> None:
+        """Initialize Aquarite API."""
+        self.aiohttp_session = aiohttp_session
         self.username = username
         self.password = password
         self.tokens = None
         self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=5)
-        self.credentials = Credentials | None
-        self.client = Client | None
+        self.credentials = None
+        self.client = None
         self.handlers = []
 
     @classmethod
-    async def create(cls, aiohttp_session: aiohttp.ClientSession, username : str, password : str):
-        """Initiate Aquarite async."""
+    async def create(cls, aiohttp_session: ClientSession, username: str, password: str):
+        """Initialize Aquarite async."""
         instance = cls(aiohttp_session, username, password)
         await instance.signin()
-        instance.credentials = Credentials(token=instance.tokens["idToken"], expiry=instance.expiry, refresh_handler=instance.get_token_and_expiry )
+        instance.credentials = Credentials(token=instance.tokens["idToken"], expiry=instance.expiry, refresh_handler=instance.get_token_and_expiry)
         instance.client = Client(project="hayward-europe", credentials=instance.credentials)
         return instance
-
 
     def get_token_and_expiry(self, request, scopes) -> Any:
         """Return the token as json."""
         request_url = f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}"
         headers = {"content-type": "application/json; charset=UTF-8"}
-        data = json.dumps(
-            {"email": self.username, "password": self.password, "returnSecureToken": True}
-        )
-
+        data = json.dumps({"email": self.username, "password": self.password, "returnSecureToken": True})
         req = requests.post(request_url, headers=headers, data=data, timeout=60)
-        # Check for errors
         try:
             req.raise_for_status()
         except HTTPError as e:
             raise UnauthorizedException(e, req.text) from e
-
         self.tokens = req.json()
         self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-
         return self.tokens["idToken"], self.expiry
 
     async def signin(self):
         """Signin."""
         try:
-            resp: ClientResponse = await self.aiohttp_session.post(
-                f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}",
-                json ={"email": self.username, "password": self.password, "returnSecureToken": True}
-            )
+            resp = await self.aiohttp_session.post(f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}", json={"email": self.username, "password": self.password, "returnSecureToken": True})
             if resp.status == 400:
                 raise UnauthorizedException(resp.reason)
             self.tokens = await resp.json()
@@ -83,20 +71,17 @@ class Aquarite:
             if err.status == HTTPStatus.UNAUTHORIZED:
                 raise UnauthorizedException(err) from err
 
-
     async def get_pools(self):
         """Get all pools for current user."""
         data = {}
-        user_dict = (
-            self.client.collection("users").document(self.tokens["localId"]).get().to_dict()
-        )
+        user_dict = self.client.collection("users").document(self.tokens["localId"]).get().to_dict()
         for poolId in user_dict["pools"]:
             pooldict = self.client.collection("pools").document(poolId).get().to_dict()
             if pooldict is not None:
                 data[poolId] = pooldict["form"]["name"]
         return data
 
-    def get_pool(self, pool_id)-> DocumentSnapshot:
+    def get_pool(self, pool_id) -> DocumentSnapshot:
         """Get pool by pool id."""
         return self.client.collection("pools").document(pool_id).get()
 
