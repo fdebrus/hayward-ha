@@ -5,42 +5,39 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, BRAND, MODEL
 
-async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
     dataservice = hass.data[DOMAIN].get(entry.entry_id)
 
-    entities = []
-
-    entities.append(AquariteSwitchEntity(hass, dataservice, "Electrolysis Cover", "hidro.cover_enabled"))
-    entities.append(AquariteSwitchEntity(hass, dataservice, "Electrolysis Boost", "hidro.cloration_enabled"))
-    entities.append(AquariteSwitchEntity(hass, dataservice, "Relay1", "relays.relay1.info.onoff"))
-    entities.append(AquariteSwitchEntity(hass, dataservice, "Relay2", "relays.relay2.info.onoff"))
-    entities.append(AquariteSwitchEntity(hass, dataservice, "Relay3", "relays.relay3.info.onoff"))
-    entities.append(AquariteSwitchEntity(hass, dataservice, "Filtration Status", "filtration.status"))
+    entities = [
+        AquariteSwitchEntity(hass, dataservice, "Electrolysis Cover", "hidro.cover_enabled"),
+        AquariteSwitchEntity(hass, dataservice, "Electrolysis Boost", "hidro.cloration_enabled"),
+        AquariteSwitchEntity(hass, dataservice, "Relay1", "relays.relay1.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, "Relay2", "relays.relay2.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, "Relay3", "relays.relay3.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, "Filtration Status", "filtration.status")
+    ]
     
     async_add_entities(entities)
 
 class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
     """Aquarite Switch Entity."""
 
-    def __init__(self, hass : HomeAssistant, dataservice, name, value_path) -> None:
+    def __init__(self, hass: HomeAssistant, dataservice, name, value_path) -> None:
         """Initialize a Aquarite Switch Entity."""
         super().__init__(dataservice)
-        """ self._attr_device_info =  """
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id") 
+        self._pool_id = dataservice.get_value("id")
         self._pool_name = dataservice.get_pool_name(self._pool_id)
-        self._attr_name = self._pool_name + "_" +  name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
-        self._unique_id = self._pool_id + name
+        self._unique_id = f"{self._pool_id}{name}"
 
     @property
     def device_info(self):
         """Return the device info."""
         return {
-            "identifiers": {
-                (DOMAIN, self._pool_id)
-            },
+            "identifiers": {(DOMAIN, self._pool_id)},
             "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
@@ -48,9 +45,8 @@ class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
 
     # @property
     # def extra_state_attributes(self) -> dict[str, str] | None:
-    #     attributes = {}
-    #     attributes['name'] = self._dataservice.get_value("relays." + self._relayName.lower() + ".name")
-    #     return attributes
+    #     """Return extra attributes."""
+    #     return {"name": self._dataservice.get_value(f"relays.{self._value_path.lower()}.name")}
 
     @property
     def is_on(self):
