@@ -4,6 +4,16 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, BRAND, MODEL
 
+async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> bool:
+    """Set up a config entry."""
+    dataservice = hass.data[DOMAIN].get(entry.entry_id)
+
+    entities = []
+
+    entities.append(AquariteLightEntity(hass, dataservice, "Light", "light.status"))
+
+    async_add_entities(entities)
+
 class AquariteLightEntity(CoordinatorEntity, LightEntity):
     """Aquarite Light Entity."""
 
