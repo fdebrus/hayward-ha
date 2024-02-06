@@ -36,14 +36,6 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
         """Get Pool Name."""
         return self.api.get_pool_name(pool_id)
 
-    async def turn_on_light(self) -> None:
-        """Turn on pool light."""
-        await self.api.turn_on_light(self.data.id)
-
-    async def turn_off_light(self) -> None:
-        """Turn off pool light."""
-        await self.api.turn_off_light(self.data.id)
-
     async def turn_on_switch(self, value_path) -> None:
         """Turn on hidro cover."""
         await self.api.turn_on_switch(self.data.id, value_path)
