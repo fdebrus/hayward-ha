@@ -92,37 +92,19 @@ class Aquarite:
         self.handlers.append(handler)
 
     async def turn_on_switch(self, pool_id, value_path) -> None:
-        """Turn on switch"""
-        # Fetch pool data
+        """Turn on switch."""
         pool_data = self.__get_pool_as_json(pool_id)
-        # Update nested dictionary
-        nested_dict = pool_data['pool']
-        path_elements = value_path.split('.')
-        for key in path_elements[:-1]:
-            nested_dict = nested_dict.setdefault(key, {})
-        nested_dict[path_elements[-1]] = 1
-        # Update changes
-        pool_data['changes'] = [{"kind": "E", "path": path_elements, "lhs": 0, "rhs": 1}]
-        # Send command
+        self.__update_pool_data(pool_data, value_path, 1)
+        pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 0, "rhs": 1}]
         await self.__send_command(pool_data)
 
     async def turn_off_switch(self, pool_id, value_path) -> None:
-        """Turn off switch"""
-        # Fetch pool data
+        """Turn off switch."""
         pool_data = self.__get_pool_as_json(pool_id)
-        # Split value_path and get the nested dictionary
-        path_elements = value_path.split('.')
-        nested_dict = pool_data['pool']
-        # Traverse the nested dictionary and create missing dictionaries along the path
-        for key in path_elements[:-1]:
-            nested_dict = nested_dict.setdefault(key, {})
-        # Assign the value to the nested dictionary
-        nested_dict[path_elements[-1]] = 0
-        # Update the changes
-        pool_data['changes'] = [{"kind": "E", "path": path_elements, "lhs": 1, "rhs": 0}]
-        # Send the command
+        self.__update_pool_data(pool_data, value_path, 0)
+        pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 1, "rhs": 0}]
         await self.__send_command(pool_data)
-        
+
     async def set_pump_mode(self, pool_id, pumpMode)-> None:
         """Set pump mode"""
         pool_data = self.__get_pool_as_json(pool_id)
@@ -150,6 +132,12 @@ class Aquarite:
         poolName = pooldict["form"]["name"]
         _LOGGER.debug(poolName)
         return poolName
+
+    def __update_pool_data(self, pool_data, value_path, value):
+        nested_dict = pool_data["pool"]
+        for key in value_path[:-1]:
+            nested_dict = nested_dict.setdefault(key, {})
+        nested_dict[value_path[-1]] = value
     
     def __get_pool_as_json(self, pool_id):
         pool = self.get_pool(pool_id)        
