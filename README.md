@@ -15,3 +15,8 @@ Afterwards you can go to the Integrations sections and click the add integration
 - Second step will ask you to choose the pool (controller) you want to add
 
 It will automatically add all the sensors to your Home Assistant installation.
+
+![image](https://github.com/fdebrus/hayward-ha/assets/33791533/0c3c2853-2162-4880-b66d-395fccd97f2d)
+
+![image](https://github.com/fdebrus/hayward-ha/assets/33791533/e4458ad5-7aea-4221-8f34-0ea92ff6576a)
+
