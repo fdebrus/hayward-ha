@@ -1,6 +1,6 @@
 """The Aquarite integration."""
 from homeassistant import config_entries, core
-from homeassistant.components import binary_sensor, light, switch, sensor, select
+from homeassistant.components import binary_sensor, light, switch, sensor, select, number
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -8,7 +8,7 @@ from .const import DOMAIN
 from .coordinator import AquariteDataCoordinator
 from .aquarite import Aquarite
 
-PLATFORMS = [binary_sensor.DOMAIN, light.DOMAIN, switch.DOMAIN, sensor.DOMAIN, select.DOMAIN]
+PLATFORMS = [binary_sensor.DOMAIN, light.DOMAIN, switch.DOMAIN, sensor.DOMAIN, select.DOMAIN, number.DOMAIN]
 
 async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry) -> bool:
     """Set up the Hayward component."""
