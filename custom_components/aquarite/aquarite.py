@@ -12,7 +12,7 @@ import requests
 from requests import HTTPError
 
 __title__ = "Aquarite"
-__version__ = "0.0.3"
+__version__ = "0.0.5"
 __author__ = "Tobias Laursen"
 __license__ = "MIT"
 
@@ -78,7 +78,7 @@ class Aquarite:
         for poolId in user_dict["pools"]:
             pooldict = self.client.collection("pools").document(poolId).get().to_dict()
             if pooldict is not None:
-                data[poolId] = pooldict["form"]["name"]
+                data[poolId] = pooldict["form"]["names"][0]["name"]
         return data
 
     def get_pool(self, pool_id) -> DocumentSnapshot:
@@ -91,51 +91,15 @@ class Aquarite:
         doc_ref.on_snapshot(self.__on_snapshot)
         self.handlers.append(handler)
 
-    async def turn_on_switch(self, pool_id, value_path) -> None:
-        """Turn on switch."""
-        pool_data = self.__get_pool_as_json(pool_id)
-        self.__update_pool_data(pool_data, value_path, 1)
-        pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 0, "rhs": 1}]
-        await self.__send_command(pool_data)
-
-    async def turn_off_switch(self, pool_id, value_path) -> None:
-        """Turn off switch."""
-        pool_data = self.__get_pool_as_json(pool_id)
-        self.__update_pool_data(pool_data, value_path, 0)
-        pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 1, "rhs": 0}]
-        await self.__send_command(pool_data)
-
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]
         for key in value_path[:-1]:
             nested_dict = nested_dict.setdefault(key, {})
         nested_dict[value_path[-1]] = value
 
-    async def set_pump_mode(self, pool_id, pumpMode)-> None:
-        """Set pump mode"""
-        pool_data = self.__get_pool_as_json(pool_id)
-        pool_data['pool']['filtration']['mode'] = pumpMode     
-        pool_data['changes'] = [{"kind": "E", "path": ["filtration", "mode"], "lhs": 0, "rhs": pumpMode}]
-        await self.__send_command(pool_data)
-
-    async def set_pump_speed(self, pool_id, pumpSpeed)-> None:
-        """Set pump speed"""
-        pool_data = self.__get_pool_as_json(pool_id)
-        pool_data['pool']['filtration']['manVel'] = pumpSpeed
-        pool_data['changes'] = [{"kind": "E", "path": ["filtration", "manVel"], "lhs": 0, "rhs": pumpSpeed}]
-        await self.__send_command(pool_data)
-        
-    async def __send_command(self, data)-> None:
-        headers = {"Authorization": "Bearer "+self.tokens["idToken"]}
-        await self.aiohttp_session.post(
-                f"{HAYWARD_REST_API}/sendCommand",
-                json = data,
-                headers=headers
-                )
-        
     def get_pool_name(self, pool_id):
         pooldict = self.client.collection("pools").document(pool_id).get().to_dict()
-        poolName = pooldict["form"]["name"]
+        poolName = pooldict["form"]["names"][0]["name"]
         _LOGGER.debug(poolName)
         return poolName
     
@@ -145,11 +109,11 @@ class Aquarite:
                 "operation" : "WRP",
                 "operationId" : None,
                 "pool": {"backwash": pool.get("backwash"),
-                         "filtration": pool.get("filtration"),
-                         "hidro" : pool.get("hidro"),
-                         "light" : pool.get("light"),
-                         "main" : pool.get("main"),
-                         "relays" : pool.get("relays")
+                            "filtration": pool.get("filtration"),
+                            "hidro" : pool.get("hidro"),
+                            "light" : pool.get("light"),
+                            "main" : pool.get("main"),
+                            "relays" : pool.get("relays")
                         },
                 "poolId" : pool_id,
                 "source" : "web"}
@@ -161,6 +125,107 @@ class Aquarite:
         for doc in doc_snapshot:
             for handler in self.handlers:
                 handler(doc)
+
+#### SWITCHES
+    async def turn_on_switch(self, pool_id: str, value_path: str) -> None:
+        try:
+            pool_data = await self.__get_pool_as_json(pool_id)
+            self.__update_pool_data(pool_data, value_path, 1)
+            pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 0, "rhs": 1}]
+            await self.__send_command(pool_data)
+            _LOGGER.info(f"Switch at {value_path} turned on for pool ID {pool_id}.")
+        except Exception as e:
+            _LOGGER.error(f"Failed to turn on switch for pool ID {pool_id}: {e}")
+            raise
+
+    async def turn_off_switch(self, pool_id: str, value_path: str) -> None:
+        try:
+            pool_data = await self.__get_pool_as_json(pool_id)
+            self.__update_pool_data(pool_data, value_path, 0)
+            pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 1, "rhs": 0}]
+            await self.__send_command(pool_data)
+            _LOGGER.info(f"Switch at {value_path} turned off for pool ID {pool_id}.")
+        except Exception as e:
+            _LOGGER.error(f"Failed to turn off switch for pool ID {pool_id}: {e}")
+            raise
+
+#### PUMP MODE
+    async def set_pump_mode(self, pool_id: str, pump_mode: str) -> None:
+        try:
+            pool_data = self.__get_pool_as_json(pool_id)
+            if not pool_data or 'pool' not in pool_data:
+                _LOGGER.error(f"No valid pool data found for pool ID {pool_id}.")
+                raise ValueError(f"Pool data not found for the given pool ID {pool_id}.")
+
+            current_mode = pool_data['pool']['filtration'].get('mode')
+            if current_mode is None:
+                _LOGGER.warning(f"Current mode not found in pool data for pool ID {pool_id}. Assuming default.")
+                current_mode = 'Manual'
+
+            pool_data['pool']['filtration']['mode'] = pump_mode
+            _LOGGER.info(f"Changing pump mode from {current_mode} to {pump_mode} for pool ID {pool_id}.")
+
+            pool_data['changes'] = [
+                {"kind": "E", "path": ["filtration", "mode"], "lhs": current_mode, "rhs": pump_mode}
+            ]
+
+            await self.__send_command(pool_data)
+        except ValueError as e:
+            _LOGGER.error(f"Value error: {e}")
+            raise
+        except Exception as e:
+            _LOGGER.error(f"Failed to set pump mode for pool ID {pool_id}: {e}")
+            raise Exception(f"Failed to set pump mode: {e}") from e
+
+#### PUMP SPEED
+    async def set_pump_speed(self, pool_id: str, pump_speed: int) -> None:
+        try:
+            pool_data = self.__get_pool_as_json(pool_id)
+            if not pool_data or 'pool' not in pool_data:
+                _LOGGER.error(f"No valid pool data found for pool ID {pool_id}.")
+                raise ValueError(f"Pool data not found for the given pool ID {pool_id}.")
+
+            current_speed = pool_data['pool']['filtration'].get('manVel')
+            if current_speed is None:
+                _LOGGER.warning(f"Current speed not found in pool data for pool ID {pool_id}. Assuming default speed.")
+                current_speed = 0
+
+            pool_data['pool']['filtration']['manVel'] = pump_speed
+
+            _LOGGER.info(f"Changing pump speed from {current_speed} to {pump_speed} for pool ID {pool_id}.")
+
+            pool_data['changes'] = [
+                {"kind": "E", "path": ["filtration", "manVel"], "lhs": current_speed, "rhs": pump_speed}
+            ]
+
+            await self.__send_command(pool_data)
+        except ValueError as e:
+            _LOGGER.error(f"Value error: {e}")
+            raise
+        except Exception as e:
+            _LOGGER.error(f"Failed to set pump speed for pool ID {pool_id}: {e}")
+            raise Exception(f"Failed to set pump speed: {e}") from e
+
+### SEND COMMAND
+    async def __send_command(self, data) -> None:
+        headers = {"Authorization": f"Bearer {self.tokens['idToken']}"}
+        try:
+            response = await self.aiohttp_session.post(
+                f"{HAYWARD_REST_API}/sendCommand",
+                json=data,
+                headers=headers
+            )
+            _LOGGER.debug(f"Command sent with response status: {response.status}")
+            response.raise_for_status()
+        except ClientResponseError as e:
+            _LOGGER.error(f"Server returned a response error: {e.status} - {e.message}")
+            raise
+        except ClientError as e:
+            _LOGGER.error(f"Aiohttp client encountered an error: {e}")
+            raise
+        except Exception as e:
+            _LOGGER.error(f"An unexpected error occurred when sending command: {e}")
+            raise
 
 class UnauthorizedException(Exception):
     """Unauthorized user exception."""
