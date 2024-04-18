@@ -31,6 +31,3 @@ class AquariteDataService:
             update_interval=self.update_interval,
         )
 
-    def get_value(self, value_path):
-        """Get the value from the data."""
-        return snapshot.get(value_path)
