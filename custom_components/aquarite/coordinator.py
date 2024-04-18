@@ -51,3 +51,8 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
     async def set_pump_speed(self, pool_id, pump_speed) -> None:
         """Set pump speed."""
         await self.api.set_pump_speed(self.data.id, pump_speed)
+
+    async def set_path_value(self, pool_id, value_path, value) -> None:
+        """Set value for value_path."""
+        await self.api.set_path_value(pool_id, value_path, value)
+
