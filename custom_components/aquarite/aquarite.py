@@ -45,31 +45,31 @@ class Aquarite:
         instance.client = Client(project="hayward-europe", credentials=instance.credentials)
         return instance
 
-    def get_token_and_expiry(self, request, scopes) -> Any:
-        """Return the token as json."""
-        request_url = f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}"
-        headers = {"content-type": "application/json; charset=UTF-8"}
-        data = json.dumps({"email": self.username, "password": self.password, "returnSecureToken": True})
-        req = requests.post(request_url, headers=headers, data=data, timeout=60)
+    def get_token_and_expiry(self, request, scopes):
+        """Handle token refresh."""
         try:
+            req = requests.post(request_url, headers=headers, data=data, timeout=60)
             req.raise_for_status()
+            self.tokens = req.json()
+            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+            return self.tokens["idToken"], self.expiry
         except HTTPError as e:
-            raise UnauthorizedException(e, req.text) from e
-        self.tokens = req.json()
-        self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-        return self.tokens["idToken"], self.expiry
+            print(f"Error refreshing token: {e}")
+            raise UnauthorizedException(f"Failed to refresh token: {e}", req.text) from e
 
     async def signin(self):
-        """Signin."""
+        """Sign in and handle errors."""
         try:
             resp = await self.aiohttp_session.post(f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}", json={"email": self.username, "password": self.password, "returnSecureToken": True})
-            if resp.status == 400:
-                raise UnauthorizedException(resp.reason)
+            resp.raise_for_status()
             self.tokens = await resp.json()
             self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
         except ClientResponseError as err:
-            if err.status == HTTPStatus.UNAUTHORIZED:
-                raise UnauthorizedException(err) from err
+            print(f"Failed to authenticate: HTTP {err.status} - {err.message}")
+            raise UnauthorizedException(err) from err
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            raise e
 
     async def get_pools(self):
         """Get all pools for current user."""
@@ -103,7 +103,7 @@ class Aquarite:
         _LOGGER.debug(poolName)
         return poolName
     
-    def __get_pool_as_json(self, pool_id):
+    async def __get_pool_as_json(self, pool_id):
         pool = self.get_pool(pool_id)        
         data = {"gateway" : pool.get("wifi"),
                 "operation" : "WRP",
@@ -125,6 +125,19 @@ class Aquarite:
         for doc in doc_snapshot:
             for handler in self.handlers:
                 handler(doc)
+
+#### UTILS
+    def get_from_dict(self, data_dict, map_list):
+        """Retrieve a value from a nested dictionary using a list of keys."""
+        for k in map_list:
+            data_dict = data_dict[k]
+        return data_dict
+
+    def set_in_dict(self, data_dict, map_list, value):
+        """Set a value in a nested dictionary using a list of keys."""
+        for k in map_list[:-1]:
+            data_dict = data_dict.setdefault(k, {})
+        data_dict[map_list[-1]] = value
 
 #### SWITCHES
     async def turn_on_switch(self, pool_id: str, value_path: str) -> None:
@@ -152,7 +165,7 @@ class Aquarite:
 #### PUMP MODE
     async def set_pump_mode(self, pool_id: str, pump_mode: str) -> None:
         try:
-            pool_data = self.__get_pool_as_json(pool_id)
+            pool_data = await self.__get_pool_as_json(pool_id)
             if not pool_data or 'pool' not in pool_data:
                 _LOGGER.error(f"No valid pool data found for pool ID {pool_id}.")
                 raise ValueError(f"Pool data not found for the given pool ID {pool_id}.")
@@ -180,7 +193,7 @@ class Aquarite:
 #### PUMP SPEED
     async def set_pump_speed(self, pool_id: str, pump_speed: int) -> None:
         try:
-            pool_data = self.__get_pool_as_json(pool_id)
+            pool_data = await self.__get_pool_as_json(pool_id)
             if not pool_data or 'pool' not in pool_data:
                 _LOGGER.error(f"No valid pool data found for pool ID {pool_id}.")
                 raise ValueError(f"Pool data not found for the given pool ID {pool_id}.")
@@ -205,6 +218,36 @@ class Aquarite:
         except Exception as e:
             _LOGGER.error(f"Failed to set pump speed for pool ID {pool_id}: {e}")
             raise Exception(f"Failed to set pump speed: {e}") from e
+
+#### SET VALUE
+    async def set_path_value(self, pool_id, value_path, value):
+        try:
+            pool_data = await self.__get_pool_as_json(pool_id)
+            if not pool_data or 'pool' not in pool_data:
+                _LOGGER.error(f"No valid pool data found for pool ID {pool_id}.")
+                raise ValueError(f"Pool data not found for the given pool ID {pool_id}.")
+
+            path_keys = value_path.split('.')
+            current_value = self.get_from_dict(pool_data['pool'], path_keys)
+
+            if current_value is None:
+                _LOGGER.warning(f"Current value for {value_path} not found in pool data for pool ID {pool_id}. Assuming default.")
+                current_value = 0
+
+            self.set_in_dict(pool_data['pool'], path_keys, value)
+            _LOGGER.info(f"Changing {value_path} from {current_value} to {value} for pool ID {pool_id}.")
+
+            pool_data['changes'] = [
+                {"kind": "E", "path": path_keys, "lhs": current_value, "rhs": value}
+            ]
+
+            await self.__send_command(pool_data)
+        except ValueError as e:
+            _LOGGER.error(f"Value error: {e}")
+            raise
+        except Exception as e:
+            _LOGGER.error(f"Failed to set {value_path} for pool ID {pool_id}: {e}")
+            raise Exception(f"Failed to set {value_path}: {e}") from e
 
 ### SEND COMMAND
     async def __send_command(self, data) -> None:
