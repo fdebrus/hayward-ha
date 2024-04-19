@@ -2,7 +2,11 @@ from homeassistant.components.light import LightEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+import logging
+
 from .const import DOMAIN, BRAND, MODEL
+
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
@@ -37,6 +41,14 @@ class AquariteLightEntity(CoordinatorEntity, LightEntity):
         }
 
     @property
+    def color_mode(self):
+        return "ONOFF"
+
+    @property
+    def supported_color_modes(self):
+        return {"ONOFF"}
+
+    @property
     def is_on(self):
         """Return true if the device is on."""
         return bool(self._dataservice.get_value(self._value_path))
@@ -44,10 +56,12 @@ class AquariteLightEntity(CoordinatorEntity, LightEntity):
     async def async_turn_on(self, **kwargs):
         """Turn the entity on."""
         await self._dataservice.turn_on_switch(self._value_path)
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs):
         """Turn the entity off."""
         await self._dataservice.turn_off_switch(self._value_path)
+        self.async_write_ha_state()
 
     @property
     def unique_id(self):
