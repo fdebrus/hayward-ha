@@ -75,10 +75,14 @@ class Aquarite:
         """Get all pools for current user."""
         data = {}
         user_dict = self.client.collection("users").document(self.tokens["localId"]).get().to_dict()
-        for poolId in user_dict["pools"]:
+        for poolId in user_dict.get("pools", []):
             pooldict = self.client.collection("pools").document(poolId).get().to_dict()
             if pooldict is not None:
-                data[poolId] = pooldict["form"]["names"][0]["name"]
+                try:
+                    name = pooldict["form"]["names"][0]["name"]
+                except (KeyError, IndexError):
+                    name = pooldict.get("form", {}).get("name", "Unknown")
+                data[poolId] = name
         return data
 
     def get_pool(self, pool_id) -> DocumentSnapshot:
@@ -99,7 +103,10 @@ class Aquarite:
 
     def get_pool_name(self, pool_id):
         pooldict = self.client.collection("pools").document(pool_id).get().to_dict()
-        poolName = pooldict["form"]["names"][0]["name"]
+        try:
+            poolName = pooldict["form"]["names"][0]["name"]
+        except (KeyError, IndexError):
+            poolName = pooldict.get("form", {}).get("name", "Unknown")
         _LOGGER.debug(poolName)
         return poolName
     
