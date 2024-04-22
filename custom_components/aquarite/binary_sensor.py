@@ -11,13 +11,17 @@ from .const import DOMAIN, BRAND, MODEL, PATH_HASCD, PATH_HASCL, PATH_HASPH, PAT
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
     dataservice = hass.data[DOMAIN].get(entry.entry_id)
+
     if not dataservice:
         return False
 
+    pool_id = dataservice.get_value("id")
+    pool_name = await dataservice.get_pool_name(pool_id)
+
     entities = [
-        AquariteBinarySensorEntity(hass, dataservice, "FL1", "hidro.fl1"),
-        AquariteBinarySensorEntity(hass, dataservice, "Filtration Status", "filtration.status"),
-        AquariteBinarySensorEntity(hass, dataservice, "Backwash Status", "backwash.status"),
+        AquariteBinarySensorEntity(hass, dataservice, "FL1", "hidro.fl1", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "Filtration Status", "filtration.status", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "Backwash Status", "backwash.status", pool_id, pool_name),
     ]
 
     if dataservice.get_value("main.hasCL"):
@@ -27,27 +31,29 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
         dataservice.get_value(path)
         for path in [PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX]
     ):
-        entities.append(AquariteBinarySensorTankEntity(hass, dataservice, "Acid Tank"))
+        entities.append(AquariteBinarySensorTankEntity(hass, dataservice, "Acid Tank", pool_id, pool_name))
 
     entities.append(
         AquariteBinarySensorEntity(
-            hass, dataservice, "Electrolysis Low" if dataservice.get_value("hidro.is_electrolysis") else "Hidrolysis Low", "hidro.low"
+            hass, dataservice, "Electrolysis Low" if dataservice.get_value("hidro.is_electrolysis") else "Hidrolysis Low", "hidro.low", pool_id, pool_name
         )
     )
 
     async_add_entities(entities)
+    
     return True
 
 
 class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     """Aquarite Binary Sensor Entity such as flow sensors FL1 & FL2."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name, value_path) -> None:
+    def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
         """Initialize an Aquarite Binary Sensor Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id")
-        self._attr_name = f"{dataservice.get_pool_name(self._pool_id)}_{name}"
+        self._pool_id = pool_id
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = f"{self._pool_id}-{name}"
 
@@ -66,10 +72,9 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_info(self):
         """Return the device info."""
-        pool_name = self._dataservice.get_pool_name(self._pool_id)
         return {
             "identifiers": {(DOMAIN, self._pool_id)},
-            "name": pool_name,
+            "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }
@@ -79,16 +84,16 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
         """The unique id of the sensor."""
         return self._unique_id
 
-
 class AquariteBinarySensorTankEntity(CoordinatorEntity, BinarySensorEntity):
     """Aquarite Binary Sensor Entity Tank."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name) -> None:
+    def __init__(self, hass: HomeAssistant, dataservice, name, pool_id, pool_name) -> None:
         """Initialize an Aquarite Binary Sensor Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id")
-        self._attr_name = f"{dataservice.get_pool_name(self._pool_id)}_{name}"
+        self._pool_id = pool_id
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._unique_id = f"{self._pool_id}-{name}"
 
     @property
@@ -110,10 +115,9 @@ class AquariteBinarySensorTankEntity(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_info(self):
         """Return the device info."""
-        pool_name = self._dataservice.get_pool_name(self._pool_id)
         return {
             "identifiers": {(DOMAIN, self._pool_id)},
-            "name": pool_name,
+            "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }

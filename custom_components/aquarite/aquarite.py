@@ -61,6 +61,7 @@ class Aquarite:
 
     async def ensure_active_token(self):
         """Ensure that the token is still valid, and refresh it if necessary."""
+        _LOGGER.debug(f"Token check, {datetime.datetime.now()} {self.expiry}...")
         if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)): 
             _LOGGER.info("Token expired, refreshing...")
             await self.get_token_and_expiry()
@@ -86,12 +87,12 @@ class Aquarite:
                 data[poolId] = name
         return data
 
-    def get_pool(self, pool_id) -> DocumentSnapshot:
-        """Get pool by pool id."""
+    async def get_pool(self, pool_id) -> DocumentSnapshot:
+        await self.ensure_active_token()
         return self.client.collection("pools").document(pool_id).get()
 
     def subscribe(self, pool_id, handler) -> None:
-        """Add subscriber on pool."""
+        ### await self.ensure_active_token()
         doc_ref = self.client.collection("pools").document(pool_id)
         doc_ref.on_snapshot(self.__on_snapshot)
         self.handlers.append(handler)
@@ -102,17 +103,18 @@ class Aquarite:
             nested_dict = nested_dict.setdefault(key, {})
         nested_dict[value_path[-1]] = value
 
-    def get_pool_name(self, pool_id):
+    async def get_pool_name(self, pool_id):
+        await self.ensure_active_token()
         pooldict = self.client.collection("pools").document(pool_id).get().to_dict()
         try:
             poolName = pooldict["form"]["names"][0]["name"]
         except (KeyError, IndexError):
             poolName = pooldict.get("form", {}).get("name", "Unknown")
-        _LOGGER.debug(poolName)
         return poolName
     
     async def __get_pool_as_json(self, pool_id):
-        pool = self.get_pool(pool_id)        
+        await self.ensure_active_token()
+        pool = await self.get_pool(pool_id)        
         data = {"gateway" : pool.get("wifi"),
                 "operation" : "WRP",
                 "operationId" : None,
@@ -125,7 +127,6 @@ class Aquarite:
                         },
                 "poolId" : pool_id,
                 "source" : "web"}
-        _LOGGER.debug(data)
         return data
 
     def __on_snapshot(self, doc_snapshot, changes, read_time) -> None:

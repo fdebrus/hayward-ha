@@ -7,29 +7,35 @@ from .const import DOMAIN, BRAND, MODEL
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
     dataservice = hass.data[DOMAIN].get(entry.entry_id)
+
     if not dataservice:
         return False
 
+    pool_id = dataservice.get_value("id")
+    pool_name = await dataservice.get_pool_name(pool_id)
+
     entities = [
-        AquariteNumberEntity(hass, dataservice, "Filtration_Smart_MinTemp", "filtration.smart.tempMin"),
-        AquariteNumberEntity(hass, dataservice, "Filtration_Smart_HighTemp", "filtration.smart.tempHigh")
+        AquariteNumberEntity(hass, dataservice, "Filtration_Smart_MinTemp", "filtration.smart.tempMin", pool_id, pool_name),
+        AquariteNumberEntity(hass, dataservice, "Filtration_Smart_HighTemp", "filtration.smart.tempHigh", pool_id, pool_name)
     ]
 
     async_add_entities(entities)
+    
     return True
 
 class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
     """Define a number entity for adjusting temperature settings on an Aqua Rite device."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name, value_path):
+    def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name):
         """Initialize."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id")
         self._attr_native_min_value = 12.0
         self._attr_native_max_value = 35.0
         self._attr_native_step = 0.5
-        self._attr_name = f"{dataservice.get_pool_name(self._pool_id)}_{name}"
+        self._pool_id = pool_id
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = f"{self._pool_id}-{name}"
         self._attr_device_class = "temperature"
@@ -42,10 +48,9 @@ class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
     @property
     def device_info(self):
         """Return the device info."""
-        pool_name = self._dataservice.get_pool_name(self._pool_id)
         return {
             "identifiers": {(DOMAIN, self._pool_id)},
-            "name": pool_name,
+            "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }
