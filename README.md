@@ -1,3 +1,5 @@
+NOT PRODUCTION READY - STILL IN DEVELOPMENT
+
 # Hayward AquaRite integration for Home Assistant
 
 Forked from https://github.com/djerik/dagen-ha
