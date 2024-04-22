@@ -35,8 +35,7 @@ class Aquarite:
         self.credentials = Credentials | None
         self.client = Client | None
         self.handlers = []
-        self.update_interval = timedelta(minutes=10)
-
+        
     @classmethod
     async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
