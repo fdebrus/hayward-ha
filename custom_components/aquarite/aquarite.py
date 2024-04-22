@@ -35,6 +35,7 @@ class Aquarite:
         self.credentials = Credentials | None
         self.client = Client | None
         self.handlers = []
+        self._pool_id = None
 
     @classmethod
     async def create(cls, aiohttp_session, username, password):
@@ -87,7 +88,8 @@ class Aquarite:
 
     async def get_pool(self, pool_id) -> DocumentSnapshot:
         await self.ensure_active_token()
-        return self.client.collection("pools").document(pool_id).get()
+        self._pool_id = self.client.collection("pools").document(pool_id).get()
+        return self._pool_id
 
     async def subscribe(self, pool_id, handler) -> None:
         await self.ensure_active_token()
@@ -98,6 +100,14 @@ class Aquarite:
                 handler(doc)
         doc_ref.on_snapshot(on_snapshot)
         self.handlers.append(handler)
+
+    async def auto_resubscribe(self, pool_id, handler):
+        try:
+            await self.subscribe(pool_id, handler)
+        except Exception as e:
+            _LOGGER.error("Subscription failed, attempting to resubscribe...")
+            await asyncio.sleep(10)
+            await self.auto_resubscribe(pool_id, handler) 
 
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]

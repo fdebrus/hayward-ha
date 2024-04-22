@@ -17,7 +17,7 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
     
     coordinator.data = await api.get_pool(entry.data["pool_id"])
     
-    await api.subscribe(entry.data["pool_id"], coordinator.set_updated_data)
+    await api.auto_resubscribe(entry.data["pool_id"], coordinator.set_updated_data)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
