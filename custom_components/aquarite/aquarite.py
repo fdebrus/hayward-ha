@@ -31,48 +31,49 @@ class Aquarite:
         self.username = username
         self.password = password
         self.tokens = None
-        self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=5)
-        self.credentials = None
-        self.client = None
+        self.expiry = None
+        self.credentials = Credentials | None
+        self.client = Client | None
         self.handlers = []
 
     @classmethod
-    async def create(cls, aiohttp_session: ClientSession, username: str, password: str):
-        """Initialize Aquarite async."""
+    async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
         await instance.signin()
-        instance.credentials = Credentials(token=instance.tokens["idToken"], expiry=instance.expiry, refresh_handler=instance.get_token_and_expiry)
         instance.client = Client(project="hayward-europe", credentials=instance.credentials)
         return instance
 
-    def get_token_and_expiry(self, request, scopes):
-        """Handle token refresh."""
-        try:
-            req = requests.post(request_url, headers=headers, data=data, timeout=60)
-            req.raise_for_status()
-            self.tokens = req.json()
-            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-            return self.tokens["idToken"], self.expiry
-        except HTTPError as e:
-            print(f"Error refreshing token: {e}")
-            raise UnauthorizedException(f"Failed to refresh token: {e}", req.text) from e
+    async def get_token_and_expiry(self):
+        """Fetch token and expiry using Google API."""
+        url = f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}"
+        headers = {"Content-Type": "application/json; charset=UTF-8"}
+        data = json.dumps({
+            "email": self.username,
+            "password": self.password,
+            "returnSecureToken": True
+        })
+        resp = await self.aiohttp_session.post(url, headers=headers, data=data)
+        if resp.status == 400:
+            raise UnauthorizedException("Failed to authenticate.")
+        self.tokens = await resp.json()
+        self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+        self.credentials = Credentials(token=self.tokens['idToken'])
+
+    async def ensure_active_token(self):
+        """Ensure that the token is still valid, and refresh it if necessary."""
+        if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)): 
+            _LOGGER.info("Token expired, refreshing...")
+            await self.get_token_and_expiry()
 
     async def signin(self):
-        """Sign in and handle errors."""
-        try:
-            resp = await self.aiohttp_session.post(f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}", json={"email": self.username, "password": self.password, "returnSecureToken": True})
-            resp.raise_for_status()
-            self.tokens = await resp.json()
-            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-        except ClientResponseError as err:
-            print(f"Failed to authenticate: HTTP {err.status} - {err.message}")
-            raise UnauthorizedException(err) from err
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            raise e
+        """Sign in and set the tokens and expiry."""
+        await self.get_token_and_expiry()
+
+
 
     async def get_pools(self):
         """Get all pools for current user."""
+        await self.ensure_active_token()
         data = {}
         user_dict = self.client.collection("users").document(self.tokens["localId"]).get().to_dict()
         for poolId in user_dict.get("pools", []):
@@ -258,6 +259,7 @@ class Aquarite:
 
 ### SEND COMMAND
     async def __send_command(self, data) -> None:
+        await self.ensure_active_token()
         headers = {"Authorization": f"Bearer {self.tokens['idToken']}"}
         try:
             response = await self.aiohttp_session.post(
