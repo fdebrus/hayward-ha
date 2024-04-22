@@ -31,48 +31,49 @@ class Aquarite:
         self.username = username
         self.password = password
         self.tokens = None
-        self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=5)
-        self.credentials = None
-        self.client = None
+        self.expiry = None
+        self.credentials = Credentials | None
+        self.client = Client | None
         self.handlers = []
+        self.update_interval = timedelta(minutes=10)
 
     @classmethod
-    async def create(cls, aiohttp_session: ClientSession, username: str, password: str):
-        """Initialize Aquarite async."""
+    async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
         await instance.signin()
-        instance.credentials = Credentials(token=instance.tokens["idToken"], expiry=instance.expiry, refresh_handler=instance.get_token_and_expiry)
-        instance.client = Client(project="hayward-europe", credentials=instance.credentials)
         return instance
 
-    def get_token_and_expiry(self, request, scopes):
-        """Handle token refresh."""
-        try:
-            req = requests.post(request_url, headers=headers, data=data, timeout=60)
-            req.raise_for_status()
-            self.tokens = req.json()
-            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-            return self.tokens["idToken"], self.expiry
-        except HTTPError as e:
-            print(f"Error refreshing token: {e}")
-            raise UnauthorizedException(f"Failed to refresh token: {e}", req.text) from e
+    async def get_token_and_expiry(self):
+        """Fetch token and expiry using Google API."""
+        url = f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}"
+        headers = {"Content-Type": "application/json; charset=UTF-8"}
+        data = json.dumps({
+            "email": self.username,
+            "password": self.password,
+            "returnSecureToken": True
+        })
+        resp = await self.aiohttp_session.post(url, headers=headers, data=data)
+        if resp.status == 400:
+            raise UnauthorizedException("Failed to authenticate.")
+        self.tokens = await resp.json()
+        self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+        self.credentials = Credentials(token=self.tokens['idToken'])
+        self.client = Client(project="hayward-europe", credentials=self.credentials)
+
+    async def ensure_active_token(self):
+        """Ensure that the token is still valid, and refresh it if necessary."""
+        _LOGGER.debug(f"Token check, {datetime.datetime.now()} {self.expiry}...")
+        if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)): 
+            _LOGGER.info("Token expired, refreshing...")
+            await self.get_token_and_expiry()
 
     async def signin(self):
-        """Sign in and handle errors."""
-        try:
-            resp = await self.aiohttp_session.post(f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}", json={"email": self.username, "password": self.password, "returnSecureToken": True})
-            resp.raise_for_status()
-            self.tokens = await resp.json()
-            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-        except ClientResponseError as err:
-            print(f"Failed to authenticate: HTTP {err.status} - {err.message}")
-            raise UnauthorizedException(err) from err
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            raise e
+        """Sign in and set the tokens and expiry."""
+        await self.get_token_and_expiry()
 
     async def get_pools(self):
         """Get all pools for current user."""
+        await self.ensure_active_token()
         data = {}
         user_dict = self.client.collection("users").document(self.tokens["localId"]).get().to_dict()
         for poolId in user_dict.get("pools", []):
@@ -85,15 +86,28 @@ class Aquarite:
                 data[poolId] = name
         return data
 
-    def get_pool(self, pool_id) -> DocumentSnapshot:
-        """Get pool by pool id."""
-        return self.client.collection("pools").document(pool_id).get()
+    async def get_pool(self, pool_id) -> DocumentSnapshot:
+        await self.ensure_active_token()
+        self._pool_id = self.client.collection("pools").document(pool_id).get()
+        return self._pool_id
 
-    def subscribe(self, pool_id, handler) -> None:
-        """Add subscriber on pool."""
+    async def subscribe(self, pool_id, handler) -> None:
+        await self.ensure_active_token()
         doc_ref = self.client.collection("pools").document(pool_id)
-        doc_ref.on_snapshot(self.__on_snapshot)
+        def on_snapshot(doc_snapshot, changes, read_time):
+            """Handles document snapshots."""
+            for doc in doc_snapshot:
+                handler(doc)
+        doc_ref.on_snapshot(on_snapshot)
         self.handlers.append(handler)
+
+    async def auto_resubscribe(self, pool_id, handler):
+        try:
+            await self.subscribe(pool_id, handler)
+        except Exception as e:
+            _LOGGER.error("Subscription failed, attempting to resubscribe...")
+            await asyncio.sleep(10)
+            await self.auto_resubscribe(pool_id, handler) 
 
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]
@@ -101,17 +115,18 @@ class Aquarite:
             nested_dict = nested_dict.setdefault(key, {})
         nested_dict[value_path[-1]] = value
 
-    def get_pool_name(self, pool_id):
+    async def get_pool_name(self, pool_id):
+        await self.ensure_active_token()
         pooldict = self.client.collection("pools").document(pool_id).get().to_dict()
         try:
             poolName = pooldict["form"]["names"][0]["name"]
         except (KeyError, IndexError):
             poolName = pooldict.get("form", {}).get("name", "Unknown")
-        _LOGGER.debug(poolName)
         return poolName
-    
+
     async def __get_pool_as_json(self, pool_id):
-        pool = self.get_pool(pool_id)        
+        await self.ensure_active_token()
+        pool = await self.get_pool(pool_id)        
         data = {"gateway" : pool.get("wifi"),
                 "operation" : "WRP",
                 "operationId" : None,
@@ -124,14 +139,7 @@ class Aquarite:
                         },
                 "poolId" : pool_id,
                 "source" : "web"}
-        _LOGGER.debug(data)
         return data
-
-    def __on_snapshot(self, doc_snapshot, changes, read_time) -> None:
-        """Create a callback on_snapshot function to capture changes."""
-        for doc in doc_snapshot:
-            for handler in self.handlers:
-                handler(doc)
 
 #### UTILS
     def get_from_dict(self, data_dict, map_list):
@@ -258,6 +266,7 @@ class Aquarite:
 
 ### SEND COMMAND
     async def __send_command(self, data) -> None:
+        await self.ensure_active_token()
         headers = {"Authorization": f"Bearer {self.tokens['idToken']}"}
         try:
             response = await self.aiohttp_session.post(

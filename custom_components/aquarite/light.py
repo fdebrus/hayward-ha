@@ -12,30 +12,35 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     """Set up a config entry."""
     dataservice = hass.data[DOMAIN].get(entry.entry_id)
 
-    if dataservice:
-        async_add_entities([AquariteLightEntity(hass, dataservice, "Light", "light.status")])
+    if not dataservice:
+        return False
+        
+    pool_id = dataservice.get_value("id")
+    pool_name = await dataservice.get_pool_name(pool_id)
+    
+    async_add_entities([AquariteLightEntity(hass, dataservice, "Light", "light.status", pool_id, pool_name)])
 
     return True
 
 class AquariteLightEntity(CoordinatorEntity, LightEntity):
     """Aquarite Light Entity."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name, value_path) -> None:
+    def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
         """Initialize a Aquarite Light Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id")
-        self._attr_name = f"{dataservice.get_pool_name(self._pool_id)}_{name}"
+        self._pool_id = pool_id
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = f"{self._pool_id}{name}"
 
     @property
     def device_info(self):
         """Return the device info."""
-        pool_name = self._dataservice.get_pool_name(self._pool_id)
         return {
             "identifiers": {(DOMAIN, self._pool_id)},
-            "name": pool_name,
+            "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }

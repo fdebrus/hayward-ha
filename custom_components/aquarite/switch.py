@@ -9,26 +9,34 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     """Set up a config entry."""
     dataservice = hass.data[DOMAIN].get(entry.entry_id)
 
+    if not dataservice:
+        return False
+
+    pool_id = dataservice.get_value("id")
+    pool_name = await dataservice.get_pool_name(pool_id)
+
     entities = [
-        AquariteSwitchEntity(hass, dataservice, "Electrolysis Cover", "hidro.cover_enabled"),
-        AquariteSwitchEntity(hass, dataservice, "Electrolysis Boost", "hidro.cloration_enabled"),
-        AquariteSwitchEntity(hass, dataservice, "Relay1", "relays.relay1.info.onoff"),
-        AquariteSwitchEntity(hass, dataservice, "Relay2", "relays.relay2.info.onoff"),
-        AquariteSwitchEntity(hass, dataservice, "Relay3", "relays.relay3.info.onoff"),
-        AquariteSwitchEntity(hass, dataservice, "Filtration Status", "filtration.status")
+        AquariteSwitchEntity(hass, dataservice, "Electrolysis Cover", "hidro.cover_enabled", pool_id, pool_name),
+        AquariteSwitchEntity(hass, dataservice, "Electrolysis Boost", "hidro.cloration_enabled", pool_id, pool_name),
+        AquariteSwitchEntity(hass, dataservice, "Relay1", "relays.relay1.info.onoff", pool_id, pool_name),
+        AquariteSwitchEntity(hass, dataservice, "Relay2", "relays.relay2.info.onoff", pool_id, pool_name),
+        AquariteSwitchEntity(hass, dataservice, "Relay3", "relays.relay3.info.onoff", pool_id, pool_name),
+        AquariteSwitchEntity(hass, dataservice, "Filtration Status", "filtration.status", pool_id, pool_name)
     ]
     
     async_add_entities(entities)
 
+    return True
+
 class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
     """Aquarite Switch Entity."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name, value_path) -> None:
+    def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
         """Initialize a Aquarite Switch Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id")
-        self._pool_name = dataservice.get_pool_name(self._pool_id)
+        self._pool_id = pool_id
+        self._pool_name = pool_name
         self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = f"{self._pool_id}{name}"

@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from typing import Any
+from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -13,15 +14,17 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, api) -> None:
         """Initialize the coordinator."""
+
         super().__init__(
             hass,
-            _LOGGER,
-            name="Aquarite",
+            logger=_LOGGER,
+            name="Aquarite"
         )
         self.api = api
 
     async def async_updated_data(self, data) -> None:
         """Update data."""
+        await self.api.ensure_active_token()
         super().async_set_updated_data(data)
 
     def set_updated_data(self, data) -> None:
@@ -32,9 +35,9 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
         """Return part from document."""
         return self.data.get(path)
 
-    def get_pool_name(self, pool_id):
+    async def get_pool_name(self, pool_id):
         """Get Pool Name."""
-        return self.api.get_pool_name(pool_id)
+        return await self.api.get_pool_name(pool_id)
 
     async def turn_on_switch(self, value_path) -> None:
         """Turn on hidro cover."""

@@ -21,12 +21,20 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
     """Set up a config entry."""
     dataservice = hass.data[DOMAIN].get(entry.entry_id)
 
+    if not dataservice:
+        return False
+
+    pool_id = dataservice.get_value("id")
+    pool_name = await dataservice.get_pool_name(pool_id)
+
     entities = []
 
     entities.append(
         AquariteTemperatureSensorEntity(
             hass,
             dataservice,
+            pool_id,
+            pool_name,
             "Temperature",
             "main.temperature",
         ),
@@ -37,6 +45,8 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
             AquariteValueSensorEntity(
                 hass,
                 dataservice,
+                pool_id,
+                pool_name,
                 "CD",
                 "modules.cd.current",
             ),
@@ -47,6 +57,8 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
             AquariteValueSensorEntity(
                 hass,
                 dataservice,
+                pool_id,
+                pool_name,
                 "Cl",
                 "modules.cl.current",
                 None,
@@ -60,6 +72,8 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
             AquariteValueSensorEntity(
                 hass,
                 dataservice,
+                pool_id,
+                pool_name,
                 "pH",
                 "modules.ph.current",
                 SensorDeviceClass.PH,
@@ -72,6 +86,8 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
             AquariteRxValueSensorEntity(
                 hass,
                 dataservice,
+                pool_id,
+                pool_name,
                 "Rx",
                 "modules.rx.current",
             ),
@@ -82,6 +98,8 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
             AquariteValueSensorEntity(
                 hass,
                 dataservice,
+                pool_id,
+                pool_name,
                 "UV",
                 "modules.uv.current",
             ),
@@ -92,6 +110,8 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
             AquariteHydrolyserSensorEntity(
                 hass,
                 dataservice,
+                pool_id,
+                pool_name,
                 "Electrolysis" if dataservice.get_value( "hidro.is_electrolysis") else "Hidrolysis",
                 "hidro.current",
             ),
@@ -99,18 +119,21 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
     
     async_add_entities(entities)
 
+    return True
+
 class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
     """Aquarite Temperature Sensor Entity."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
-    def __init__(self, hass : HomeAssistant, dataservice, name, value_path) -> None:
+    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
         """Initialize Temperature Sensor."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id") 
-        self._attr_name = dataservice.get_pool_name(self._pool_id) + "_" +  name
+        self._pool_id = pool_id 
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = dataservice.get_value("id") + "-" + name
 
@@ -119,9 +142,9 @@ class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
         """Return the device info."""
         return {
             "identifiers": {
-                (DOMAIN, self._dataservice.get_value("id"))
+                (DOMAIN, self._pool_id)
             },
-            "name": self._dataservice.get_pool_name(self._pool_id),
+            "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }
@@ -144,12 +167,13 @@ class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
 class AquariteValueSensorEntity(CoordinatorEntity, SensorEntity):
     """Aquarite Value Sensor Entity."""
 
-    def __init__(self, hass : HomeAssistant, dataservice, name, value_path, device_class:SensorDeviceClass = None, native_unit_of_measurement:str = None, icon:str = None) -> None:
+    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path, device_class:SensorDeviceClass = None, native_unit_of_measurement:str = None, icon:str = None) -> None:
         """Initialize Value Sensor such as pH."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id") 
-        self._attr_name = dataservice.get_pool_name(self._pool_id) + "_" +  name
+        self._pool_id = pool_id 
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = native_unit_of_measurement
@@ -163,7 +187,7 @@ class AquariteValueSensorEntity(CoordinatorEntity, SensorEntity):
             "identifiers": {
                 (DOMAIN, self._pool_id)
             },
-            "name": self._dataservice.get_pool_name(self._pool_id),
+            "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }
@@ -184,12 +208,13 @@ class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:gauge"
     _attr_native_unit_of_measurement = PERCENTAGE
 
-    def __init__(self, hass : HomeAssistant, dataservice, name, value_path) -> None:
+    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
         """Initialize Hydrolyser Sensor."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id") 
-        self._attr_name = dataservice.get_pool_name(self._pool_id)+ "_" +  name
+        self._pool_id = pool_id 
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = dataservice.get_value("id") + "-" + name
         
@@ -200,7 +225,7 @@ class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
             "identifiers": {
                 (DOMAIN, self._pool_id)
             },
-            "name": self._dataservice.get_pool_name(self._pool_id),
+            "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }
@@ -221,12 +246,13 @@ class AquariteRxValueSensorEntity(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:gauge"
     _attr_native_unit_of_measurement = UnitOfElectricPotential.MILLIVOLT
 
-    def __init__(self, hass : HomeAssistant, dataservice, name, value_path) -> None:
+    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
         """Initialize Hydrolyser Sensor."""
         super().__init__(dataservice)
         self._dataservice = dataservice
-        self._pool_id = dataservice.get_value("id") 
-        self._attr_name = dataservice.get_pool_name(self._pool_id) + "_" +  name
+        self._pool_id = pool_id 
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = dataservice.get_value("id") + "-" + name
 
@@ -237,7 +263,7 @@ class AquariteRxValueSensorEntity(CoordinatorEntity, SensorEntity):
             "identifiers": {
                 (DOMAIN, self._pool_id)
             },
-            "name": self._dataservice.get_pool_name(self._pool_id),
+            "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }
