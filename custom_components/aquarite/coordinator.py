@@ -18,19 +18,18 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             logger=_LOGGER,
-            name="Aquarite",
-            update_interval=timedelta(minutes=5)
+            name="Aquarite"
         )
         self.api = api
 
     async def async_updated_data(self, data) -> None:
         """Update data."""
         await self.api.ensure_active_token()
-        await self.async_updated_data(data)
+        super().async_set_updated_data(data)
 
     def set_updated_data(self, data) -> None:
         """Receive Data."""
-        asyncio.run(self.set_updated_data(data))
+        asyncio.run_coroutine_threadsafe(self.async_updated_data(data), self.hass.loop).result()
 
     def get_value(self, path) -> Any:
         """Return part from document."""
