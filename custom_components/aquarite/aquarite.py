@@ -40,7 +40,6 @@ class Aquarite:
     async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
         await instance.signin()
-        instance.client = Client(project="hayward-europe", credentials=instance.credentials)
         return instance
 
     async def get_token_and_expiry(self):
@@ -58,6 +57,7 @@ class Aquarite:
         self.tokens = await resp.json()
         self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
         self.credentials = Credentials(token=self.tokens['idToken'])
+        self.client = Client(project="hayward-europe", credentials=self.credentials)
 
     async def ensure_active_token(self):
         """Ensure that the token is still valid, and refresh it if necessary."""
@@ -69,8 +69,6 @@ class Aquarite:
     async def signin(self):
         """Sign in and set the tokens and expiry."""
         await self.get_token_and_expiry()
-
-
 
     async def get_pools(self):
         """Get all pools for current user."""
@@ -91,10 +89,14 @@ class Aquarite:
         await self.ensure_active_token()
         return self.client.collection("pools").document(pool_id).get()
 
-    def subscribe(self, pool_id, handler) -> None:
-        ### await self.ensure_active_token()
+    async def subscribe(self, pool_id, handler) -> None:
+        await self.ensure_active_token()
         doc_ref = self.client.collection("pools").document(pool_id)
-        doc_ref.on_snapshot(self.__on_snapshot)
+        def on_snapshot(doc_snapshot, changes, read_time):
+            """Handles document snapshots."""
+            for doc in doc_snapshot:
+                handler(doc)
+        doc_ref.on_snapshot(on_snapshot)
         self.handlers.append(handler)
 
     def __update_pool_data(self, pool_data, value_path, value):
@@ -111,7 +113,7 @@ class Aquarite:
         except (KeyError, IndexError):
             poolName = pooldict.get("form", {}).get("name", "Unknown")
         return poolName
-    
+
     async def __get_pool_as_json(self, pool_id):
         await self.ensure_active_token()
         pool = await self.get_pool(pool_id)        
@@ -128,12 +130,6 @@ class Aquarite:
                 "poolId" : pool_id,
                 "source" : "web"}
         return data
-
-    def __on_snapshot(self, doc_snapshot, changes, read_time) -> None:
-        """Create a callback on_snapshot function to capture changes."""
-        for doc in doc_snapshot:
-            for handler in self.handlers:
-                handler(doc)
 
 #### UTILS
     def get_from_dict(self, data_dict, map_list):
