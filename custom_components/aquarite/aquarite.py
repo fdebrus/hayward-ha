@@ -40,7 +40,7 @@ class Aquarite:
     async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
         await instance.signin()  # Initial sign-in to fetch the token
-        instance.start_token_refresh_routine()
+        await instance.start_token_refresh_routine()
         return instance
 
     async def start_token_refresh_routine(self):
