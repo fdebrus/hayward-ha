@@ -128,9 +128,14 @@ class Aquarite:
 
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]
-        for key in value_path[:-1]:
-            nested_dict = nested_dict.setdefault(key, {})
-        nested_dict[value_path[-1]] = value
+        keys = value_path.split('.')
+        for key in keys[:-1]:
+            if key in nested_dict:
+                nested_dict = nested_dict[key]
+            else:
+                nested_dict[key] = {}
+                nested_dict = nested_dict[key]
+        nested_dict[keys[-1]] = value
 
     async def __get_pool_as_json(self, pool_id):
         pool = await self.get_pool(pool_id)        

@@ -16,12 +16,12 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
-        AquariteSwitchEntity(hass, dataservice, "Electrolysis Cover", "hidro.cover_enabled", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Electrolysis Boost", "hidro.cloration_enabled", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Relay1", "relays.relay1.info.onoff", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Relay2", "relays.relay2.info.onoff", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Relay3", "relays.relay3.info.onoff", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Filtration Status", "filtration.status", pool_id, pool_name)
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Electrolysis Cover", "hidro.cover_enabled"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Electrolysis Boost", "hidro.cloration_enabled"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay1", "relays.relay1.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay2", "relays.relay2.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay3", "relays.relay3.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Filtration Status", "filtration.status")
     ]
     
     async_add_entities(entities)
@@ -31,7 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
 class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
     """Aquarite Switch Entity."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
+    def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
         """Initialize a Aquarite Switch Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
