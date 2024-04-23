@@ -41,7 +41,7 @@ class Aquarite:
     async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
         await instance.signin()  # Initial sign-in to fetch the token
-        await instance.start_token_refresh_routine()
+        asyncio.create_task(instance.start_token_refresh_routine())
         return instance
 
     async def start_token_refresh_routine(self):
