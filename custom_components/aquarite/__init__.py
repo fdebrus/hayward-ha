@@ -12,7 +12,9 @@ PLATFORMS = [binary_sensor.DOMAIN, light.DOMAIN, switch.DOMAIN, sensor.DOMAIN, s
 
 async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry) -> bool:
     """Set up the Hayward component."""
+
     api = await Aquarite.create(async_get_clientsession(hass), entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
+
     coordinator = AquariteDataCoordinator(hass, api)
     
     coordinator.data = await api.get_pool(entry.data["pool_id"])
