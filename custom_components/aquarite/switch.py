@@ -13,7 +13,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
         return False
 
     pool_id = dataservice.get_value("id")
-    pool_name = await dataservice.get_pool_name(pool_id)
+    pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
         AquariteSwitchEntity(hass, dataservice, "Electrolysis Cover", "hidro.cover_enabled", pool_id, pool_name),

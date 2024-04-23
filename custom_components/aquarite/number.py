@@ -1,3 +1,5 @@
+"""Aquarite Number entities."""
+
 from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -5,18 +7,18 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, BRAND, MODEL
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
-    """Set up a config entry."""
+
     dataservice = hass.data[DOMAIN].get(entry.entry_id)
 
     if not dataservice:
         return False
 
     pool_id = dataservice.get_value("id")
-    pool_name = await dataservice.get_pool_name(pool_id)
+    pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
-        AquariteNumberEntity(hass, dataservice, "Filtration_Smart_MinTemp", "filtration.smart.tempMin", pool_id, pool_name),
-        AquariteNumberEntity(hass, dataservice, "Filtration_Smart_HighTemp", "filtration.smart.tempHigh", pool_id, pool_name)
+        AquariteNumberEntity(hass, dataservice, pool_id, pool_name, "Filtration_Smart_MinTemp", "filtration.smart.tempMin"),
+        AquariteNumberEntity(hass, dataservice, pool_id, pool_name, "Filtration_Smart_HighTemp", "filtration.smart.tempHigh")
     ]
 
     async_add_entities(entities)
@@ -24,17 +26,15 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     return True
 
 class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
-    """Define a number entity for adjusting temperature settings on an Aqua Rite device."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name):
-        """Initialize."""
+    def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, name, value_path):
         super().__init__(dataservice)
         self._dataservice = dataservice
+        self._pool_id = pool_id
+        self._pool_name = pool_name
         self._attr_native_min_value = 12.0
         self._attr_native_max_value = 35.0
         self._attr_native_step = 0.5
-        self._pool_id = pool_id
-        self._pool_name = pool_name
         self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = f"{self._pool_id}-{name}"
@@ -42,7 +42,7 @@ class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
 
     @property
     def unique_id(self):
-        """The unique id of the sensor."""
+        """The unique id of the number."""
         return self._unique_id
 
     @property
@@ -62,5 +62,5 @@ class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float):
         """Update the current native value."""
-        await self._dataservice.set_path_value(self._pool_id, self._value_path, value)
+        await self._dataservice.api.set_path_value(self._pool_id, self._value_path, value)
         self.async_write_ha_state()

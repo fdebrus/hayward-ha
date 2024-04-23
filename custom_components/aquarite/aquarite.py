@@ -1,20 +1,16 @@
 import datetime
 import json
-from http import HTTPStatus
-from typing import Any
 
-import aiohttp
 import asyncio
 from aiohttp import ClientResponseError, ClientSession
 from google.cloud.firestore import Client, DocumentSnapshot
 from google.oauth2.credentials import Credentials
+
 import logging
-import requests
-from requests import HTTPError
 
 __title__ = "Aquarite"
-__version__ = "0.0.5"
-__author__ = "Tobias Laursen"
+__version__ = "0.0.7"
+__author__ = "Frederic Debrus"
 __license__ = "MIT"
 
 API_KEY = "AIzaSyBLaxiyZ2nS1KgRBqWe-NY4EG7OzG5fKpE"
@@ -40,7 +36,7 @@ class Aquarite:
     @classmethod
     async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
-        await instance.signin()  # Initial sign-in to fetch the token
+        await instance.signin()
         asyncio.create_task(instance.start_token_refresh_routine())
         return instance
 
@@ -48,7 +44,7 @@ class Aquarite:
         while True:
             try:
                 await self.ensure_active_token()
-                await asyncio.sleep(self.calculate_sleep_duration())  # Sleep until next check is needed
+                await asyncio.sleep(self.calculate_sleep_duration())
             except Exception as e:
                 _LOGGER.error(f"Error maintaining token: {str(e)}")
                 break
@@ -135,14 +131,6 @@ class Aquarite:
         for key in value_path[:-1]:
             nested_dict = nested_dict.setdefault(key, {})
         nested_dict[value_path[-1]] = value
-
-    async def get_pool_name(self, pool_id):
-        pooldict = self.client.collection("pools").document(pool_id).get().to_dict()
-        try:
-            poolName = pooldict["form"]["names"][0]["name"]
-        except (KeyError, IndexError):
-            poolName = pooldict.get("form", {}).get("name", "Unknown")
-        return poolName
 
     async def __get_pool_as_json(self, pool_id):
         pool = await self.get_pool(pool_id)        

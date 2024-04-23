@@ -1,4 +1,5 @@
 """The Aquarite integration."""
+
 from homeassistant import config_entries, core
 from homeassistant.components import binary_sensor, light, switch, sensor, select, number
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME

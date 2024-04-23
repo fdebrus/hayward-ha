@@ -1,4 +1,5 @@
-"""Aquarite value sensors."""
+"""Aquarite Sensor entities."""
+
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import PERCENTAGE, UnitOfElectricPotential, UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -16,16 +17,15 @@ from .const import (
     PATH_HASUV,
 )
 
-
 async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> bool:
-    """Set up a config entry."""
+    
     dataservice = hass.data[DOMAIN].get(entry.entry_id)
 
     if not dataservice:
         return False
 
     pool_id = dataservice.get_value("id")
-    pool_name = await dataservice.get_pool_name(pool_id)
+    pool_name = dataservice.get_pool_name(pool_id)
 
     entities = []
 
@@ -122,13 +122,12 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
     return True
 
 class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
-    """Aquarite Temperature Sensor Entity."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
     def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
-        """Initialize Temperature Sensor."""
+
         super().__init__(dataservice)
         self._dataservice = dataservice
         self._pool_id = pool_id 
@@ -136,6 +135,11 @@ class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = dataservice.get_value("id") + "-" + name
+
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id
 
     @property
     def device_info(self):
@@ -159,16 +163,10 @@ class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
         """Return the unit of measurement."""
         return UnitOfTemperature.CELSIUS
 
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
 class AquariteValueSensorEntity(CoordinatorEntity, SensorEntity):
-    """Aquarite Value Sensor Entity."""
 
     def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path, device_class:SensorDeviceClass = None, native_unit_of_measurement:str = None, icon:str = None) -> None:
-        """Initialize Value Sensor such as pH."""
+
         super().__init__(dataservice)
         self._dataservice = dataservice
         self._pool_id = pool_id 
@@ -179,6 +177,11 @@ class AquariteValueSensorEntity(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = native_unit_of_measurement
         self._attr_icon = icon
         self._unique_id = dataservice.get_value("id") + "-" + name
+
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id
 
     @property
     def device_info(self):
@@ -197,19 +200,13 @@ class AquariteValueSensorEntity(CoordinatorEntity, SensorEntity):
         """Return value of sensor."""
         return float(self._dataservice.get_value(self._value_path)) / 100
 
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
 class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
-    """Aquarite Hydrolyser Sensor Entity."""
 
     _attr_icon = "mdi:gauge"
     _attr_native_unit_of_measurement = PERCENTAGE
 
     def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
-        """Initialize Hydrolyser Sensor."""
+
         super().__init__(dataservice)
         self._dataservice = dataservice
         self._pool_id = pool_id 
@@ -217,7 +214,12 @@ class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = dataservice.get_value("id") + "-" + name
-        
+
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id
+
     @property
     def device_info(self):
         """Return the device info."""
@@ -235,19 +237,13 @@ class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
         """Return value of sensor."""
         return float(self._dataservice.get_value(self._value_path)) / 10
 
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
 class AquariteRxValueSensorEntity(CoordinatorEntity, SensorEntity):
-    """Aquarite Rx Sensor Entity."""
 
     _attr_icon = "mdi:gauge"
     _attr_native_unit_of_measurement = UnitOfElectricPotential.MILLIVOLT
 
     def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
-        """Initialize Hydrolyser Sensor."""
+
         super().__init__(dataservice)
         self._dataservice = dataservice
         self._pool_id = pool_id 
@@ -256,6 +252,11 @@ class AquariteRxValueSensorEntity(CoordinatorEntity, SensorEntity):
         self._value_path = value_path
         self._unique_id = dataservice.get_value("id") + "-" + name
 
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id
+        
     @property
     def device_info(self):
         """Return the device info."""
@@ -272,8 +273,3 @@ class AquariteRxValueSensorEntity(CoordinatorEntity, SensorEntity):
     def native_value(self) -> int:
         """Return value of sensor."""
         return int(self._dataservice.get_value(self._value_path))
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
