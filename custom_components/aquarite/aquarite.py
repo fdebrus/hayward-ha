@@ -35,12 +35,26 @@ class Aquarite:
         self.credentials = Credentials | None
         self.client = Client | None
         self.handlers = []
-        
+
     @classmethod
     async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
-        await instance.signin()
+        await instance.signin()  # Initial sign-in to fetch the token
+        instance.start_token_refresh_routine()
         return instance
+
+    async def start_token_refresh_routine(self):
+        while True:
+            try:
+                await self.ensure_active_token()
+                await asyncio.sleep(self.calculate_sleep_duration())  # Sleep until next check is needed
+            except Exception as e:
+                _LOGGER.error(f"Error maintaining token: {str(e)}")
+                break
+
+    def calculate_sleep_duration(self):
+        time_to_expiry = (self.expiry - datetime.datetime.now()).total_seconds()
+        return max(time_to_expiry - 300, 10)
 
     async def get_token_and_expiry(self):
         """Fetch token and expiry using Google API."""
@@ -72,7 +86,6 @@ class Aquarite:
 
     async def get_pools(self):
         """Get all pools for current user."""
-        await self.ensure_active_token()
         data = {}
         user_dict = self.client.collection("users").document(self.tokens["localId"]).get().to_dict()
         for poolId in user_dict.get("pools", []):
@@ -86,12 +99,10 @@ class Aquarite:
         return data
 
     async def get_pool(self, pool_id) -> DocumentSnapshot:
-        await self.ensure_active_token()
         self._pool_id = self.client.collection("pools").document(pool_id).get()
         return self._pool_id
 
     async def subscribe(self, pool_id, handler) -> None:
-        await self.ensure_active_token()
         doc_ref = self.client.collection("pools").document(pool_id)
         def on_snapshot(doc_snapshot, changes, read_time):
             """Handles document snapshots."""
@@ -115,7 +126,6 @@ class Aquarite:
         nested_dict[value_path[-1]] = value
 
     async def get_pool_name(self, pool_id):
-        await self.ensure_active_token()
         pooldict = self.client.collection("pools").document(pool_id).get().to_dict()
         try:
             poolName = pooldict["form"]["names"][0]["name"]
@@ -124,7 +134,6 @@ class Aquarite:
         return poolName
 
     async def __get_pool_as_json(self, pool_id):
-        await self.ensure_active_token()
         pool = await self.get_pool(pool_id)        
         data = {"gateway" : pool.get("wifi"),
                 "operation" : "WRP",
@@ -265,7 +274,6 @@ class Aquarite:
 
 ### SEND COMMAND
     async def __send_command(self, data) -> None:
-        await self.ensure_active_token()
         headers = {"Authorization": f"Bearer {self.tokens['idToken']}"}
         try:
             response = await self.aiohttp_session.post(
