@@ -59,15 +59,15 @@ class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
     @property
     def is_on(self):
         """Return true if the device is on."""
-        return bool(self._dataservice.get_value(self._value_path))
+        return bool(self._dataservice.get_value(self._pool_id, self._value_path))
         
     async def async_turn_on(self):
         """Turn the entity on."""
-        await self._dataservice.turn_on_switch(self._value_path)
+        await self._dataservice.turn_on_switch(self._pool_id, self._value_path)
 
     async def async_turn_off(self):
         """Turn the entity off."""
-        await self._dataservice.turn_off_switch(self._value_path)
+        await self._dataservice.turn_off_switch(self._pool_id, self._value_path)
 
     @property
     def unique_id(self):

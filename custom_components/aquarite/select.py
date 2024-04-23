@@ -66,7 +66,7 @@ class AquaritePumpModeEntity(CoordinatorEntity, SelectEntity):
 
     async def async_select_option(self, option: str):
         """Set pump mode"""
-        await self._dataservice.api.set_pump_mode(self._attr_name, self._allowed_values.index(option))
+        await self._dataservice.api.set_pump_mode(self._pool_id, self._allowed_values.index(option))
 
 class AquaritePumpSpeedEntity(CoordinatorEntity, SelectEntity):
 
@@ -110,5 +110,5 @@ class AquaritePumpSpeedEntity(CoordinatorEntity, SelectEntity):
 
     async def async_select_option(self, option: str):
         """Set pump speed"""
-        await self._dataservice.api.set_pump_speed(self._attr_name, self._allowed_values.index(option))
+        await self._dataservice.api.set_pump_speed(self._pool_id, self._allowed_values.index(option))
 
