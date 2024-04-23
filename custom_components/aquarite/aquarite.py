@@ -67,12 +67,22 @@ class Aquarite:
             "returnSecureToken": True
         })
         resp = await self.aiohttp_session.post(url, headers=headers, data=data)
+        _LOGGER.debug(f"Response {resp}")
         if resp.status == 400:
             raise UnauthorizedException("Failed to authenticate.")
         self.tokens = await resp.json()
+        _LOGGER.debug(f"Token {self.tokens}")
         self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+        _LOGGER.debug(f"Expiry {self.expiry}")
         self.credentials = Credentials(token=self.tokens['idToken'])
+        _LOGGER.debug(f"Creds {self.credentials}")
         self.client = Client(project="hayward-europe", credentials=self.credentials)
+        _LOGGER.debug(f"Client {self.client}")
+        _LOGGER.debug(f"Handlers content: {self.handlers}")
+        if hasattr(self, 'handlers') and self.handlers:
+            for pool_id, handler in self.handlers:
+                _LOGGER.debug(f"Resubscribing to pool {pool_id}")
+                await self.subscribe(pool_id, handler)
 
     async def ensure_active_token(self):
         """Ensure that the token is still valid, and refresh it if necessary."""
@@ -107,18 +117,18 @@ class Aquarite:
         doc_ref = self.client.collection("pools").document(pool_id)
         def on_snapshot(doc_snapshot, changes, read_time):
             """Handles document snapshots."""
-            for doc in doc_snapshot:
-                handler(doc)
+            try:
+                for change in changes:
+                    _LOGGER.debug(f"Received change {change.type} in firestore")
+                for doc in doc_snapshot:
+                    try:
+                        handler(doc)
+                    except Exception as handler_error:
+                        _LOGGER.error(f"Error executing handler: {handler_error}")
+            except Exception as e:
+                _LOGGER.error(f"Error in on_snapshot: {e}")
         doc_ref.on_snapshot(on_snapshot)
-        self.handlers.append(handler)
-
-    async def auto_resubscribe(self, pool_id, handler):
-        try:
-            await self.subscribe(pool_id, handler)
-        except Exception as e:
-            _LOGGER.error("Subscription failed, attempting to resubscribe...")
-            await asyncio.sleep(10)
-            await self.auto_resubscribe(pool_id, handler) 
+        self.handlers.append((pool_id, handler))
 
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]
