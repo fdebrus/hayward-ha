@@ -24,7 +24,6 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
 
     async def async_updated_data(self, data) -> None:
         """Update data."""
-        await self.api.ensure_active_token()
         super().async_set_updated_data(data)
 
     def set_updated_data(self, data) -> None:
