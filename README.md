@@ -3,7 +3,7 @@
 **NOT PRODUCTION READY - STILL IN DEVELOPMENT**
 
 **You can install 0.0.7 version, it's close to production ready. I welcome all feedback, test, test, test..**
-**If you see room for improvement, anything you would like to see added / changes, so into the "Issues" and record your wish**
+**If you see room for improvement, anything you would like to see added / changed, go into the "Issues" and record your wish**
 
 **I will be away for couple of days, do not expect any feedback / update before at least 2 weeks. Vacation is calling**
 
