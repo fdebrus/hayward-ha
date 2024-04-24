@@ -63,18 +63,12 @@ class Aquarite:
             "returnSecureToken": True
         })
         resp = await self.aiohttp_session.post(url, headers=headers, data=data)
-        _LOGGER.debug(f"Response {resp}")
         if resp.status == 400:
             raise UnauthorizedException("Failed to authenticate.")
         self.tokens = await resp.json()
-        _LOGGER.debug(f"Token {self.tokens}")
         self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-        _LOGGER.debug(f"Expiry {self.expiry}")
         self.credentials = Credentials(token=self.tokens['idToken'])
-        _LOGGER.debug(f"Creds {self.credentials}")
         self.client = Client(project="hayward-europe", credentials=self.credentials)
-        _LOGGER.debug(f"Client {self.client}")
-        _LOGGER.debug(f"Handlers content: {self.handlers}")
         if hasattr(self, 'handlers') and self.handlers:
             for pool_id, handler in self.handlers:
                 _LOGGER.debug(f"Resubscribing to pool {pool_id}")
