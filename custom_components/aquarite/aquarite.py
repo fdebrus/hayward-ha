@@ -125,6 +125,8 @@ class Aquarite:
                 _LOGGER.error(f"Error in on_snapshot: {e}")
         doc_ref.on_snapshot(on_snapshot)
         self.handlers.append((pool_id, handler))
+        max_size = 10
+        self.handlers = self.handlers[-max_size:]
 
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]
