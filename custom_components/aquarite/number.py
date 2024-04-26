@@ -17,8 +17,10 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
-        AquariteNumberEntity(hass, dataservice, pool_id, pool_name, "Filtration_Smart_MinTemp", "filtration.smart.tempMin"),
-        AquariteNumberEntity(hass, dataservice, pool_id, pool_name, "Filtration_Smart_HighTemp", "filtration.smart.tempHigh")
+        AquariteNumberEntity(hass, dataservice, pool_id, pool_name, 500, 800, "Redox Setpoint", "modules.rx.status.value"),
+        AquariteNumberEntity(hass, dataservice, pool_id, pool_name, 500, 800, "pH Low", "modules.ph.status.low_value"),
+        AquariteNumberEntity(hass, dataservice, pool_id, pool_name, 500, 800, "pH Max", "modules.ph.status.high_value"),
+        AquariteNumberEntity(hass, dataservice, pool_id, pool_name, 0, dataservice.get_value("hidro.maxAllowedValue"), "Hydrolysis Setpoint", "hidro.level")
     ]
 
     async_add_entities(entities)
@@ -27,18 +29,18 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
 
 class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
 
-    def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, name, value_path):
+    def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, value_min, value_max, name, value_path):
         super().__init__(dataservice)
         self._dataservice = dataservice
         self._pool_id = pool_id
         self._pool_name = pool_name
-        self._attr_native_min_value = 12.0
-        self._attr_native_max_value = 35.0
+        self._attr_native_min_value = value_min
+        self._attr_native_max_value = value_max
         self._attr_native_step = 0.5
         self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
         self._unique_id = f"{self._pool_id}-{name}"
-        self._attr_device_class = "temperature"
+        # self._attr_device_class = "temperature"
 
     @property
     def unique_id(self):

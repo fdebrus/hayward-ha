@@ -21,6 +21,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
         AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay1", "relays.relay1.info.onoff"),
         AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay2", "relays.relay2.info.onoff"),
         AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay3", "relays.relay3.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay4", "relays.relay4.info.onoff"),
         AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Filtration Status", "filtration.status")
     ]
     
@@ -51,10 +52,11 @@ class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
             "model": MODEL,
         }
 
-    # @property
-    # def extra_state_attributes(self) -> dict[str, str] | None:
-    #     """Return extra attributes."""
-    #     return {"name": self._dataservice.get_value(f"relays.{self._value_path.lower()}.name")}
+    @property
+    def extra_state_attributes(self) -> dict[str, str] | None:
+        """Return extra attributes."""
+        if "relay" in self._attr_name: 
+            return {"name": self._dataservice.get_value(f"relays.{self._value_path}.name")}
 
     @property
     def is_on(self):

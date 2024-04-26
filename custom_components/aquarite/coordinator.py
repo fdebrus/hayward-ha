@@ -34,6 +34,16 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
         """Return part from document."""
         return self.data.get(path)
 
+    def set_value(self, value_path: str, value: any) -> None:
+        """Update data by a dynamic path."""
+        nested_dict = self.data.to_dict()
+        keys = value_path.split('.')
+        current_dict = nested_dict
+        for key in keys[:-1]:
+            current_dict = current_dict.setdefault(key, {})
+        current_dict[keys[-1]] = value
+        self.data = nested_dict
+
     def get_pool_name(self, pool_id):
         """Return the name of the pool from document."""
         data_dict = self.data.to_dict()

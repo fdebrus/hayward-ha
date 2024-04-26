@@ -19,13 +19,15 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
-        AquariteBinarySensorEntity(hass, dataservice, "FL1", "hidro.fl1", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "Hidro Flow Status", "hidro.fl1", pool_id, pool_name),
         AquariteBinarySensorEntity(hass, dataservice, "Filtration Status", "filtration.status", pool_id, pool_name),
         AquariteBinarySensorEntity(hass, dataservice, "Backwash Status", "backwash.status", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "Hidro Cover Reduction", "hidro.cover", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "pH Pump Alarm", "modules.ph.al3", pool_id, pool_name)
     ]
 
     if dataservice.get_value("main.hasCL"):
-        entities.append(AquariteBinarySensorEntity(hass, dataservice, "FL2", "hidro.fl2"))
+        entities.append(AquariteBinarySensorEntity(hass, dataservice, "Hidro FL2 Status", "hidro.fl2", pool_id, pool_name))
 
     if any(
         dataservice.get_value(path)
@@ -60,7 +62,7 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_class(self):
         """Return the class of the binary sensor."""
-        if self._value_path in {"hidro.fl1", "hidro.low"}:
+        if self._value_path in {"hidro.fl1", "hidro.low", "modules.cl.pump_status", "modules.rx.pump_status", "modules.ph.al3"}:
             return BinarySensorDeviceClass.PROBLEM
         return BinarySensorDeviceClass.RUNNING
 

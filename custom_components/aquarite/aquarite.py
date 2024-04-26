@@ -101,6 +101,7 @@ class Aquarite:
 
     async def get_pool(self, pool_id) -> DocumentSnapshot:
         self._pool_id = self.client.collection("pools").document(pool_id).get()
+        _LOGGER.debug(f"{self._pool_id.to_dict()}")
         return self._pool_id
 
     async def subscribe(self, pool_id, handler) -> None:
@@ -143,10 +144,12 @@ class Aquarite:
                             "hidro" : pool.get("hidro"),
                             "light" : pool.get("light"),
                             "main" : pool.get("main"),
-                            "relays" : pool.get("relays")
+                            "relays" : pool.get("relays"),
+                            "modules" : pool.get("modules")
                         },
                 "poolId" : pool_id,
                 "source" : "web"}
+        _LOGGER.debug(f"{data}")
         return data
 
 #### UTILS
