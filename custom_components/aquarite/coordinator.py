@@ -43,6 +43,7 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
             current_dict = current_dict.setdefault(key, {})
         current_dict[keys[-1]] = value
         self.data = nested_dict
+        _LOGGER.debug(f"{self.data}")
 
     def get_pool_name(self, pool_id):
         """Return the name of the pool from document."""

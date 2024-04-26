@@ -23,7 +23,14 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
         AquariteBinarySensorEntity(hass, dataservice, "Filtration Status", "filtration.status", pool_id, pool_name),
         AquariteBinarySensorEntity(hass, dataservice, "Backwash Status", "backwash.status", pool_id, pool_name),
         AquariteBinarySensorEntity(hass, dataservice, "Hidro Cover Reduction", "hidro.cover", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "pH Pump Alarm", "modules.ph.al3", pool_id, pool_name)
+        AquariteBinarySensorEntity(hass, dataservice, "pH Pump Alarm", "modules.ph.al3", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "CD Module Installed", "main.hasCD", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "CL Module Installed", "main.hasCL", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "RX Module Installed", "main.hasRX", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "pH Module Installed", "main.hasPH", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "IO Module Installed", "main.hasIO", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "Hidro Module Installed", "main.hasHidro", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "pH Acid Pump", "modules.ph.pump_high_on", pool_id, pool_name)
     ]
 
     if dataservice.get_value("main.hasCL"):
@@ -64,6 +71,8 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
         """Return the class of the binary sensor."""
         if self._value_path in {"hidro.fl1", "hidro.low", "modules.cl.pump_status", "modules.rx.pump_status", "modules.ph.al3"}:
             return BinarySensorDeviceClass.PROBLEM
+        elif self._value_path in {"main.hasCD","main.hasCL","main.hasRX","main.hasPH","main.hasHidro","main.hasIO"}:
+            return BinarySensorDeviceClass.CONNECTIVITY
         return BinarySensorDeviceClass.RUNNING
 
     @property

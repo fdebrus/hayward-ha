@@ -116,6 +116,17 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
                 "hidro.current",
             ),
         )
+
+    entities.append(
+            AquariteTimeSensorEntity(
+                hass,
+                dataservice,
+                pool_id,
+                pool_name,
+                "Hidrolysis Cell Time",
+                "hidro.cellTotalTime",
+            ),
+        )
     
     async_add_entities(entities)
 
@@ -198,7 +209,47 @@ class AquariteValueSensorEntity(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         """Return value of sensor."""
-        return float(self._dataservice.get_value(self._value_path)) / 100
+        value = self._dataservice.get_value(self._value_path)
+        return float(value) / 100
+
+class AquariteTimeSensorEntity(CoordinatorEntity, SensorEntity):
+
+    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path, device_class:SensorDeviceClass = None, native_unit_of_measurement:str = None, icon:str = None) -> None:
+
+        super().__init__(dataservice)
+        self._dataservice = dataservice
+        self._pool_id = pool_id 
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
+        self._value_path = value_path
+        self._attr_device_class = device_class
+        self._attr_native_unit_of_measurement = native_unit_of_measurement
+        self._attr_icon = icon
+        self._unique_id = dataservice.get_value("id") + "-" + name
+
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id
+
+    @property
+    def device_info(self):
+        """Return the device info."""
+        return {
+            "identifiers": {
+                (DOMAIN, self._pool_id)
+            },
+            "name": self._pool_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+    @property
+    def native_value(self):
+        """Return value of sensor."""
+        milliseconds = float(self._dataservice.get_value(self._value_path))
+        hours = milliseconds / 3600000 
+        return round(hours, 2)
 
 class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
 
