@@ -6,7 +6,7 @@
   "issue_tracker": "https://github.com/fdebrus/hayward-ha/issues",
   "domain": "aquarite",
   "name": "Aquarite",
-  "todorequirements": ["Aquarite==0.0.4"],
+  "todorequirements": ["Aquarite==0.0.9"],
   "requirements": ["google-auth","google-cloud-firestore"],
   "version": "0.0.4",
   "iot_class": "cloud_push",
