@@ -1,4 +1,5 @@
 """The Aquarite integration."""
+
 from homeassistant import config_entries, core
 from homeassistant.components import binary_sensor, light, switch, sensor, select, number
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
@@ -12,12 +13,16 @@ PLATFORMS = [binary_sensor.DOMAIN, light.DOMAIN, switch.DOMAIN, sensor.DOMAIN, s
 
 async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry) -> bool:
     """Set up the Hayward component."""
+
     api = await Aquarite.create(async_get_clientsession(hass), entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
+
     coordinator = AquariteDataCoordinator(hass, api)
+
+    api.set_coordinator(coordinator)
     
     coordinator.data = await api.get_pool(entry.data["pool_id"])
     
-    await api.auto_resubscribe(entry.data["pool_id"], coordinator.set_updated_data)
+    await api.subscribe(entry.data["pool_id"], coordinator.set_updated_data)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator

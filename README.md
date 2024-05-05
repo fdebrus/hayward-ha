@@ -12,8 +12,6 @@
 
 # Hayward AquaRite integration for Home Assistant
 
-Forked from https://github.com/djerik/dagen-ha
-
 ## Requirements
 - An Hayward AquaRite with wifi module connected to the internet.
 - The controller must be added to an Hayward account.
@@ -28,8 +26,9 @@ Afterwards you can go to the Integrations sections and click the add integration
 
 It will automatically add all the sensors to your Home Assistant installation.
 
-![image](https://github.com/fdebrus/hayward-ha/assets/33791533/4bae171b-a6e4-41e4-b57b-873b03642bfa)
+Example dashboard, inspired from the great work of https://github.com/alexdelprete/HA-NeoPool-MQTT
+
+![image](https://github.com/fdebrus/hayward-ha/assets/33791533/ef570ca5-d4dd-4a3d-b5c1-e1379c1d6a14)
 
 
-![image](https://github.com/fdebrus/hayward-ha/assets/33791533/e4458ad5-7aea-4221-8f34-0ea92ff6576a)
 

@@ -1,4 +1,5 @@
-"""Aquarite Select entity."""
+"""Aquarite Select entities."""
+
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -13,24 +14,22 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
         return False
 
     pool_id = dataservice.get_value("id")
-    pool_name = await dataservice.get_pool_name(pool_id)
+    pool_name = dataservice.get_pool_name(pool_id)
 
-    entities = []
+    entities = [
+        AquaritePumpModeEntity(hass, dataservice, pool_id, pool_name, "Pump Mode", "filtration.mode"),
+        AquaritePumpSpeedEntity(hass, dataservice, pool_id, pool_name, "Pump Speed", "filtration.manVel")
+    ]
 
-    entities.append(AquaritePumpModeEntity(hass, dataservice, "Pump Mode", "filtration.mode", pool_id, pool_name))
-    entities.append(AquaritePumpSpeedEntity(hass, dataservice, "Pump Speed", "filtration.manVel", pool_id, pool_name))
-    
     async_add_entities(entities)
 
     return True
 
 class AquaritePumpModeEntity(CoordinatorEntity, SelectEntity):
-    """Aquarite Select Entity."""
 
-    def __init__(self, hass : HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
-        """Initialize a Aquarite Select Entity."""
+    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
+
         super().__init__(dataservice)
-        """ self._attr_device_info =  """
         self._dataservice = dataservice
         self._pool_id = pool_id
         self._pool_name = pool_name
@@ -38,6 +37,11 @@ class AquaritePumpModeEntity(CoordinatorEntity, SelectEntity):
         self._value_path = value_path
         self._unique_id = dataservice.get_value("id") + name
         self._allowed_values = ["Manual", "Auto", "Heat", "Smart", "Intel"]
+    
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id
 
     @property
     def device_info(self):
@@ -62,17 +66,11 @@ class AquaritePumpModeEntity(CoordinatorEntity, SelectEntity):
 
     async def async_select_option(self, option: str):
         """Set pump mode"""
-        await self._dataservice.set_pump_mode(self._attr_name, self._allowed_values.index(option))
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
+        await self._dataservice.api.set_pump_mode(self._pool_id, self._allowed_values.index(option))
 
 class AquaritePumpSpeedEntity(CoordinatorEntity, SelectEntity):
-    """Aquarite Select Entity."""
 
-    def __init__(self, hass : HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
+    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
         """Initialize a Aquarite Select Entity."""
         super().__init__(dataservice)
         """ self._attr_device_info =  """
@@ -83,6 +81,11 @@ class AquaritePumpSpeedEntity(CoordinatorEntity, SelectEntity):
         self._value_path = value_path
         self._unique_id = dataservice.get_value("id") + name
         self._allowed_values = ["Slow", "Medium", "High"]
+
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id
 
     @property
     def device_info(self):
@@ -107,9 +110,5 @@ class AquaritePumpSpeedEntity(CoordinatorEntity, SelectEntity):
 
     async def async_select_option(self, option: str):
         """Set pump speed"""
-        await self._dataservice.set_pump_speed(self._attr_name, self._allowed_values.index(option))
+        await self._dataservice.api.set_pump_speed(self._pool_id, self._allowed_values.index(option))
 
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id

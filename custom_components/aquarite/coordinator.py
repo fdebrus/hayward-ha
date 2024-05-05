@@ -1,8 +1,8 @@
 """Coordinator for Aquarite."""
+
 import asyncio
 import logging
 from typing import Any
-from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -24,7 +24,6 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
 
     async def async_updated_data(self, data) -> None:
         """Update data."""
-        await self.api.ensure_active_token()
         super().async_set_updated_data(data)
 
     def set_updated_data(self, data) -> None:
@@ -35,27 +34,26 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
         """Return part from document."""
         return self.data.get(path)
 
-    async def get_pool_name(self, pool_id):
-        """Get Pool Name."""
-        return await self.api.get_pool_name(pool_id)
+    def set_value(self, value_path: str, value: any) -> None:
+        """Update data by a dynamic path."""
+        nested_dict = self.data.to_dict()
+        keys = value_path.split('.')
+        current_dict = nested_dict
+        for key in keys[:-1]:
+            current_dict = current_dict.setdefault(key, {})
+        current_dict[keys[-1]] = value
+        self.data = nested_dict
+        _LOGGER.debug(f"{self.data}")
 
-    async def turn_on_switch(self, value_path) -> None:
-        """Turn on hidro cover."""
-        await self.api.turn_on_switch(self.data.id, value_path)
-
-    async def turn_off_switch(self, value_path) -> None:
-        """Turn off hidro cover."""
-        await self.api.turn_off_switch(self.data.id, value_path)
-
-    async def set_pump_mode(self, pool_id, pump_mode) -> None:
-        """Set pump mode."""
-        await self.api.set_pump_mode(self.data.id, pump_mode)
-    
-    async def set_pump_speed(self, pool_id, pump_speed) -> None:
-        """Set pump speed."""
-        await self.api.set_pump_speed(self.data.id, pump_speed)
-
-    async def set_path_value(self, pool_id, value_path, value) -> None:
-        """Set value for value_path."""
-        await self.api.set_path_value(pool_id, value_path, value)
-
+    def get_pool_name(self, pool_id):
+        """Return the name of the pool from document."""
+        data_dict = self.data.to_dict()
+        if data_dict.get("id") == pool_id:
+            try:
+                pool_name = data_dict["form"]["names"][0]["name"]
+            except (KeyError, IndexError):
+                pool_name = data_dict.get("form", {}).get("name", "Unknown")
+        else:
+            _LOGGER.error(f"Pool ID {pool_id} does not match the document's ID.")
+            pool_name = "Unknown"
+        return pool_name

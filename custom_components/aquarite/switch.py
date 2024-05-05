@@ -13,15 +13,16 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
         return False
 
     pool_id = dataservice.get_value("id")
-    pool_name = await dataservice.get_pool_name(pool_id)
+    pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
-        AquariteSwitchEntity(hass, dataservice, "Electrolysis Cover", "hidro.cover_enabled", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Electrolysis Boost", "hidro.cloration_enabled", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Relay1", "relays.relay1.info.onoff", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Relay2", "relays.relay2.info.onoff", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Relay3", "relays.relay3.info.onoff", pool_id, pool_name),
-        AquariteSwitchEntity(hass, dataservice, "Filtration Status", "filtration.status", pool_id, pool_name)
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Electrolysis Cover", "hidro.cover_enabled"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Electrolysis Boost", "hidro.cloration_enabled"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay1", "relays.relay1.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay2", "relays.relay2.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay3", "relays.relay3.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay4", "relays.relay4.info.onoff"),
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Filtration Status", "filtration.status")
     ]
     
     async_add_entities(entities)
@@ -31,7 +32,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
 class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
     """Aquarite Switch Entity."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
+    def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
         """Initialize a Aquarite Switch Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
@@ -51,10 +52,11 @@ class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
             "model": MODEL,
         }
 
-    # @property
-    # def extra_state_attributes(self) -> dict[str, str] | None:
-    #     """Return extra attributes."""
-    #     return {"name": self._dataservice.get_value(f"relays.{self._value_path.lower()}.name")}
+    @property
+    def extra_state_attributes(self) -> dict[str, str] | None:
+        """Return extra attributes."""
+        if "relay" in self._attr_name: 
+            return {"name": self._dataservice.get_value(f"relays.{self._value_path}.name")}
 
     @property
     def is_on(self):
@@ -63,11 +65,11 @@ class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
         
     async def async_turn_on(self):
         """Turn the entity on."""
-        await self._dataservice.turn_on_switch(self._value_path)
+        await self._dataservice.api.turn_on_switch(self._pool_id, self._value_path)
 
     async def async_turn_off(self):
         """Turn the entity off."""
-        await self._dataservice.turn_off_switch(self._value_path)
+        await self._dataservice.api.turn_off_switch(self._pool_id, self._value_path)
 
     @property
     def unique_id(self):
