@@ -9,7 +9,7 @@ from google.oauth2.credentials import Credentials
 import logging
 
 __title__ = "Aquarite"
-__version__ = "0.0.7"
+__version__ = "0.0.9"
 __author__ = "Frederic Debrus"
 __license__ = "MIT"
 
