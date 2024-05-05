@@ -17,6 +17,8 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
     api = await Aquarite.create(async_get_clientsession(hass), entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
 
     coordinator = AquariteDataCoordinator(hass, api)
+
+    api.set_coordinator(coordinator)
     
     coordinator.data = await api.get_pool(entry.data["pool_id"])
     
