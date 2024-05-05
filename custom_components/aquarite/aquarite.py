@@ -22,16 +22,16 @@ _LOGGER = logging.getLogger(__name__)
 class Aquarite:
     """Aquarite API."""
 
-    def __init__(self, aiohttp_session: ClientSession, username: str, password: str) -> None:
+    def __init__(self, aiohttp_session: ClientSession, username: str, password: str, coordinator=None) -> None:
         """Initialize Aquarite API."""
         self.aiohttp_session = aiohttp_session
+        self.coordinator = coordinator
         self.username = username
         self.password = password
         self.tokens = None
         self.expiry = None
         self.credentials = Credentials | None
         self.client = Client | None
-        self.handlers = []
 
     @classmethod
     async def create(cls, aiohttp_session, username, password):
@@ -39,6 +39,10 @@ class Aquarite:
         await instance.signin()
         asyncio.create_task(instance.start_token_refresh_routine())
         return instance
+
+    def set_coordinator(self, coordinator):
+        """Set the coordinator after initialization."""
+        self.coordinator = coordinator
 
     async def start_token_refresh_routine(self):
         while True:
@@ -69,10 +73,6 @@ class Aquarite:
         self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
         self.credentials = Credentials(token=self.tokens['idToken'])
         self.client = Client(project="hayward-europe", credentials=self.credentials)
-        if hasattr(self, 'handlers') and self.handlers:
-            for pool_id, handler in self.handlers:
-                _LOGGER.debug(f"Resubscribing to pool {pool_id}")
-                await self.subscribe(pool_id, handler)
 
     async def ensure_active_token(self):
         """Ensure that the token is still valid, and refresh it if necessary."""
@@ -80,6 +80,7 @@ class Aquarite:
         if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)): 
             _LOGGER.info("Token expired, refreshing...")
             await self.get_token_and_expiry()
+            await self.subscribe(self.coordinator.data["pool_id"], self.coordinator)
 
     async def signin(self):
         """Sign in and set the tokens and expiry."""
@@ -106,6 +107,7 @@ class Aquarite:
 
     async def subscribe(self, pool_id, handler) -> None:
         doc_ref = self.client.collection("pools").document(pool_id)
+
         def on_snapshot(doc_snapshot, changes, read_time):
             """Handles document snapshots."""
             try:
@@ -119,9 +121,6 @@ class Aquarite:
             except Exception as e:
                 _LOGGER.error(f"Error in on_snapshot: {e}")
         doc_ref.on_snapshot(on_snapshot)
-        self.handlers.append((pool_id, handler))
-        max_size = 10
-        self.handlers = self.handlers[-max_size:]
 
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]
@@ -135,7 +134,7 @@ class Aquarite:
         nested_dict[keys[-1]] = value
 
     async def __get_pool_as_json(self, pool_id):
-        pool = await self.get_pool(pool_id)        
+        pool = self.coordinator.data.to_dict()
         data = {"gateway" : pool.get("wifi"),
                 "operation" : "WRP",
                 "operationId" : None,
