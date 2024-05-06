@@ -9,7 +9,7 @@ from google.oauth2.credentials import Credentials
 import logging
 
 __title__ = "Aquarite"
-__version__ = "0.0.9"
+__version__ = "0.0.7"
 __author__ = "Frederic Debrus"
 __license__ = "MIT"
 
@@ -32,6 +32,7 @@ class Aquarite:
         self.expiry = None
         self.credentials = Credentials | None
         self.client = Client | None
+        self.listeners = {}
 
     @classmethod
     async def create(cls, aiohttp_session, username, password):
@@ -76,11 +77,28 @@ class Aquarite:
 
     async def ensure_active_token(self):
         """Ensure that the token is still valid, and refresh it if necessary."""
-        _LOGGER.debug(f"Token check, {datetime.datetime.now()} {self.expiry}...")
         if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)): 
-            _LOGGER.info("Token expired, refreshing...")
+            _LOGGER.debug("Token expired, refreshing...")
             await self.get_token_and_expiry()
-            await self.subscribe(self.coordinator.data["pool_id"], self.coordinator)
+            await self.refresh_listeners()
+
+    async def re_subscribe_listeners(self):
+        """Re-subscribe to all listeners after refreshing the token."""
+        for pool_id in self.coordinator.pools:
+            await self.subscribe(pool_id, self.coordinator.handle_update)
+
+    async def subscribe(self, pool_id, handler):
+        """Subscribe to Firestore document changes."""
+        doc_ref = self.client.collection("pools").document(pool_id)
+        unsubscribe = doc_ref.on_snapshot(handler)
+        self.listeners[pool_id] = unsubscribe
+
+    async def refresh_listeners(self):
+        """Refresh all active Firestore listeners."""
+        for pool_id, unsubscribe in list(self.listeners.items()):
+            unsubscribe()
+            self.listeners.pop(pool_id)
+        await self.re_subscribe_listeners()
 
     async def signin(self):
         """Sign in and set the tokens and expiry."""
@@ -100,27 +118,16 @@ class Aquarite:
                 data[poolId] = name
         return data
 
+    async def get_pool_data(self, pool_id):
+        pool_snapshot = await self.get_pool(pool_id)
+        if pool_snapshot.exists:
+            return pool_snapshot.to_dict()
+        else:
+            _LOGGER.error(f"No pool found with ID {pool_id}.")
+            return None
+
     async def get_pool(self, pool_id) -> DocumentSnapshot:
-        self._pool_id = self.client.collection("pools").document(pool_id).get()
-        _LOGGER.debug(f"{self._pool_id.to_dict()}")
-        return self._pool_id
-
-    async def subscribe(self, pool_id, handler) -> None:
-        doc_ref = self.client.collection("pools").document(pool_id)
-
-        def on_snapshot(doc_snapshot, changes, read_time):
-            """Handles document snapshots."""
-            try:
-                for change in changes:
-                    _LOGGER.debug(f"Received change {change.type} in firestore")
-                for doc in doc_snapshot:
-                    try:
-                        handler(doc)
-                    except Exception as handler_error:
-                        _LOGGER.error(f"Error executing handler: {handler_error}")
-            except Exception as e:
-                _LOGGER.error(f"Error in on_snapshot: {e}")
-        doc_ref.on_snapshot(on_snapshot)
+        return self.client.collection("pools").document(pool_id).get()
 
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]
