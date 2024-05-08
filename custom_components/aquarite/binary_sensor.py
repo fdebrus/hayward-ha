@@ -15,7 +15,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     if not dataservice:
         return False
 
-    pool_id = entry.data["pool_id"]
+    pool_id = dataservice.get_value("id")
     pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
@@ -33,18 +33,18 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
         AquariteBinarySensorEntity(hass, dataservice, "pH Acid Pump", "modules.ph.pump_high_on", pool_id, pool_name)
     ]
 
-    if dataservice.get_value(pool_id, "main.hasCL"):
+    if dataservice.get_value("main.hasCL"):
         entities.append(AquariteBinarySensorEntity(hass, dataservice, "Hidro FL2 Status", "hidro.fl2", pool_id, pool_name))
 
     if any(
-        dataservice.get_value(pool_id, path)
+        dataservice.get_value(path)
         for path in [PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX]
     ):
         entities.append(AquariteBinarySensorTankEntity(hass, dataservice, "Acid Tank", pool_id, pool_name))
 
     entities.append(
         AquariteBinarySensorEntity(
-            hass, dataservice, "Electrolysis Low" if dataservice.get_value(pool_id, "hidro.is_electrolysis") else "Hidrolysis Low", "hidro.low", pool_id, pool_name
+            hass, dataservice, "Electrolysis Low" if dataservice.get_value("hidro.is_electrolysis") else "Hidrolysis Low", "hidro.low", pool_id, pool_name
         )
     )
 
@@ -78,7 +78,7 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     @property
     def is_on(self):
         """Return true if the device is on."""
-        return bool(self._dataservice.get_value(self._pool_id, self._value_path))
+        return bool(self._dataservice.get_value(self._value_path))
 
     @property
     def device_info(self):
@@ -121,7 +121,7 @@ class AquariteBinarySensorTankEntity(CoordinatorEntity, BinarySensorEntity):
             "modules.cl.tank",
             "modules.cd.tank",
         ]
-        return any(self._dataservice.get_value(self._pool_id, module) for module in tank_modules)
+        return any(self._dataservice.get_value(module) for module in tank_modules)
 
     @property
     def device_info(self):
