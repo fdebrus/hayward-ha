@@ -25,14 +25,16 @@ class Aquarite:
     def __init__(self, aiohttp_session: ClientSession, username: str, password: str, coordinator=None) -> None:
         """Initialize Aquarite API."""
         self.aiohttp_session = aiohttp_session
-        self.coordinator = coordinator
         self.username = username
         self.password = password
         self.tokens = None
         self.expiry = None
-        self.credentials = Credentials | None
-        self.client = Client | None
-        self.listeners = {}
+        self.coordinator = coordinator
+        self.watch = None
+
+    def set_coordinator(self, coordinator):
+        """Set the coordinator after initialization."""
+        self.coordinator = coordinator
 
     @classmethod
     async def create(cls, aiohttp_session, username, password):
@@ -41,9 +43,22 @@ class Aquarite:
         asyncio.create_task(instance.start_token_refresh_routine())
         return instance
 
-    def set_coordinator(self, coordinator):
-        """Set the coordinator after initialization."""
-        self.coordinator = coordinator
+    async def signin(self):
+        """Sign in and set the tokens and expiry."""
+        url = f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}"
+        headers = {"Content-Type": "application/json; charset=UTF-8"}
+        data = json.dumps({
+            "email": self.username,
+            "password": self.password,
+            "returnSecureToken": True
+        })
+        resp = await self.aiohttp_session.post(url, headers=headers, data=data)
+        if resp.status == 400:
+            raise Exception("Failed to authenticate.")
+        self.tokens = await resp.json()
+        self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+        self.credentials = Credentials(token=self.tokens['idToken'])
+        self.client = Client(project="hayward-europe", credentials=self.credentials)
 
     async def start_token_refresh_routine(self):
         while True:
@@ -56,53 +71,48 @@ class Aquarite:
 
     def calculate_sleep_duration(self):
         time_to_expiry = (self.expiry - datetime.datetime.now()).total_seconds()
-        return max(time_to_expiry - 300, 10)
-
-    async def get_token_and_expiry(self):
-        """Fetch token and expiry using Google API."""
-        url = f"{GOOGLE_IDENTITY_REST_API}:signInWithPassword?key={API_KEY}"
-        headers = {"Content-Type": "application/json; charset=UTF-8"}
-        data = json.dumps({
-            "email": self.username,
-            "password": self.password,
-            "returnSecureToken": True
-        })
-        resp = await self.aiohttp_session.post(url, headers=headers, data=data)
-        if resp.status == 400:
-            raise UnauthorizedException("Failed to authenticate.")
-        self.tokens = await resp.json()
-        self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-        self.credentials = Credentials(token=self.tokens['idToken'])
-        self.client = Client(project="hayward-europe", credentials=self.credentials)
+        return max(time_to_expiry - 300, 10)  # Refresh 5 minutes before expiry
 
     async def ensure_active_token(self):
         """Ensure that the token is still valid, and refresh it if necessary."""
-        if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)): 
+        if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=3)):
             _LOGGER.debug("Token expired, refreshing...")
-            await self.get_token_and_expiry()
-            await self.refresh_listeners()
+            await self.signin()
+            await self.refresh_listener()
 
-    async def re_subscribe_listeners(self):
-        """Re-subscribe to all listeners after refreshing the token."""
-        for pool_id in self.coordinator.pools:
-            await self.subscribe(pool_id, self.coordinator.handle_update)
+    async def subscribe(self) -> None:
+        """Subscribe to the pool's updates."""
+        pool_id = self.coordinator.pool_id
+        handler = self.coordinator.set_updated_data
 
-    async def subscribe(self, pool_id, handler):
-        """Subscribe to Firestore document changes."""
         doc_ref = self.client.collection("pools").document(pool_id)
-        unsubscribe = doc_ref.on_snapshot(handler)
-        self.listeners[pool_id] = unsubscribe
 
-    async def refresh_listeners(self):
-        """Refresh all active Firestore listeners."""
-        for pool_id, unsubscribe in list(self.listeners.items()):
-            unsubscribe()
-            self.listeners.pop(pool_id)
-        await self.re_subscribe_listeners()
+        def on_snapshot(doc_snapshot, changes, read_time):
+            """Handles document snapshots."""
+            try:
+                for change in changes:
+                    _LOGGER.debug(f"Received change {change.type} in firestore")
+                for doc in doc_snapshot:
+                    try:
+                        handler(doc)
+                    except Exception as handler_error:
+                        _LOGGER.error(f"Error executing handler: {handler_error}")
+            except Exception as e:
+                _LOGGER.error(f"Error in on_snapshot: {e}")
 
-    async def signin(self):
-        """Sign in and set the tokens and expiry."""
-        await self.get_token_and_expiry()
+        self.watch = doc_ref.on_snapshot(on_snapshot)
+        _LOGGER.debug(f"Subscribed with new listener for pool_id {pool_id}")
+
+    async def refresh_listener(self):
+        """Refresh the Firestore listener if token was refreshed."""
+        if self.watch:
+            _LOGGER.debug("Unsubscribing old listener")
+            self.watch.unsubscribe()
+
+        _LOGGER.debug("Re-subscribing with new token")
+        await self.subscribe()
+
+#####
 
     async def get_pools(self):
         """Get all pools for current user."""
@@ -118,16 +128,9 @@ class Aquarite:
                 data[poolId] = name
         return data
 
-    async def get_pool_data(self, pool_id):
-        pool_snapshot = await self.get_pool(pool_id)
-        if pool_snapshot.exists:
-            return pool_snapshot.to_dict()
-        else:
-            _LOGGER.error(f"No pool found with ID {pool_id}.")
-            return None
-
-    async def get_pool(self, pool_id) -> DocumentSnapshot:
-        return self.client.collection("pools").document(pool_id).get()
+    async def fetch_pool_data(self, pool_id) -> DocumentSnapshot:
+        self._pool_data = self.client.collection("pools").document(pool_id).get()
+        return self._pool_data
 
     def __update_pool_data(self, pool_data, value_path, value):
         nested_dict = pool_data["pool"]
@@ -141,7 +144,7 @@ class Aquarite:
         nested_dict[keys[-1]] = value
 
     async def __get_pool_as_json(self, pool_id):
-        pool = self.coordinator.data.to_dict()
+        pool = await self.fetch_pool_data(pool_id)        
         data = {"gateway" : pool.get("wifi"),
                 "operation" : "WRP",
                 "operationId" : None,
@@ -177,7 +180,7 @@ class Aquarite:
             pool_data = await self.__get_pool_as_json(pool_id)
             self.__update_pool_data(pool_data, value_path, 1)
             pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 0, "rhs": 1}]
-            await self.__send_command(pool_data)
+            await self.send_command(pool_data)
             _LOGGER.info(f"Switch at {value_path} turned on for pool ID {pool_id}.")
         except Exception as e:
             _LOGGER.error(f"Failed to turn on switch for pool ID {pool_id}: {e}")
@@ -188,7 +191,7 @@ class Aquarite:
             pool_data = await self.__get_pool_as_json(pool_id)
             self.__update_pool_data(pool_data, value_path, 0)
             pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 1, "rhs": 0}]
-            await self.__send_command(pool_data)
+            await self.send_command(pool_data)
             _LOGGER.info(f"Switch at {value_path} turned off for pool ID {pool_id}.")
         except Exception as e:
             _LOGGER.error(f"Failed to turn off switch for pool ID {pool_id}: {e}")
@@ -214,7 +217,7 @@ class Aquarite:
                 {"kind": "E", "path": ["filtration", "mode"], "lhs": current_mode, "rhs": pump_mode}
             ]
 
-            await self.__send_command(pool_data)
+            await self.send_command(pool_data)
         except ValueError as e:
             _LOGGER.error(f"Value error: {e}")
             raise
@@ -243,7 +246,7 @@ class Aquarite:
                 {"kind": "E", "path": ["filtration", "manVel"], "lhs": current_speed, "rhs": pump_speed}
             ]
 
-            await self.__send_command(pool_data)
+            await self.send_command(pool_data)
         except ValueError as e:
             _LOGGER.error(f"Value error: {e}")
             raise
@@ -273,7 +276,7 @@ class Aquarite:
                 {"kind": "E", "path": path_keys, "lhs": current_value, "rhs": value}
             ]
 
-            await self.__send_command(pool_data)
+            await self.send_command(pool_data)
         except ValueError as e:
             _LOGGER.error(f"Value error: {e}")
             raise
@@ -282,7 +285,7 @@ class Aquarite:
             raise Exception(f"Failed to set {value_path}: {e}") from e
 
 ### SEND COMMAND
-    async def __send_command(self, data) -> None:
+    async def send_command(self, data) -> None:
         headers = {"Authorization": f"Bearer {self.tokens['idToken']}"}
         try:
             response = await self.aiohttp_session.post(
