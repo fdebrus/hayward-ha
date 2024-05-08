@@ -19,10 +19,11 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
     coordinator = AquariteDataCoordinator(hass, api)
 
     api.set_coordinator(coordinator)
+
+    coordinator.data = await api.fetch_pool_data(entry.data["pool_id"])
+    coordinator.pool_id = entry.data["pool_id"]
     
-    coordinator.data = await api.get_pool(entry.data["pool_id"])
-    
-    await api.subscribe(entry.data["pool_id"], coordinator.set_updated_data)
+    await api.subscribe()
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
