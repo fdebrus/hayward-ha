@@ -57,3 +57,12 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
             _LOGGER.error(f"Pool ID {pool_id} does not match the document's ID.")
             pool_name = "Unknown"
         return pool_name
+
+    def handle_update(self, doc_snapshot, changes, read_time):
+        try:
+            for change in changes:
+                if change.type == 'modified':
+                    _LOGGER.debug("Data modified")
+                    self.set_updated_data(change.document)
+        except Exception as e:
+            _LOGGER.error(f"Error handling data update: {e}")
