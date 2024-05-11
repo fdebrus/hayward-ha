@@ -18,5 +18,15 @@ Example dashboard, inspired from the great work of https://github.com/alexdelpre
 
 ![image](https://github.com/fdebrus/hayward-ha/assets/33791533/ef570ca5-d4dd-4a3d-b5c1-e1379c1d6a14)
 
+# Credits
 
+Big thanks to 
+
+@djerik who started the work on this integration, source of my work.
+@alexdelprete for the work done on the local integration of NeoPool, great idea's and further inspiration. https://github.com/alexdelprete/HA-NeoPool-MQTT
+@curzon01 for a fanstastic dashboard.
+
+# Issues/Discussion
+
+For discussions/general requests, please refer to [this](https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136) thread in HA community.
 
