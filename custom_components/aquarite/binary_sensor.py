@@ -30,7 +30,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
         AquariteBinarySensorEntity(hass, dataservice, "pH Module Installed", "main.hasPH", pool_id, pool_name),
         AquariteBinarySensorEntity(hass, dataservice, "IO Module Installed", "main.hasIO", pool_id, pool_name),
         AquariteBinarySensorEntity(hass, dataservice, "Hidro Module Installed", "main.hasHidro", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "pH Acid Pump", "modules.ph.pump_high_on", pool_id, pool_name)
+        AquariteBinarySensorEntity(hass, dataservice, "pH Acid Pump", "modules.ph.pump_high_on", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "Heating Status", "relays.filtration.heating.status", pool_id, pool_name)
     ]
 
     if dataservice.get_value("main.hasCL"):
