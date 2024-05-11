@@ -23,7 +23,9 @@ Example dashboard, inspired from the great work of https://github.com/alexdelpre
 Big thanks to 
 
 @djerik who started the work on this integration, source of my work.
+
 @alexdelprete for the work done on the local integration of NeoPool, great idea's and further inspiration. https://github.com/alexdelprete/HA-NeoPool-MQTT
+
 @curzon01 for a fanstastic dashboard.
 
 # Issues/Discussion
