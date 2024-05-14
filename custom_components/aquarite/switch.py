@@ -62,7 +62,20 @@ class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
     def is_on(self):
         """Return true if the device is on."""
         return bool(self._dataservice.get_value(self._value_path))
-        
+
+    @property
+    def is_on(self):
+        """Return true if the device is on."""
+        onoff_value = bool(self._dataservice.get_value(self._value_path))
+    
+        if "relay" in self._value_path:
+            # Derive the corresponding status path by replacing 'onoff' with 'status'
+            status_path = self._value_path.replace('onoff', 'status')
+            status_value = bool(self._dataservice.get_value(status_path))
+            return onoff_value or status_value
+
+        return onoff_value
+
     async def async_turn_on(self):
         """Turn the entity on."""
         await self._dataservice.api.turn_on_switch(self._pool_id, self._value_path)
