@@ -1,23 +1,22 @@
+import asyncio
 import datetime
 import json
-
-import asyncio
-from aiohttp import ClientResponseError, ClientSession
-from google.cloud.firestore import Client, DocumentSnapshot
-from google.oauth2.credentials import Credentials
-
 import logging
-
-__title__ = "Aquarite"
-__version__ = "0.1.1"
-__author__ = "Frederic Debrus"
-__license__ = "MIT"
+from aiohttp import ClientSession
+from google.oauth2.credentials import Credentials
+from google.cloud.firestore_v1 import Client, DocumentSnapshot
+from google.auth.transport.requests import Request
 
 API_KEY = "AIzaSyBLaxiyZ2nS1KgRBqWe-NY4EG7OzG5fKpE"
 GOOGLE_IDENTITY_REST_API = "https://identitytoolkit.googleapis.com/v1/accounts"
 HAYWARD_REST_API = "https://europe-west1-hayward-europe.cloudfunctions.net/"
 
 _LOGGER = logging.getLogger(__name__)
+
+__title__ = "Aquarite"
+__version__ = "0.1.2"
+__author__ = "Frederic Debrus"
+__license__ = "MIT"
 
 # suppress warning message from google.api_core.bidi
 logger = logging.getLogger('google.api_core.bidi')
@@ -43,9 +42,22 @@ class Aquarite:
     @classmethod
     async def create(cls, aiohttp_session, username, password):
         instance = cls(aiohttp_session, username, password)
-        await instance.signin()
+        await instance.signin_with_retries()
         asyncio.create_task(instance.start_token_refresh_routine())
         return instance
+
+    async def signin_with_retries(self, retries=5, delay=5):
+        """Sign in with retry logic."""
+        for attempt in range(retries):
+            try:
+                await self.signin()
+                return
+            except Exception as e:
+                _LOGGER.error(f"Sign-in failed on attempt {attempt + 1}/{retries}: {e}")
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)
+                else:
+                    raise
 
     async def signin(self):
         """Sign in and set the tokens and expiry."""
@@ -56,22 +68,35 @@ class Aquarite:
             "password": self.password,
             "returnSecureToken": True
         })
-        resp = await self.aiohttp_session.post(url, headers=headers, data=data)
-        if resp.status == 400:
-            raise Exception("Failed to authenticate.")
-        self.tokens = await resp.json()
-        self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-        self.credentials = Credentials(token=self.tokens['idToken'])
-        self.client = Client(project="hayward-europe", credentials=self.credentials)
+        async with self.aiohttp_session.post(url, headers=headers, data=data) as resp:
+            if resp.status == 400:
+                raise Exception("Failed to authenticate.")
+            self.tokens = await resp.json()
+            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+            self.credentials = Credentials(token=self.tokens['idToken'])
+            self.client = Client(project="hayward-europe", credentials=self.credentials)
 
     async def start_token_refresh_routine(self):
         while True:
             try:
-                await self.ensure_active_token()
+                await self.ensure_active_token_with_retries()
                 await asyncio.sleep(self.calculate_sleep_duration())
             except Exception as e:
                 _LOGGER.error(f"Error maintaining token: {str(e)}")
                 break
+
+    async def ensure_active_token_with_retries(self, retries=5, delay=5):
+        """Ensure that the token is still valid, and refresh it if necessary, with retries."""
+        for attempt in range(retries):
+            try:
+                await self.ensure_active_token()
+                return
+            except Exception as e:
+                _LOGGER.error(f"Token refresh failed on attempt {attempt + 1}/{retries}: {e}")
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)
+                else:
+                    raise
 
     def calculate_sleep_duration(self):
         time_to_expiry = (self.expiry - datetime.datetime.now()).total_seconds()
