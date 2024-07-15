@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import json
 import logging
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientError
 from google.oauth2.credentials import Credentials
 from google.cloud.firestore_v1 import Client, DocumentSnapshot
 from google.auth.transport.requests import Request
@@ -44,6 +44,7 @@ class Aquarite:
         instance = cls(aiohttp_session, username, password)
         await instance.signin_with_retries()
         asyncio.create_task(instance.start_token_refresh_routine())
+        asyncio.create_task(instance.check_connectivity())
         return instance
 
     async def signin_with_retries(self, retries=5, delay=5):
@@ -141,14 +142,29 @@ class Aquarite:
         _LOGGER.debug("Re-subscribing with new token")
         await self.subscribe()
 
-#####
+    async def check_connectivity(self, interval=60):
+        """Periodically check internet connectivity and attempt reconnection if disconnected."""
+        while True:
+            try:
+                async with self.aiohttp_session.get("https://www.google.com") as response:
+                    if response.status == 200:
+                        if not self.tokens:
+                            _LOGGER.info("Internet connection restored, attempting to reauthenticate.")
+                            await self.signin_with_retries()
+                        else:
+                            _LOGGER.debug("Internet connection is active.")
+            except ClientError:
+                _LOGGER.warning("Internet connection lost. Will retry...")
+            await asyncio.sleep(interval)
 
     async def get_pools(self):
         """Get all pools for current user."""
         data = {}
-        user_dict = self.client.collection("users").document(self.tokens["localId"]).get().to_dict()
+        user_dict = await asyncio.to_thread(self.client.collection("users").document(self.tokens["localId"]).get)
+        user_dict = user_dict.to_dict()
         for poolId in user_dict.get("pools", []):
-            pooldict = self.client.collection("pools").document(poolId).get().to_dict()
+            pooldict = await asyncio.to_thread(self.client.collection("pools").document(poolId).get)
+            pooldict = pooldict.to_dict()
             if pooldict is not None:
                 try:
                     name = pooldict["form"]["names"][0]["name"]
@@ -158,7 +174,7 @@ class Aquarite:
         return data
 
     async def fetch_pool_data(self, pool_id) -> DocumentSnapshot:
-        self._pool_data = self.client.collection("pools").document(pool_id).get()
+        self._pool_data = await asyncio.to_thread(self.client.collection("pools").document(pool_id).get)
         return self._pool_data
 
     def __update_pool_data(self, pool_data, value_path, value):
@@ -173,20 +189,20 @@ class Aquarite:
         nested_dict[keys[-1]] = value
 
     async def __get_pool_as_json(self, pool_id):
-        pool = await self.fetch_pool_data(pool_id)        
-        data = {"gateway" : pool.get("wifi"),
-                "operation" : "WRP",
-                "operationId" : None,
+        pool = await self.fetch_pool_data(pool_id)
+        data = {"gateway": pool.get("wifi"),
+                "operation": "WRP",
+                "operationId": None,
                 "pool": {"backwash": pool.get("backwash"),
-                            "filtration": pool.get("filtration"),
-                            "hidro" : pool.get("hidro"),
-                            "light" : pool.get("light"),
-                            "main" : pool.get("main"),
-                            "relays" : pool.get("relays"),
-                            "modules" : pool.get("modules")
-                        },
-                "poolId" : pool_id,
-                "source" : "web"}
+                         "filtration": pool.get("filtration"),
+                         "hidro": pool.get("hidro"),
+                         "light": pool.get("light"),
+                         "main": pool.get("main"),
+                         "relays": pool.get("relays"),
+                         "modules": pool.get("modules")
+                         },
+                "poolId": pool_id,
+                "source": "web"}
         _LOGGER.debug(f"{data}")
         return data
 
@@ -317,13 +333,13 @@ class Aquarite:
     async def send_command(self, data) -> None:
         headers = {"Authorization": f"Bearer {self.tokens['idToken']}"}
         try:
-            response = await self.aiohttp_session.post(
+            async with self.aiohttp_session.post(
                 f"{HAYWARD_REST_API}/sendCommand",
                 json=data,
                 headers=headers
-            )
-            _LOGGER.debug(f"Command sent with response status: {response.status}")
-            response.raise_for_status()
+            ) as response:
+                _LOGGER.debug(f"Command sent with response status: {response.status}")
+                response.raise_for_status()
         except ClientResponseError as e:
             _LOGGER.error(f"Server returned a response error: {e.status} - {e.message}")
             raise
