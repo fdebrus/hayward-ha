@@ -151,7 +151,8 @@ class Aquarite:
                     if response.status == 200:
                         if not self.tokens:
                             _LOGGER.info("Internet connection restored, attempting to reauthenticate.")
-                            await self.signin_with_retries()
+                            await self.signin()
+                            await self.refresh_listener()
                         else:
                             _LOGGER.debug("Internet connection is active.")
             except ClientError:
