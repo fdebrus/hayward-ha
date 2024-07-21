@@ -107,6 +107,7 @@ class Aquarite:
         """Ensure that the token is still valid, and refresh it if necessary."""
         if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=3)):
             _LOGGER.debug("Token expired, refreshing...")
+            self.tokens = None
             await self.signin()
             await self.refresh_listener()
 
@@ -156,10 +157,12 @@ class Aquarite:
             except ClientError:
                 _LOGGER.warning("Internet connection lost. Will retry...")
             await asyncio.sleep(interval)
-
+#################################
     async def get_pools(self):
         """Get all pools for current user."""
         data = {}
+        _LOGGER.debug(f"Tokens: {self.tokens}")
+        _LOGGER.debug(f"Fetching user document for localId: {self.tokens.get('localId')}")
         user_dict = await asyncio.to_thread(self.client.collection("users").document(self.tokens["localId"]).get)
         user_dict = user_dict.to_dict()
         for poolId in user_dict.get("pools", []):
