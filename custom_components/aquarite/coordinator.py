@@ -29,16 +29,13 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_updated_data(self, data) -> None:
         """Update data."""
-        _LOGGER.debug(f"Updating data: {data}")
         if self.auth.expiry and datetime.now() >= self.auth.expiry:
             _LOGGER.debug("Token expired, refreshing token.")
             await self.auth.refresh_token()
-        _LOGGER.debug("Setting updated data.")
         super().async_set_updated_data(data)
 
     def set_updated_data(self, data) -> None:
         """Receive Data."""
-        _LOGGER.debug(f"Setting updated data: {data}")
         # Ensure data is a dictionary
         if isinstance(data, str):
             data = json.loads(data)
@@ -58,7 +55,6 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
                     _LOGGER.debug(f"Received change {change.type} in Firestore")
                 for doc in doc_snapshot:
                     try:
-                        _LOGGER.debug(f"Document snapshot data: {doc.to_dict()}")
                         self.set_updated_data(doc.to_dict())
                     except Exception as handler_error:
                         _LOGGER.error(f"Error executing handler: {handler_error}")
