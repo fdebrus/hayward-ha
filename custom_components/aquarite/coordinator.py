@@ -1,54 +1,94 @@
-"""Coordinator for Aquarite."""
-
 import asyncio
 import logging
-from typing import Any
+from datetime import datetime
+from typing import Any, Optional
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
+from .application_credentials import IdentityToolkitAuth
+from .aquarite import Aquarite
+from .const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 
-class AquariteDataCoordinator(DataUpdateCoordinator):
+class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     """Aquarite custom coordinator."""
 
-    def __init__(self, hass: HomeAssistant, api) -> None:
+    def __init__(self, hass: HomeAssistant, auth: IdentityToolkitAuth, api: Aquarite) -> None:
         """Initialize the coordinator."""
-
-        super().__init__(
-            hass,
-            logger=_LOGGER,
-            name="Aquarite"
-        )
+        self.auth = auth
         self.api = api
+        self.pool_id: Optional[str] = None
+        super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
+
+    def set_pool_id(self, pool_id: str):
+        """Set the pool ID."""
+        _LOGGER.debug(f"Setting pool ID: {pool_id}")
+        self.pool_id = pool_id
 
     async def async_updated_data(self, data) -> None:
         """Update data."""
+        _LOGGER.debug(f"Updating data: {data}")
+        if self.auth.expiry and datetime.now() >= self.auth.expiry:
+            _LOGGER.debug("Token expired, refreshing token.")
+            await self.auth.refresh_token()
+        _LOGGER.debug("Setting updated data.")
         super().async_set_updated_data(data)
 
     def set_updated_data(self, data) -> None:
         """Receive Data."""
+        _LOGGER.debug(f"Setting updated data: {data}")
+        # Ensure data is a dictionary
+        if isinstance(data, str):
+            data = json.loads(data)
         asyncio.run_coroutine_threadsafe(self.async_updated_data(data), self.hass.loop).result()
 
-    def get_value(self, path) -> Any:
+    async def subscribe(self):
+        """Subscribe to the pool's updates."""
+        _LOGGER.debug(f"Subscribing to updates for pool ID: {self.pool_id}")
+
+        doc_ref = self.api.client.collection("pools").document(self.pool_id)
+
+        def on_snapshot(doc_snapshot, changes, read_time):
+            """Handles document snapshots."""
+            try:
+                _LOGGER.debug(f"Snapshot received. Changes: {changes}, Read Time: {read_time}")
+                for change in changes:
+                    _LOGGER.debug(f"Received change {change.type} in Firestore")
+                for doc in doc_snapshot:
+                    try:
+                        _LOGGER.debug(f"Document snapshot data: {doc.to_dict()}")
+                        self.set_updated_data(doc.to_dict())
+                    except Exception as handler_error:
+                        _LOGGER.error(f"Error executing handler: {handler_error}")
+            except Exception as e:
+                _LOGGER.error(f"Error in on_snapshot: {e}")
+
+        self.watch = doc_ref.on_snapshot(on_snapshot)
+        _LOGGER.debug(f"Subscribed with new listener for pool_id {self.pool_id}")
+
+    async def _async_update_data(self) -> Any:
+        """No-op update method."""
+        _LOGGER.debug("No-op update method called.")
+        return
+
+    def get_value(self, path: str) -> Any:
         """Return part from document."""
-        return self.data.get(path)
-
-    def set_value(self, value_path: str, value: any) -> None:
-        """Update data by a dynamic path."""
-        nested_dict = self.data.to_dict()
-        keys = value_path.split('.')
-        current_dict = nested_dict
-        for key in keys[:-1]:
-            current_dict = current_dict.setdefault(key, {})
-        current_dict[keys[-1]] = value
-        self.data = nested_dict
-        _LOGGER.debug(f"{self.data}")
-
-    def get_pool_name(self, pool_id):
+        keys = path.split('.')
+        value = self.data
+        try:
+            for key in keys:
+                value = value[key]
+        except (TypeError, KeyError):
+            value = None
+        return value
+    
+    def get_pool_name(self, pool_id: str) -> str:
         """Return the name of the pool from document."""
-        data_dict = self.data.to_dict()
-        if data_dict.get("id") == pool_id:
+        _LOGGER.debug(f"Getting pool name for pool ID: {pool_id}")
+        data_dict = self.data
+        if data_dict and data_dict.get("id") == pool_id:
             try:
                 pool_name = data_dict["form"]["names"][0]["name"]
             except (KeyError, IndexError):
@@ -56,13 +96,5 @@ class AquariteDataCoordinator(DataUpdateCoordinator):
         else:
             _LOGGER.error(f"Pool ID {pool_id} does not match the document's ID.")
             pool_name = "Unknown"
+        _LOGGER.debug(f"Pool name: {pool_name}")
         return pool_name
-
-    def handle_update(self, doc_snapshot, changes, read_time):
-        try:
-            for change in changes:
-                if change.type == 'modified':
-                    _LOGGER.debug("Data modified")
-                    self.set_updated_data(change.document)
-        except Exception as e:
-            _LOGGER.error(f"Error handling data update: {e}")

@@ -127,7 +127,7 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
                 "hidro.cellTotalTime",
             ),
         )
-    
+
     async_add_entities(entities)
 
     return True

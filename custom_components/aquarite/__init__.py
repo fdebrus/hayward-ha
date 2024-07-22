@@ -1,37 +1,46 @@
-"""The Aquarite integration."""
+import logging
+import aiohttp
 
-from homeassistant import config_entries, core
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.components import binary_sensor, light, switch, sensor, select, number
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from .application_credentials import IdentityToolkitAuth
 from .const import DOMAIN
-from .coordinator import AquariteDataCoordinator
 from .aquarite import Aquarite
+from .coordinator import AquariteDataUpdateCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [binary_sensor.DOMAIN, light.DOMAIN, switch.DOMAIN, sensor.DOMAIN, select.DOMAIN, number.DOMAIN]
 
-async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry) -> bool:
-    """Set up the Hayward component."""
-
-    api = await Aquarite.create(async_get_clientsession(hass), entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
-
-    coordinator = AquariteDataCoordinator(hass, api)
-
-    api.set_coordinator(coordinator)
-
-    coordinator.data = await api.fetch_pool_data(entry.data["pool_id"])
-    coordinator.pool_id = entry.data["pool_id"]
-    
-    await api.subscribe()
-
+async def async_setup(hass: HomeAssistant, config: dict):
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = coordinator
-
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
     return True
 
-async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
-    """Async setup component."""
-    return True
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Set up Aquarite from a config entry."""
+    try:
+        credentials = entry.data
+        auth = IdentityToolkitAuth(hass, credentials["username"], credentials["password"])
+        await auth.authenticate()
+
+        aiohttp_session = aiohttp.ClientSession()
+
+        api = Aquarite(auth.client, auth.tokens, aiohttp_session)
+
+        coordinator = AquariteDataUpdateCoordinator(hass, auth, api)
+        coordinator.set_pool_id(credentials["pool_id"])
+        coordinator.data = await api.fetch_pool_data(credentials["pool_id"])
+        
+        await coordinator.subscribe()
+        
+        hass.data[DOMAIN][entry.entry_id] = coordinator
+
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        
+        return True
+        
+    except Exception as e:
+        _LOGGER.error(f"Error setting up entry {entry.entry_id}: {e}")
+        return False
