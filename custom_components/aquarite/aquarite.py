@@ -1,8 +1,7 @@
 import asyncio
 import logging
-
-from google.cloud.firestore_v1 import Client as FirestoreClient, DocumentSnapshot
 from aiohttp import ClientSession, ClientError
+from google.cloud.firestore_v1 import DocumentSnapshot
 
 from .const import HAYWARD_REST_API
 
@@ -11,14 +10,14 @@ _LOGGER = logging.getLogger(__name__)
 class Aquarite:
     """Aquarite API client."""
 
-    def __init__(self, client, tokens, aiohttp_session) -> None:
+    def __init__(self, auth, aiohttp_session) -> None:
         """Initialize the API client."""
-        self.client = client
-        self.tokens = tokens
+        self.auth = auth
         self.aiohttp_session = aiohttp_session
 
     async def fetch_pool_data(self, pool_id) -> dict:
-        pool_data = await asyncio.to_thread(self.client.collection("pools").document(pool_id).get)
+        client = await self.auth.get_client()
+        pool_data = await asyncio.to_thread(client.collection("pools").document(pool_id).get)
         return pool_data.to_dict()
 
     async def __get_pool_as_json(self, pool_id):
@@ -51,7 +50,7 @@ class Aquarite:
         nested_dict[keys[-1]] = value
 
     async def send_command(self, data) -> None:
-        headers = {"Authorization": f"Bearer {self.tokens['idToken']}"}
+        headers = {"Authorization": f"Bearer {self.auth.tokens['idToken']}"}
         try:
             async with self.aiohttp_session.post(
                 f"{HAYWARD_REST_API}/sendCommand",
@@ -179,10 +178,11 @@ class Aquarite:
     async def get_pools(self):
         """Get all pools for the current user."""
         data = {}
-        user_dict = await asyncio.to_thread(self.client.collection("users").document(self.tokens["localId"]).get)
+        client = await self.auth.get_client()
+        user_dict = await asyncio.to_thread(client.collection("users").document(self.auth.tokens["localId"]).get)
         user_dict = user_dict.to_dict()
         for poolId in user_dict.get("pools", []):
-            pooldict = await asyncio.to_thread(self.client.collection("pools").document(poolId).get)
+            pooldict = await asyncio.to_thread(client.collection("pools").document(poolId).get)
             pooldict = pooldict.to_dict()
             if pooldict is not None:
                 try:

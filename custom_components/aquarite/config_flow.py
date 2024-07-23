@@ -46,7 +46,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             auth = IdentityToolkitAuth(self.hass, self.data[CONF_USERNAME], self.data[CONF_PASSWORD])
             token_data = await auth.authenticate()
 
-            api = Aquarite(auth.client, auth.tokens, aiohttp.ClientSession())
+            api = Aquarite(auth, aiohttp.ClientSession())
 
         except UnauthorizedException:
             errors["base"] = "auth_error"

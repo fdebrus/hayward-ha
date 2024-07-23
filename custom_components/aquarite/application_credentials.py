@@ -61,6 +61,7 @@ class IdentityToolkitAuth:
                     client_id=None,
                     client_secret=None
                 )
+                _LOGGER.debug(f'{self.credentials}')
                 self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
 
     async def refresh_token(self):
@@ -86,6 +87,7 @@ class IdentityToolkitAuth:
                     client_id=None,
                     client_secret=None
                 )
+                _LOGGER.debug(f'{self.credentials}')
                 self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
 
     async def start_token_refresh_routine(self, coordinator):
@@ -125,8 +127,9 @@ class IdentityToolkitAuth:
                 self.tokens = None
             await asyncio.sleep(interval)
 
-    async def get_credentials(self):
-        """Get the current credentials, refreshing them if necessary."""
+    async def get_client(self):
+        """Get the current client, refreshing if necessary."""
         if self.expiry and datetime.datetime.now() >= self.expiry:
             await self.refresh_token()
-        return self.credentials
+            await coordinator.refresh_listener()
+        return self.client

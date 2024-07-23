@@ -28,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         aiohttp_session = aiohttp.ClientSession()
 
-        api = Aquarite(auth.client, auth.tokens, aiohttp_session)
+        api = Aquarite(auth, aiohttp_session)
 
         coordinator = AquariteDataUpdateCoordinator(hass, auth, api)
         coordinator.set_pool_id(credentials["pool_id"])
@@ -36,8 +36,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         
         await coordinator.subscribe()
 
-        asyncio.create_task(auth.start_token_refresh_routine(coordinator))
-        asyncio.create_task(auth.check_connectivity(coordinator))
+        # asyncio.create_task(auth.start_token_refresh_routine(coordinator))
+        # asyncio.create_task(auth.check_connectivity(coordinator))
 
         hass.data[DOMAIN][entry.entry_id] = coordinator
 

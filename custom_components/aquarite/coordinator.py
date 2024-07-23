@@ -45,7 +45,8 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         """Subscribe to the pool's updates."""
         _LOGGER.debug(f"Subscribing to updates for pool ID: {self.pool_id}")
 
-        doc_ref = self.api.client.collection("pools").document(self.pool_id)
+        client = await self.auth.get_client()
+        doc_ref = client.collection("pools").document(self.pool_id)
 
         def on_snapshot(doc_snapshot, changes, read_time):
             """Handles document snapshots."""
