@@ -64,6 +64,14 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self.watch = doc_ref.on_snapshot(on_snapshot)
         _LOGGER.debug(f"Subscribed with new listener for pool_id {self.pool_id}")
 
+    async def refresh_listener(self):
+        """Refresh the Firestore listener if token was refreshed."""
+        if self.watch:
+            _LOGGER.debug(f"Unsubscribing old listener: {self.watch}")
+            self.watch.unsubscribe()
+        _LOGGER.debug("Re-subscribing with new token")
+        await self.subscribe()
+
     async def _async_update_data(self) -> Any:
         """No-op update method."""
         _LOGGER.debug("No-op update method called.")
@@ -82,7 +90,6 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     
     def get_pool_name(self, pool_id: str) -> str:
         """Return the name of the pool from document."""
-        _LOGGER.debug(f"Getting pool name for pool ID: {pool_id}")
         data_dict = self.data
         if data_dict and data_dict.get("id") == pool_id:
             try:
@@ -92,5 +99,4 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         else:
             _LOGGER.error(f"Pool ID {pool_id} does not match the document's ID.")
             pool_name = "Unknown"
-        _LOGGER.debug(f"Pool name: {pool_name}")
         return pool_name

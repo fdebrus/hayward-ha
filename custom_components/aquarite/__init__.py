@@ -1,5 +1,6 @@
 import logging
 import aiohttp
+import asyncio
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -34,7 +35,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         coordinator.data = await api.fetch_pool_data(credentials["pool_id"])
         
         await coordinator.subscribe()
-        
+
+        asyncio.create_task(auth.start_token_refresh_routine(coordinator))
+        asyncio.create_task(auth.check_connectivity(coordinator))
+
         hass.data[DOMAIN][entry.entry_id] = coordinator
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
