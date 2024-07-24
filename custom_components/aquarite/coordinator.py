@@ -56,10 +56,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         """Subscribe to the pool's updates."""
         _LOGGER.debug(f"Subscribing to updates for pool ID: {self.pool_id}")
 
-        client = await self.auth.get_client()
-        doc_ref = client.collection("pools").document(self.pool_id)
-
-        def on_snapshot(doc_snapshot, changes, read_time):
+        async def on_snapshot(doc_snapshot, changes, read_time):
             """Handles document snapshots."""
             try:
                 _LOGGER.debug(f"Snapshot received. Changes: {changes}, Read Time: {read_time}")
@@ -73,8 +70,12 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             except Exception as e:
                 _LOGGER.error(f"Error in on_snapshot: {e}")
 
+        client = await self.auth.get_client()
+        doc_ref = client.collection("pools").document(self.pool_id)
         self.watch = doc_ref.on_snapshot(on_snapshot)
+
         _LOGGER.debug(f"Subscribed with new listener for pool_id {self.pool_id}")
+
 
     async def refresh_listener(self):
         """Refresh the Firestore listener if token was refreshed."""
