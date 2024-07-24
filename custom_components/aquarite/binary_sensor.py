@@ -10,7 +10,7 @@ from .const import DOMAIN, BRAND, MODEL, PATH_HASCD, PATH_HASCL, PATH_HASPH, PAT
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
-    dataservice = hass.data[DOMAIN].get(entry.entry_id)
+    dataservice = hass.data[DOMAIN]["coordinator"]
 
     if not dataservice:
         return False

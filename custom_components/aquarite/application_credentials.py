@@ -1,4 +1,3 @@
-import aiohttp
 import json
 import datetime
 import logging
@@ -9,7 +8,7 @@ from google.oauth2.credentials import Credentials
 from google.cloud.firestore_v1 import Client as FirestoreClient
 from aiohttp import ClientSession, ClientError
 
-from .const import API_KEY
+from .const import DOMAIN, API_KEY, BASE_URL, TOKEN_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,17 +18,20 @@ class UnauthorizedException(Exception):
 
 class IdentityToolkitAuth:
     def __init__(self, hass: HomeAssistant, email: str, password: str):
-        self.hass = hass
-        self.aiohttp_session = aiohttp.ClientSession()
         self.api_key = API_KEY
+        self.hass =  hass
         self.email = email
         self.password = password
-        self.base_url = "https://identitytoolkit.googleapis.com/v1/accounts"
-        self.token_url = "https://securetoken.googleapis.com/v1/token"
+        self.base_url = BASE_URL
+        self.token_url = TOKEN_URL
         self.tokens = None
         self.expiry = None
         self.credentials = None
         self.client = None
+
+    async def close(self):
+        """Close the aiohttp session."""
+        await self.session.close()
 
     async def authenticate(self):
         await self.signin()
@@ -48,7 +50,7 @@ class IdentityToolkitAuth:
             "password": self.password,
             "returnSecureToken": True
         })
-        async with aiohttp.ClientSession() as session:
+        async with ClientSession() as session:
             async with session.post(url, headers=headers, data=data) as resp:
                 if resp.status == 400:
                     raise UnauthorizedException("Failed to authenticate.")
@@ -66,13 +68,13 @@ class IdentityToolkitAuth:
 
     async def refresh_token(self):
         """Refresh the access token using the refresh token."""
-        url = f"https://securetoken.googleapis.com/v1/token?key={self.api_key}"
+        url = f"{self.token_url}?key={self.api_key}"
         headers = {"Content-Type": "application/json; charset=UTF-8"}
         data = json.dumps({
             "grant_type": "refresh_token",
             "refresh_token": self.tokens["refreshToken"]
         })
-        async with aiohttp.ClientSession() as session:
+        async with ClientSession() as session:
             async with session.post(url, headers=headers, data=data) as resp:
                 if resp.status != 200:
                     raise UnauthorizedException("Failed to refresh token.")
@@ -90,10 +92,18 @@ class IdentityToolkitAuth:
                 _LOGGER.debug(f'{self.credentials}')
                 self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
 
+    async def get_client(self):
+        """Get the current client, refreshing if necessary."""
+        if self.expiry and datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)):
+            await self.refresh_token()
+            coordinator = self.hass.data[DOMAIN].get("coordinator")
+            await coordinator.refresh_listener()
+        return self.client
+
     async def start_token_refresh_routine(self, coordinator):
         while True:
             try:
-                await self.ensure_active_token(coordinator)
+                await self.ensure_active_token()
                 await asyncio.sleep(self.calculate_sleep_duration())
             except Exception as e:
                 _LOGGER.error(f"Error maintaining token: {str(e)}")
@@ -103,33 +113,8 @@ class IdentityToolkitAuth:
         time_to_expiry = (self.expiry - datetime.datetime.now()).total_seconds()
         return max(time_to_expiry - 300, 10)  # Refresh 5 minutes before expiry
 
-    async def ensure_active_token(self, coordinator):
+    async def ensure_active_token(self):
         """Ensure that the token is still valid, and refresh it if necessary."""
-        if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=3)):
+        if datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)):
             _LOGGER.debug("Token expired, refreshing...")
-            await self.refresh_token()
-            await coordinator.refresh_listener()
-
-    async def check_connectivity(self, coordinator, interval=60):
-        """Periodically check internet connectivity and attempt reconnection if disconnected."""
-        while True:
-            try:
-                async with self.aiohttp_session.get("https://www.google.com") as response:
-                    if response.status == 200:
-                        if not self.tokens:
-                            _LOGGER.info("Internet connection restored, attempting to reauthenticate.")
-                            await self.refresh_token()
-                            await coordinator.refresh_listener()
-                        else:
-                            _LOGGER.debug("Internet connection is active.")
-            except ClientError:
-                _LOGGER.warning("Internet connection lost. Will retry...")
-                self.tokens = None
-            await asyncio.sleep(interval)
-
-    async def get_client(self):
-        """Get the current client, refreshing if necessary."""
-        if self.expiry and datetime.datetime.now() >= self.expiry:
-            await self.refresh_token()
-            await coordinator.refresh_listener()
-        return self.client
+            await self.get_client()

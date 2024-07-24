@@ -3,16 +3,17 @@ import logging
 from aiohttp import ClientSession, ClientError
 from google.cloud.firestore_v1 import DocumentSnapshot
 
-from .const import HAYWARD_REST_API
+from .const import DOMAIN, HAYWARD_REST_API
 
 _LOGGER = logging.getLogger(__name__)
 
 class Aquarite:
     """Aquarite API client."""
 
-    def __init__(self, auth, aiohttp_session) -> None:
+    def __init__(self, auth, hass, aiohttp_session) -> None:
         """Initialize the API client."""
         self.auth = auth
+        self.hass = hass
         self.aiohttp_session = aiohttp_session
 
     async def fetch_pool_data(self, pool_id) -> dict:
@@ -76,6 +77,13 @@ class Aquarite:
             pool_data['changes'] = [{"kind": "E", "path": value_path.split('.'), "lhs": 0, "rhs": 1}]
             await self.send_command(pool_data)
             _LOGGER.info(f"Switch at {value_path} turned ON for pool ID {pool_id}.")
+
+            # updated_pool_data = await self.fetch_pool_data(pool_id)
+            # self.__update_pool_data(updated_pool_data, value_path, 1)
+            # _LOGGER.debug(f'{updated_pool_data}')
+            # coordinator = self.hass.data[DOMAIN].get("coordinator")
+            # await coordinator.async_set_updated_data(updated_pool_data)
+
         except Exception as e:
             _LOGGER.error(f"Failed to turn on switch for pool ID {pool_id}: {e}")
             raise

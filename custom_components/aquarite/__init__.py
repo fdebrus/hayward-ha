@@ -6,8 +6,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components import binary_sensor, light, switch, sensor, select, number
 
-from .application_credentials import IdentityToolkitAuth
 from .const import DOMAIN
+from .application_credentials import IdentityToolkitAuth
 from .aquarite import Aquarite
 from .coordinator import AquariteDataUpdateCoordinator
 
@@ -22,29 +22,45 @@ async def async_setup(hass: HomeAssistant, config: dict):
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up Aquarite from a config entry."""
     try:
-        credentials = entry.data
-        auth = IdentityToolkitAuth(hass, credentials["username"], credentials["password"])
+        user_config = entry.data
+        auth = IdentityToolkitAuth(hass, user_config["username"], user_config["password"])
         await auth.authenticate()
 
         aiohttp_session = aiohttp.ClientSession()
 
-        api = Aquarite(auth, aiohttp_session)
+        api = Aquarite(auth, hass, aiohttp_session)
 
         coordinator = AquariteDataUpdateCoordinator(hass, auth, api)
-        coordinator.set_pool_id(credentials["pool_id"])
-        coordinator.data = await api.fetch_pool_data(credentials["pool_id"])
-        
+        coordinator.set_pool_id(user_config["pool_id"])
+        coordinator.data = await api.fetch_pool_data(user_config["pool_id"])
+
         await coordinator.subscribe()
 
-        # asyncio.create_task(auth.start_token_refresh_routine(coordinator))
-        # asyncio.create_task(auth.check_connectivity(coordinator))
+        hass.data[DOMAIN]["coordinator"] = coordinator
+        hass.data[DOMAIN]["aiohttp_session"] = aiohttp_session
 
-        hass.data[DOMAIN][entry.entry_id] = coordinator
+        asyncio.create_task(auth.start_token_refresh_routine(coordinator))
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-        
+
         return True
-        
+
     except Exception as e:
         _LOGGER.error(f"Error setting up entry {entry.entry_id}: {e}")
+        return False
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Unload Aquarite config entry."""
+    try:
+        coordinator = hass.data[DOMAIN].get("coordinator")
+        if coordinator:
+            await coordinator.auth.close()
+        
+        aiohttp_session = hass.data[DOMAIN].get("aiohttp_session")
+        if aiohttp_session:
+            await aiohttp_session.close()
+
+        return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    except Exception as e:
+        _LOGGER.error(f"Error unloading entry {entry.entry_id}: {e}")
         return False

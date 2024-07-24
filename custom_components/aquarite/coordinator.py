@@ -1,16 +1,23 @@
 import asyncio
 import logging
+import json
 from datetime import datetime
 from typing import Any, Optional
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
+from google.cloud import firestore_v1
+
 from .application_credentials import IdentityToolkitAuth
 from .aquarite import Aquarite
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+# suppress warning message from google.api_core.bidi
+logger = logging.getLogger('google.api_core.bidi')
+logger.setLevel(logging.ERROR)
 
 class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     """Aquarite custom coordinator."""
@@ -20,6 +27,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self.auth = auth
         self.api = api
         self.pool_id: Optional[str] = None
+        self.watch = None
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
 
     def set_pool_id(self, pool_id: str):
@@ -27,11 +35,14 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         _LOGGER.debug(f"Setting pool ID: {pool_id}")
         self.pool_id = pool_id
 
+    async def async_set_updated_data(self, data) -> None:
+        """Update data and notify listeners."""
+        self.data = data
+        self.async_update_listeners()
+
     async def async_updated_data(self, data) -> None:
         """Update data."""
-        if self.auth.expiry and datetime.now() >= self.auth.expiry:
-            _LOGGER.debug("Token expired, refreshing token.")
-            await self.auth.refresh_token()
+        await self.auth.get_client()
         super().async_set_updated_data(data)
 
     def set_updated_data(self, data) -> None:
@@ -69,7 +80,11 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         """Refresh the Firestore listener if token was refreshed."""
         if self.watch:
             _LOGGER.debug(f"Unsubscribing old listener: {self.watch}")
-            self.watch.unsubscribe()
+            try:
+                self.watch.unsubscribe()
+                _LOGGER.debug("Unsubscribed successfully")
+            except Exception as e:
+                _LOGGER.error(f"Error while unsubscribing: {e}")
         _LOGGER.debug("Re-subscribing with new token")
         await self.subscribe()
 
