@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from google.cloud import firestore_v1
+from google.api_core.exceptions import GoogleAPICallError
 
 from .application_credentials import IdentityToolkitAuth
 from .aquarite import Aquarite
@@ -29,6 +30,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self.pool_id: Optional[str] = None
         self.watch = None
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
+        self.hass.loop.create_task(self.periodic_health_check())
 
     def set_pool_id(self, pool_id: str):
         """Set the pool ID."""
@@ -55,44 +57,70 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     async def subscribe(self):
         """Subscribe to the pool's updates."""
         _LOGGER.debug(f"Subscribing to updates for pool ID: {self.pool_id}")
+        await self.setup_subscription()
 
-        async def on_snapshot(doc_snapshot, changes, read_time):
-            """Handles document snapshots."""
-            try:
-                _LOGGER.debug(f"Snapshot received. Changes: {changes}, Read Time: {read_time}")
-                for change in changes:
-                    _LOGGER.debug(f"Received change {change.type} in Firestore")
-                for doc in doc_snapshot:
-                    try:
-                        self.set_updated_data(doc.to_dict())
-                    except Exception as handler_error:
-                        _LOGGER.error(f"Error executing handler: {handler_error}")
-            except Exception as e:
-                _LOGGER.error(f"Error in on_snapshot: {e}")
+    async def setup_subscription(self):
+        try:
+            client = await self.auth.get_client()
+            doc_ref = client.collection("pools").document(self.pool_id)
+            self.watch = doc_ref.on_snapshot(self.on_snapshot)
+            _LOGGER.debug(f"Subscribed with new listener for pool_id {self.pool_id}")
+        except Exception as e:
+            _LOGGER.error(f"Error setting up subscription: {e}")
+            await self.refresh_subscription()
 
-        client = await self.auth.get_client()
-        doc_ref = client.collection("pools").document(self.pool_id)
-        self.watch = doc_ref.on_snapshot(on_snapshot)
+    async def refresh_subscription(self):
+        """Refresh the subscription to handle invalid client or network issues."""
+        _LOGGER.debug(f"Refreshing subscription for pool ID: {self.pool_id}")
+        await self.unsubscribe()
+        await self.setup_subscription()
 
-        _LOGGER.debug(f"Subscribed with new listener for pool_id {self.pool_id}")
+    def on_snapshot(self, doc_snapshot, changes, read_time):
+        """Handles document snapshots."""
+        try:
+            _LOGGER.debug(f"Snapshot received. Changes: {changes}, Read Time: {read_time}")
+            for change in changes:
+                _LOGGER.debug(f"Received change {change.type} in Firestore")
+            for doc in doc_snapshot:
+                try:
+                    self.set_updated_data(doc.to_dict())
+                except Exception as handler_error:
+                    _LOGGER.error(f"Error executing handler: {handler_error}")
+        except Exception as e:
+            _LOGGER.error(f"Error in on_snapshot: {e}")
+            asyncio.create_task(self.refresh_subscription())
 
-
-    async def refresh_listener(self):
-        """Refresh the Firestore listener if token was refreshed."""
-        if self.watch:
-            _LOGGER.debug(f"Unsubscribing old listener: {self.watch}")
-            try:
-                self.watch.unsubscribe()
-                _LOGGER.debug("Unsubscribed successfully")
-            except Exception as e:
-                _LOGGER.error(f"Error while unsubscribing: {e}")
-        _LOGGER.debug("Re-subscribing with new token")
-        await self.subscribe()
+    async def unsubscribe(self):
+        """Unsubscribe from the current watch."""
+        if hasattr(self, 'watch') and self.watch is not None:
+            self.watch.unsubscribe()
+            _LOGGER.debug(f"Unsubscribed from pool ID: {self.pool_id}")
 
     async def _async_update_data(self) -> Any:
         """No-op update method."""
         _LOGGER.debug("No-op update method called.")
         return
+
+    async def periodic_health_check(self):
+        """Periodic task to check the Firestore client connection status."""
+        while True:
+            await asyncio.sleep(300)  # Check every 5 minutes
+            await self.check_connection_status()
+
+    async def check_connection_status(self):
+        """Check the Firestore client's connection status and refresh if necessary."""
+        try:
+            client = await self.auth.get_client()
+            doc_ref = client.collection("pools").document(self.pool_id)
+            # Attempt to get a document to verify the connection
+            doc = await asyncio.to_thread(doc_ref.get)
+            _LOGGER.debug(f"Connection status check successful for pool ID: {self.pool_id}")
+        except GoogleAPICallError as e:
+            _LOGGER.debug(f"Connection status check failed: {e}, refreshing subscription.")
+            await self.refresh_subscription()
+        except Exception as e:
+            _LOGGER.debug(f"Unexpected error during connection status check: {e}")
+            await self.refresh_subscription()
 
     def get_value(self, path: str) -> Any:
         """Return part from document."""

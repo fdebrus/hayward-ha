@@ -97,7 +97,7 @@ class IdentityToolkitAuth:
         if self.expiry and datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)):
             await self.refresh_token()
             coordinator = self.hass.data[DOMAIN].get("coordinator")
-            await coordinator.refresh_listener()
+            await coordinator.refresh_subscription()
         return self.client
 
     async def start_token_refresh_routine(self, coordinator):
