@@ -70,6 +70,8 @@ class Aquarite:
                 "value": 1
             })
 
+            _LOGGER.debug(f"Changing {value_path} to 1 for pool ID {pool_id}. {pool_data}")
+
             # Send the command to the API
             await self.send_command(pool_data)
             _LOGGER.info(f"Switch at {value_path} turned ON for pool ID {pool_id}.")
@@ -93,6 +95,8 @@ class Aquarite:
                 "path": path_keys,
                 "value": 0
             })
+
+            _LOGGER.debug(f"Changing {value_path} to 0 for pool ID {pool_id}. {pool_data}")
 
             # Send the command to the API
             await self.send_command(pool_data)
@@ -119,13 +123,14 @@ class Aquarite:
 
             # Update the value in the pool data
             self.set_in_dict(pool_data, path_keys, value)
-            _LOGGER.info(f"Changing {value_path} from {current_value} to {value} for pool ID {pool_id}.")
 
             # Prepare the changes for the API request
             pool_data['changes'] = json.dumps({
                 "path": path_keys,
                 "value": value
             })
+
+            _LOGGER.debug(f"Changing {value_path} from {current_value} to {value} for pool ID {pool_id}. {pool_data}")
 
             # Send the command to the API
             await self.send_command(pool_data)
@@ -152,13 +157,12 @@ class Aquarite:
             updated_filtration_config = current_filtration_config.copy()
             updated_filtration_config["mode"] = pump_mode
 
-            # Log the change
-            _LOGGER.info(f"Changing pump mode from {current_mode} to {pump_mode} for pool ID {pool_id}.")
-
             # Prepare the changes for the API request
             pool_data['changes'] = json.dumps({
                 "filtration": updated_filtration_config
             })
+
+            _LOGGER.debug(f"Changing pump mode from {current_mode} to {pump_mode} for pool ID {pool_id}. {pool_data}")
 
             # Send the command to the API
             await self.send_command(pool_data)
@@ -185,13 +189,12 @@ class Aquarite:
             updated_filtration_config = current_filtration_config.copy()
             updated_filtration_config["manVel"] = pump_speed
 
-            # Log the change
-            _LOGGER.info(f"Changing pump speed from {current_speed} to {pump_speed} for pool ID {pool_id}.")
-
             # Prepare the changes for the API request
             pool_data['changes'] = json.dumps({
                 "filtration": updated_filtration_config
             })
+
+            _LOGGER.debug(f"Changing filtration from {current_speed} to {pump_speed} for pool ID {pool_id}.. {pool_data}")
 
             # Send the command to the API
             await self.send_command(pool_data)
@@ -207,7 +210,7 @@ class Aquarite:
         for key in map_list:
             data_dict = data_dict.get(key)
             if data_dict is None:
-                return None
+                return None 
         return data_dict
 
     def set_in_dict(self, data_dict, map_list, value):
