@@ -66,8 +66,8 @@ class AquariteLightEntity(CoordinatorEntity, LightEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn the entity on."""
-        await self._dataservice.api.turn_on_switch(self._pool_id, self._value_path)
+        await self._dataservice.api.turn_on_light(self._pool_id)
 
     async def async_turn_off(self, **kwargs):
         """Turn the entity off."""
-        await self._dataservice.api.turn_off_switch(self._pool_id, self._value_path)
+        await self._dataservice.api.turn_off_light(self._pool_id)
