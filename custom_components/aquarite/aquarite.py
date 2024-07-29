@@ -136,6 +136,72 @@ class Aquarite:
             _LOGGER.error(f"Failed to set {value_path} for pool ID {pool_id}: {e}")
             raise Exception(f"Failed to set {value_path}: {e}") from e
 
+    async def set_pump_mode(self, pool_id: str, pump_mode: str) -> None:
+        try:
+            # Get the initial pool data
+            pool_data = self.get_pool_data_as_json(pool_id)
+
+            # Extract the existing filtration configuration from the pool data
+            coordinator = self.hass.data[DOMAIN].get("coordinator")
+            current_filtration_config = coordinator.data.get("filtration", {})
+
+            # Get the current mode, assuming default if not found
+            current_mode = current_filtration_config.get('mode', 'Manual')
+
+            # Update the filtration mode
+            updated_filtration_config = current_filtration_config.copy()
+            updated_filtration_config["mode"] = pump_mode
+
+            # Log the change
+            _LOGGER.info(f"Changing pump mode from {current_mode} to {pump_mode} for pool ID {pool_id}.")
+
+            # Prepare the changes for the API request
+            pool_data['changes'] = json.dumps({
+                "filtration": updated_filtration_config
+            })
+
+            # Send the command to the API
+            await self.send_command(pool_data)
+        except ValueError as e:
+            _LOGGER.error(f"Value error: {e}")
+            raise
+        except Exception as e:
+            _LOGGER.error(f"Failed to set pump mode for pool ID {pool_id}: {e}")
+            raise Exception(f"Failed to set pump mode: {e}") from e
+
+    async def set_pump_speed(self, pool_id: str, pump_speed: int) -> None:
+        try:
+            # Get the initial pool data
+            pool_data = self.get_pool_data_as_json(pool_id)
+
+            # Extract the existing filtration configuration from the pool data
+            coordinator = self.hass.data[DOMAIN].get("coordinator")
+            current_filtration_config = coordinator.data.get("filtration", {})
+
+            # Get the current speed, assuming default if not found
+            current_speed = current_filtration_config.get('manVel', 0)
+
+            # Update the filtration speed
+            updated_filtration_config = current_filtration_config.copy()
+            updated_filtration_config["manVel"] = pump_speed
+
+            # Log the change
+            _LOGGER.info(f"Changing pump speed from {current_speed} to {pump_speed} for pool ID {pool_id}.")
+
+            # Prepare the changes for the API request
+            pool_data['changes'] = json.dumps({
+                "filtration": updated_filtration_config
+            })
+
+            # Send the command to the API
+            await self.send_command(pool_data)
+        except ValueError as e:
+            _LOGGER.error(f"Value error: {e}")
+            raise
+        except Exception as e:
+            _LOGGER.error(f"Failed to set pump speed for pool ID {pool_id}: {e}")
+            raise Exception(f"Failed to set pump speed: {e}") from e
+
     def get_from_dict(self, data_dict, map_list):
         """Get a value from a nested dictionary using a list of keys."""
         for key in map_list:
