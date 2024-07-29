@@ -7,7 +7,7 @@
   "domain": "aquarite",
   "name": "Aquarite",
   "requirements": ["google-auth>=2.29.0","google-cloud-firestore>=2.16.0"],
-  "version": "0.1.2",
+  "version": "0.3.0",
   "iot_class": "cloud_push",
   "loggers": "custom_components.aquarite"
 }
