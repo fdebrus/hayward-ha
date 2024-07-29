@@ -53,6 +53,37 @@ class Aquarite:
             _LOGGER.error(f"An unexpected error occurred when sending command: {e}")
             raise
 
+    async def update_light_status(self, pool_id: str, status: int) -> None:
+        try:
+            # Get the initial pool data
+            pool_data = self.get_pool_data_as_json(pool_id)
+    
+            # Extract the existing light configuration from the pool data
+            coordinator = self.hass.data[DOMAIN].get("coordinator")
+            current_light_config = coordinator.data.get("light", {})
+    
+            # Update the light configuration status
+            updated_light_config = current_light_config.copy()
+            updated_light_config["status"] = status  # Setting the light status
+    
+            # Incorporate the updated light configuration into the pool data changes
+            pool_data['changes'] = json.dumps({"light": updated_light_config})
+
+            _LOGGER.debug(f"Changing light status for pool ID {pool_id}. {pool_data}")
+
+            # Send the command to the API
+            await self.send_command(pool_data)
+            _LOGGER.info(f"Light status set to {status} for pool ID {pool_id}.")
+        except Exception as e:
+            _LOGGER.error(f"Failed to set light status for pool ID {pool_id}: {e}")
+            raise
+
+    async def turn_on_light(self, pool_id: str) -> None:
+        await self.update_light_status(pool_id, 1)
+
+    async def turn_off_light(self, pool_id: str) -> None:
+        await self.update_light_status(pool_id, 0)
+
     async def turn_on_switch(self, pool_id: str, value_path: str) -> None:
         try:
             # Get the initial pool data
