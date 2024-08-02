@@ -64,5 +64,5 @@ class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float):
         """Update the current native value."""
-        await self._dataservice.api.set_path_value(self._pool_id, self._value_path, value)
+        await self._dataservice.api.set_value(self._pool_id, self._value_path, value)
         self.async_write_ha_state()

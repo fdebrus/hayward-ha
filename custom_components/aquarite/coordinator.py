@@ -31,6 +31,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self.api = api
         self.pool_id: Optional[str] = None
         self.watch = None
+        self.data = None
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
         self.hass.loop.create_task(self.periodic_health_check())
 
@@ -137,6 +138,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     def get_pool_name(self, pool_id: str) -> str:
         """Return the name of the pool from document."""
         data_dict = self.data
+        _LOGGER.debug(f"-- DATA -- {self.data} / POOLID {pool_id}")
         if data_dict and data_dict.get("id") == pool_id:
             try:
                 pool_name = data_dict["form"]["names"][0]["name"]

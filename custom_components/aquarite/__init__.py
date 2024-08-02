@@ -40,6 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         coordinator.set_pool_id(user_config["pool_id"])
         
         # Fetch initial pool data
+        coordinator.data = await api.fetch_pool_data(user_config["pool_id"])
         await coordinator.subscribe()
 
         # Store the coordinator and aiohttp session in Home Assistant's data

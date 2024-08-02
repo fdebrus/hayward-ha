@@ -28,6 +28,7 @@ class IdentityToolkitAuth:
         self.expiry = None
         self.credentials = None
         self.client = None
+        self.session = None
 
     async def close(self):
         """Close the aiohttp session."""
@@ -50,8 +51,8 @@ class IdentityToolkitAuth:
             "password": self.password,
             "returnSecureToken": True
         })
-        async with ClientSession() as session:
-            async with session.post(url, headers=headers, data=data) as resp:
+        async with ClientSession() as self.session:
+            async with self.session.post(url, headers=headers, data=data) as resp:
                 if resp.status == 400:
                     raise UnauthorizedException("Failed to authenticate.")
                 self.tokens = await resp.json()
@@ -74,8 +75,8 @@ class IdentityToolkitAuth:
             "grant_type": "refresh_token",
             "refresh_token": self.tokens["refreshToken"]
         })
-        async with ClientSession() as session:
-            async with session.post(url, headers=headers, data=data) as resp:
+        async with ClientSession() as self.session:
+            async with self.session.post(url, headers=headers, data=data) as resp:
                 if resp.status != 200:
                     raise UnauthorizedException("Failed to refresh token.")
                 new_tokens = await resp.json()
