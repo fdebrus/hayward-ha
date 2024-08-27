@@ -7,7 +7,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, BRAND, MODEL, PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
 
-
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
     dataservice = hass.data[DOMAIN]["coordinator"]

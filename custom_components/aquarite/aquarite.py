@@ -3,10 +3,10 @@ import json
 import copy
 import asyncio
 
-from aiohttp import ClientSession, ClientError, ClientResponseError
-from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from typing import Any
 
 from .const import DOMAIN, HAYWARD_REST_API, BRAND, MODEL
@@ -17,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 class Aquarite:
     """Aquarite API client."""
 
-    def __init__(self, auth: IdentityToolkitAuth, hass: HomeAssistant, aiohttp_session: ClientSession) -> None:
+    def __init__(self, auth: IdentityToolkitAuth, hass: HomeAssistant, aiohttp_session: async_get_clientsession) -> None:
         """Initialize the API client."""
         self.auth = auth
         self.hass = hass
@@ -71,10 +71,10 @@ class Aquarite:
             ) as response:
                 _LOGGER.debug(f"Command sent with response status: {response.status}")
                 response.raise_for_status()
-        except ClientResponseError as e:
+        except aiohttp.ClientResponseError as e:
             _LOGGER.error(f"Server returned a response error: {e.status} - {e.message}")
             raise
-        except ClientError as e:
+        except aiohttp.ClientError as e:
             _LOGGER.error(f"Aiohttp client encountered an error: {e}")
             raise
         except Exception as e:
@@ -86,17 +86,11 @@ class Aquarite:
     async def set_value(self, pool_id: str, value_path: str, value: Any) -> None:
         try:
             pool_data = self.get_pool_data_as_json(pool_id)
-
             coordinator = self.hass.data[DOMAIN].get("coordinator")
-
             current_path_config = self.extract_complete_info(coordinator.data, value_path)
-
             self.set_in_dict(current_path_config, value_path, value)
-
             pool_data['changes'] = json.dumps(current_path_config)
-
             _LOGGER.debug(f"Setting {value_path} to {value} for pool ID {pool_id} --- {pool_data}")
-
             await self.send_command(pool_data)
         except ValueError as e:
             _LOGGER.error(f"Value error: {e}")
@@ -108,47 +102,28 @@ class Aquarite:
 ### UTILS
 
     def set_in_dict(self, data_dict, path, value):
-        _LOGGER.debug("Starting set_in_dict with path: %s and value: %s", path, value)
-    
-        # Split the path into a list of keys
         map_list = path.split(".")
-        _LOGGER.debug("Split path into map_list: %s", map_list)
-
         temp = data_dict
         for key in map_list[:-1]:
-            _LOGGER.debug("Current temp: %s", temp)
             if key not in temp:
-                _LOGGER.debug("Key '%s' not found, creating new dictionary.", key)
                 temp[key] = {}
-            else:
-                _LOGGER.debug("Key '%s' found, moving to the next level.", key)
             temp = temp[key]
-
         last_key = map_list[-1]
-        _LOGGER.debug("Setting value at the last key '%s'", last_key)
         temp[last_key] = value
-        _LOGGER.debug("Final data_dict state: %s", data_dict)
 
     def extract_complete_info(self, data, path):
         keys = path.split('.')
         subset = data
-
         if len(keys) > 2:
             keys = keys[:2]
         elif len(keys) > 1:
             keys = keys[:1]
-
         try:
             for key in keys:
                 subset = subset[key]
         except KeyError:
             return f"Key error: Key '{key}' not found in data"
-
-        _LOGGER.debug(f'SUBSET: {subset}')
-
         result = subset
         for key in reversed(keys):
             result = {key: result}
-            _LOGGER.debug(f'RESULT: {result}')
-
         return result

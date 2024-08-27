@@ -1,10 +1,10 @@
 import logging
-import aiohttp
 import asyncio
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components import binary_sensor, light, switch, sensor, select, number
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DOMAIN
 from .application_credentials import IdentityToolkitAuth
@@ -29,8 +29,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         auth = IdentityToolkitAuth(hass, user_config["username"], user_config["password"])
         await auth.authenticate()
 
-        # Initialize aiohttp session
-        aiohttp_session = aiohttp.ClientSession()
+        # Initialize aiohttp session using Home Assistant's helper
+        aiohttp_session = async_get_clientsession(hass)
 
         # Create an instance of the Aquarite API client
         api = Aquarite(auth, hass, aiohttp_session)

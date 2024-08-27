@@ -4,8 +4,6 @@ from typing import Any, Optional
 
 import voluptuous as vol
 
-import aiohttp
-
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -46,7 +44,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             auth = IdentityToolkitAuth(self.hass, self.data[CONF_USERNAME], self.data[CONF_PASSWORD])
             token_data = await auth.authenticate()
 
-            api = Aquarite(auth, self.hass, aiohttp.ClientSession())
+            api = Aquarite(auth, self.hass, async_get_clientsession(self.hass))
 
         except UnauthorizedException:
             errors["base"] = "auth_error"

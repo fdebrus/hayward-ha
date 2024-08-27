@@ -4,9 +4,10 @@ import logging
 import asyncio
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
 from google.oauth2.credentials import Credentials
 from google.cloud.firestore_v1 import Client as FirestoreClient
-from aiohttp import ClientSession, ClientError
 
 from .const import DOMAIN, API_KEY, BASE_URL, TOKEN_URL
 
@@ -19,7 +20,7 @@ class UnauthorizedException(Exception):
 class IdentityToolkitAuth:
     def __init__(self, hass: HomeAssistant, email: str, password: str):
         self.api_key = API_KEY
-        self.hass =  hass
+        self.hass = hass
         self.email = email
         self.password = password
         self.base_url = BASE_URL
@@ -28,7 +29,7 @@ class IdentityToolkitAuth:
         self.expiry = None
         self.credentials = None
         self.client = None
-        self.session = None
+        self.session = async_get_clientsession(hass)
 
     async def close(self):
         """Close the aiohttp session."""
@@ -51,21 +52,20 @@ class IdentityToolkitAuth:
             "password": self.password,
             "returnSecureToken": True
         })
-        async with ClientSession() as self.session:
-            async with self.session.post(url, headers=headers, data=data) as resp:
-                if resp.status == 400:
-                    raise UnauthorizedException("Failed to authenticate.")
-                self.tokens = await resp.json()
-                self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-                self.credentials = Credentials(
-                    token=self.tokens['idToken'],
-                    refresh_token=self.tokens['refreshToken'],
-                    token_uri=self.token_url,
-                    client_id=None,
-                    client_secret=None
-                )
-                _LOGGER.debug(f'{self.credentials}')
-                self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
+        async with self.session.post(url, headers=headers, data=data) as resp:
+            if resp.status == 400:
+                raise UnauthorizedException("Failed to authenticate.")
+            self.tokens = await resp.json()
+            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+            self.credentials = Credentials(
+                token=self.tokens['idToken'],
+                refresh_token=self.tokens['refreshToken'],
+                token_uri=self.token_url,
+                client_id=None,
+                client_secret=None
+            )
+            _LOGGER.debug(f'{self.credentials}')
+            self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
 
     async def refresh_token(self):
         """Refresh the access token using the refresh token."""
@@ -75,23 +75,22 @@ class IdentityToolkitAuth:
             "grant_type": "refresh_token",
             "refresh_token": self.tokens["refreshToken"]
         })
-        async with ClientSession() as self.session:
-            async with self.session.post(url, headers=headers, data=data) as resp:
-                if resp.status != 200:
-                    raise UnauthorizedException("Failed to refresh token.")
-                new_tokens = await resp.json()
-                self.tokens["idToken"] = new_tokens["id_token"]
-                self.tokens["refreshToken"] = new_tokens["refresh_token"]
-                self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(new_tokens["expires_in"]))
-                self.credentials = Credentials(
-                    token=self.tokens['idToken'],
-                    refresh_token=self.tokens['refreshToken'],
-                    token_uri=self.token_url,
-                    client_id=None,
-                    client_secret=None
-                )
-                _LOGGER.debug(f'{self.credentials}')
-                self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
+        async with self.session.post(url, headers=headers, data=data) as resp:
+            if resp.status != 200:
+                raise UnauthorizedException("Failed to refresh token.")
+            new_tokens = await resp.json()
+            self.tokens["idToken"] = new_tokens["id_token"]
+            self.tokens["refreshToken"] = new_tokens["refresh_token"]
+            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(new_tokens["expires_in"]))
+            self.credentials = Credentials(
+                token=self.tokens['idToken'],
+                refresh_token=self.tokens['refreshToken'],
+                token_uri=self.token_url,
+                client_id=None,
+                client_secret=None
+            )
+            _LOGGER.debug(f'{self.credentials}')
+            self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
 
     async def get_client(self):
         """Get the current client, refreshing if necessary."""
