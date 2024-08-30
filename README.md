@@ -1,5 +1,7 @@
 # Hayward AquaRite integration for Home Assistant
 
+Confirmed working with with Hayward, Bayrol, Da-Gen, Vistapool, Hidrolife, NeoPool
+
 ## Requirements
 - An Hayward AquaRite with wifi module connected to the internet.
 - The controller must be added to an Hayward account.
