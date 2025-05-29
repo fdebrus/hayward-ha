@@ -7,7 +7,7 @@ from .const import DOMAIN, BRAND, MODEL
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
-    dataservice = hass.data[DOMAIN].get(entry.entry_id)
+    dataservice = hass.data[DOMAIN]["coordinator"]
 
     if not dataservice:
         return False
@@ -78,11 +78,11 @@ class AquariteSwitchEntity(CoordinatorEntity, SwitchEntity):
 
     async def async_turn_on(self):
         """Turn the entity on."""
-        await self._dataservice.api.turn_on_switch(self._pool_id, self._value_path)
+        await self._dataservice.api.set_value(self._pool_id, self._value_path, 1)
 
     async def async_turn_off(self):
         """Turn the entity off."""
-        await self._dataservice.api.turn_off_switch(self._pool_id, self._value_path)
+        await self._dataservice.api.set_value(self._pool_id, self._value_path, 0)
 
     @property
     def unique_id(self):

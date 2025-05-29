@@ -8,8 +8,8 @@ from .const import DOMAIN, BRAND, MODEL
 
 async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
-    dataservice = hass.data[DOMAIN].get(entry.entry_id)
-
+    dataservice = hass.data[DOMAIN]["coordinator"]
+    
     if not dataservice:
         return False
 
@@ -66,7 +66,7 @@ class AquaritePumpModeEntity(CoordinatorEntity, SelectEntity):
 
     async def async_select_option(self, option: str):
         """Set pump mode"""
-        await self._dataservice.api.set_pump_mode(self._pool_id, self._allowed_values.index(option))
+        await self._dataservice.api.set_value(self._pool_id, self._value_path, self._allowed_values.index(option))
 
 class AquaritePumpSpeedEntity(CoordinatorEntity, SelectEntity):
 
@@ -110,5 +110,5 @@ class AquaritePumpSpeedEntity(CoordinatorEntity, SelectEntity):
 
     async def async_select_option(self, option: str):
         """Set pump speed"""
-        await self._dataservice.api.set_pump_speed(self._pool_id, self._allowed_values.index(option))
+        await self._dataservice.api.set_value(self._pool_id, self._value_path, self._allowed_values.index(option))
 

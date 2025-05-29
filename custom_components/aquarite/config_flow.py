@@ -10,7 +10,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
 from .const import DOMAIN
-from .aquarite import Aquarite, UnauthorizedException
+from .application_credentials import IdentityToolkitAuth, UnauthorizedException
+from .aquarite import Aquarite
 
 AUTH_SCHEMA = vol.Schema(
     {vol.Required(CONF_USERNAME): cv.string, vol.Required(CONF_PASSWORD): cv.string}
@@ -40,7 +41,11 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_create_entry(title=self.data['pools'][self.data["pool_id"]], data=self.data)
 
         try:
-            api = await Aquarite.create(async_get_clientsession(self.hass), self.data[CONF_USERNAME], self.data[CONF_PASSWORD])
+            auth = IdentityToolkitAuth(self.hass, self.data[CONF_USERNAME], self.data[CONF_PASSWORD])
+            token_data = await auth.authenticate()
+
+            api = Aquarite(auth, self.hass, async_get_clientsession(self.hass))
+
         except UnauthorizedException:
             errors["base"] = "auth_error"
             return self.async_show_form(

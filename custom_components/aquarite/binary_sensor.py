@@ -7,10 +7,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, BRAND, MODEL, PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
 
-
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
-    dataservice = hass.data[DOMAIN].get(entry.entry_id)
+    dataservice = hass.data[DOMAIN]["coordinator"]
 
     if not dataservice:
         return False
@@ -31,7 +30,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
         AquariteBinarySensorEntity(hass, dataservice, "IO Module Installed", "main.hasIO", pool_id, pool_name),
         AquariteBinarySensorEntity(hass, dataservice, "Hidro Module Installed", "main.hasHidro", pool_id, pool_name),
         AquariteBinarySensorEntity(hass, dataservice, "pH Acid Pump", "modules.ph.pump_high_on", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "Heating Status", "relays.filtration.heating.status", pool_id, pool_name)
+        AquariteBinarySensorEntity(hass, dataservice, "Heating Status", "relays.filtration.heating.status", pool_id, pool_name),
+        AquariteBinarySensorEntity(hass, dataservice, "Connected", "present", pool_id, pool_name)
     ]
 
     if dataservice.get_value("main.hasCL"):
@@ -72,7 +72,7 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
         """Return the class of the binary sensor."""
         if self._value_path in {"hidro.fl1", "hidro.low", "modules.cl.pump_status", "modules.rx.pump_status", "modules.ph.al3"}:
             return BinarySensorDeviceClass.PROBLEM
-        elif self._value_path in {"main.hasCD","main.hasCL","main.hasRX","main.hasPH","main.hasHidro","main.hasIO"}:
+        elif self._value_path in {"main.hasCD","main.hasCL","main.hasRX","main.hasPH","main.hasHidro","main.hasIO","present"}:
             return BinarySensorDeviceClass.CONNECTIVITY
         return BinarySensorDeviceClass.RUNNING
 

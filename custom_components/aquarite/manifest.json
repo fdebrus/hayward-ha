@@ -1,13 +1,12 @@
 {
-  "codeowners": ["@fdebrus"],
-  "config_flow": true,
-  "dependencies": [],
-  "documentation": "https://github.com/fdebrus/hayward-ha",
-  "issue_tracker": "https://github.com/fdebrus/hayward-ha/issues",
-  "domain": "aquarite",
-  "name": "Aquarite",
-  "requirements": ["google-auth>=2.29.0","google-cloud-firestore>=2.16.0"],
-  "version": "0.1.2",
-  "iot_class": "cloud_push",
-  "loggers": "custom_components.aquarite"
+    "domain": "aquarite",
+    "name": "Aquarite",
+    "iot_class": "cloud_push",
+    "loggers": "custom_components.aquarite",
+    "requirements": ["google-auth>=2.29.0","google-cloud-firestore>=2.16.0"],
+    "config_flow": true,
+    "documentation": "https://example.com",
+    "dependencies": ["application_credentials"],
+    "codeowners": ["@fdebrus"],
+    "version": "0.3.2"
 }

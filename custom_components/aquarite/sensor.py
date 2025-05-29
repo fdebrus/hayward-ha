@@ -19,7 +19,7 @@ from .const import (
 
 async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> bool:
     
-    dataservice = hass.data[DOMAIN].get(entry.entry_id)
+    dataservice = hass.data[DOMAIN]["coordinator"]
 
     if not dataservice:
         return False
@@ -127,7 +127,7 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
                 "hidro.cellTotalTime",
             ),
         )
-    
+
     async_add_entities(entities)
 
     return True
@@ -247,8 +247,8 @@ class AquariteTimeSensorEntity(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         """Return value of sensor."""
-        milliseconds = float(self._dataservice.get_value(self._value_path))
-        hours = milliseconds / 3600000 
+        seconds = float(self._dataservice.get_value(self._value_path))
+        hours = seconds / 3600 
         return round(hours, 2)
 
 class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
