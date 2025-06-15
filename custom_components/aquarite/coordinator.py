@@ -12,15 +12,13 @@ from google.api_core.exceptions import GoogleAPICallError
 
 from .application_credentials import IdentityToolkitAuth
 from .aquarite import Aquarite
-from .const import DOMAIN, POLL_INTERVAL
+from .const import DOMAIN, HEALTH_CHECK_INTERVAL, POLL_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
 # suppress warning message from google.api_core.bidi
 logger = logging.getLogger('google.api_core.bidi')
 logger.setLevel(logging.ERROR)
-
-HEALTH_CHECK_INTERVAL = 300  # Interval for periodic health checks in seconds
 
 class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     """Aquarite custom coordinator."""

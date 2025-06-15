@@ -15,4 +15,5 @@ BASE_URL = "https://identitytoolkit.googleapis.com/v1/accounts"
 TOKEN_URL = "https://securetoken.googleapis.com/v1/token"
 HAYWARD_REST_API = "https://europe-west1-hayward-europe.cloudfunctions.net/"
 
-POLL_INTERVAL= 60
+HEALTH_CHECK_INTERVAL = 300  # Interval for periodic health checks in seconds
+POLL_INTERVAL= 60 # Interval for periodic pooling from the Firestore document
