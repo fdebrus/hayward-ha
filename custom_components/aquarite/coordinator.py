@@ -69,7 +69,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             doc = await asyncio.to_thread(doc_ref.get)
             latest_data = doc.to_dict()
             if latest_data != self.data:
-                _LOGGER.debug("Periodic poll: state out of sync, updating coordinator.")
+                _LOGGER.warning("Periodic poll: state out of sync, updating coordinator.")
                 await self.async_set_updated_data(latest_data)
         except Exception as e:
             _LOGGER.error(f"Polling error: {e}")
