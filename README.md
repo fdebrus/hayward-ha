@@ -34,5 +34,9 @@ For discussions/general requests, please refer to [this](https://community.home-
 
 <a href="https://buymeacoffee.com/fdebrus" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/black_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a><br>
 
-“This project is not affiliated with, endorsed by, or sponsored by Hayward Industries, Inc. ‘Hayward’ is a registered trademark of its respective owner.”
+## License
 
+This project is licensed under a Non-Commercial License – see the [LICENSE](LICENSE) file for details.
+
+**Disclaimer:**  
+This project is not affiliated with, endorsed by, or sponsored by Hayward Industries, Inc. “Hayward” is a registered trademark of its respective owner. Any mention of “Hayward” is for compatibility or descriptive purposes only.
