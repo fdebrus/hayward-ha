@@ -12,7 +12,7 @@ from google.api_core.exceptions import GoogleAPICallError
 
 from .application_credentials import IdentityToolkitAuth
 from .aquarite import Aquarite
-from .const import DOMAIN
+from .const import DOMAIN, POLL_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self.data = None
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
         self.hass.loop.create_task(self.periodic_health_check())
+        self.hass.loop.create_task(self.periodic_polling())
 
     def set_pool_id(self, pool_id: str):
         """Set the pool ID."""
@@ -56,6 +57,24 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             data = json.loads(data)
         _LOGGER.debug(f"{data}")
         asyncio.run_coroutine_threadsafe(self.async_updated_data(data), self.hass.loop).result()
+
+    async def periodic_polling(self):
+        """Periodically poll the Firestore document for state reconciliation."""
+        while True:
+            await asyncio.sleep(POLL_INTERVAL)
+            await self.poll_state()
+
+    async def poll_state(self):
+        try:
+            client = await self.auth.get_client()
+            doc_ref = client.collection("pools").document(self.pool_id)
+            doc = await asyncio.to_thread(doc_ref.get)
+            latest_data = doc.to_dict()
+            if latest_data != self.data:
+                _LOGGER.debug("Periodic poll: state out of sync, updating coordinator.")
+                await self.async_set_updated_data(latest_data)
+        except Exception as e:
+            _LOGGER.error(f"Polling error: {e}")
 
     async def subscribe(self):
         """Subscribe to the pool's updates."""
