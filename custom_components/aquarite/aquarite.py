@@ -2,6 +2,7 @@ import logging
 import json
 import copy
 import asyncio
+import aiohttp
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -67,7 +68,8 @@ class Aquarite:
             async with self.aiohttp_session.post(
                 f"{HAYWARD_REST_API}/sendPoolCommand",
                 json=data,
-                headers=headers
+                headers=headers,
+                timeout=15
             ) as response:
                 _LOGGER.debug(f"Command sent with response status: {response.status}")
                 response.raise_for_status()
@@ -111,19 +113,35 @@ class Aquarite:
         last_key = map_list[-1]
         temp[last_key] = value
 
+#    def extract_complete_info(self, data, path):
+#        keys = path.split('.')
+#        subset = data
+#        if len(keys) > 2:
+#            keys = keys[:2]
+#        elif len(keys) > 1:
+#            keys = keys[:1]
+#        try:
+#            for key in keys:
+#                subset = subset[key]
+#        except KeyError:
+#            return f"Key error: Key '{key}' not found in data"
+#        result = subset
+#        for key in reversed(keys):
+#            result = {key: result}
+#        return result
+
     def extract_complete_info(self, data, path):
         keys = path.split('.')
         subset = data
-        if len(keys) > 2:
-            keys = keys[:2]
-        elif len(keys) > 1:
-            keys = keys[:1]
+        trimmed_keys = keys[:2] if len(keys) > 2 else keys[:1]
+    
         try:
-            for key in keys:
+            for key in trimmed_keys:
                 subset = subset[key]
-        except KeyError:
-            return f"Key error: Key '{key}' not found in data"
+        except KeyError as e:
+            raise KeyError(f"Key error: '{e.args[0]}' not found in data")
+
         result = subset
-        for key in reversed(keys):
+        for key in reversed(trimmed_keys):
             result = {key: result}
         return result

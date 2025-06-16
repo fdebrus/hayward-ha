@@ -7,14 +7,14 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, BRAND, MODEL
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
-
+    """Set up Aquarite number entities from a config entry."""
     dataservice = hass.data[DOMAIN]["coordinator"]
 
     if not dataservice:
         return False
 
-    pool_id = dataservice.get_value("id")
-    pool_name = dataservice.get_pool_name(pool_id)
+    pool_id = entry.data["pool_id"]
+    pool_name = entry.data.get("pool_name", pool_id)
 
     entities = [
         AquariteNumberEntity(hass, dataservice, pool_id, pool_name, 500, 800, "Redox Setpoint", "modules.rx.status.value"),
@@ -24,10 +24,10 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     ]
 
     async_add_entities(entities)
-    
     return True
 
 class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
+    """Aquarite Number Entity."""
 
     def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, value_min, value_max, name, value_path):
         super().__init__(dataservice)
@@ -39,13 +39,13 @@ class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
         self._attr_native_step = 0.5
         self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
-        self._unique_id = f"{self._pool_id}-{name}"
-        # self._attr_device_class = "temperature"
+        self._attr_unique_id = f"{self._pool_id}-{name}"
+        # self._attr_device_class = "temperature"  # Uncomment if/when appropriate
 
     @property
-    def unique_id(self):
-        """The unique id of the number."""
-        return self._unique_id
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return self._dataservice.data is not None
 
     @property
     def device_info(self):
@@ -60,7 +60,10 @@ class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
     @property
     def native_value(self):
         """Return the current native value."""
-        return self._dataservice.get_value(self._value_path)
+        try:
+            return self._dataservice.get_value(self._value_path)
+        except Exception:
+            return None
 
     async def async_set_native_value(self, value: float):
         """Update the current native value."""
