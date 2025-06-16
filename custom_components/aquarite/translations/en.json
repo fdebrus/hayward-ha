@@ -11,18 +11,20 @@
       },
       "reauth_confirm": {
         "title": "[%key:common::config_flow::title::reauth%]",
-        "description": "The Hayward integration needs to re-authenticate your account"
+        "description": "Re-authenticate your Hayward account to continue."
       },
       "pool": {
         "data": {
-          "CONF_POOL_ID": "Pools:"
+          "pool_id": "Pools:"
         },
-        "description": "Please choose the pool to add",
-        "title": "Setup Pool"
+        "description": "Please choose the pool for this integration.",
+        "title": "Select Pool"
       }
     },
     "error": {
-      "auth_error": "Authorization failed, check username and password."
+      "auth_error": "Authorization failed, check username and password.",
+      "no_pools_found": "No pools found for your account.",
+      "unknown_error": "Unexpected error. Please try again."
     },
     "abort": {
       "reauth_successful": "New login info has been saved"

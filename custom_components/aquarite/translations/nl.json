@@ -1,0 +1,34 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "data": {
+            "username": "Hayward-gebruikersnaam",
+            "password": "Wachtwoord"
+          },
+          "description": "Vul je Hayward-inloggegevens in.",
+          "title": "Authenticatie"
+        },
+        "reauth_confirm": {
+          "title": "[%key:common::config_flow::title::reauth%]",
+          "description": "Authenticeer je Hayward-account opnieuw om verder te gaan."
+        },
+        "pool": {
+          "data": {
+            "pool_id": "Zwembaden:"
+          },
+          "description": "Selecteer het zwembad voor deze integratie.",
+          "title": "Selecteer Zwembad"
+        }
+      },
+      "error": {
+        "auth_error": "Autorisatie mislukt, controleer gebruikersnaam en wachtwoord.",
+        "no_pools_found": "Geen zwembaden gevonden voor je account.",
+        "unknown_error": "Onverwachte fout. Probeer het opnieuw."
+      },
+      "abort": {
+        "reauth_successful": "Nieuwe inloggegevens zijn opgeslagen."
+      }
+    }
+  }
+  
