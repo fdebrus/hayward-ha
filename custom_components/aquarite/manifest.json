@@ -8,5 +8,5 @@
     "documentation": "https://example.com",
     "dependencies": ["application_credentials"],
     "codeowners": ["@fdebrus"],
-    "version": "0.3.4"
+    "version": "0.3.6"
 }
