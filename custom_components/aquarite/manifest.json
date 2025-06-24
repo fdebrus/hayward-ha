@@ -5,7 +5,7 @@
     "loggers": "custom_components.aquarite",
     "requirements": ["google-auth>=2.29.0","google-cloud-firestore>=2.16.0"],
     "config_flow": true,
-    "documentation": "https://example.com",
+    "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
     "dependencies": ["application_credentials"],
     "codeowners": ["@fdebrus"],
     "version": "0.3.6"
