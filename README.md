@@ -1,5 +1,5 @@
 # Hayward AquaRite integration for Home Assistant
-Dagen / Vistapool / Sugarvalley / Poolwatch
+Dagen / Vistapool / Sugarvalley / Poolwatch / Kripsol
 
 ## Requirements
 - An Hayward AquaRite with wifi module connected to the internet.
