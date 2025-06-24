@@ -125,14 +125,14 @@ views:
                     type: numeric-input
                 type: tile
                 entity: number.pool_redox_setpoint
-                name: Redox
+                name: Redox (mV)
                 icon: phu:pool-electric-lvl
               - features:
                   - style: slider
                     type: numeric-input
                 type: tile
-                entity: number.pool_hydrolysis_setpoint
-                name: Hydrolysis
+                entity: number.pool_electrolysis_setpoint
+                name: Electrolysis (g/h)
                 icon: phu:pool-clorine
       - type: vertical-stack
         title: AUX Relays Switch
@@ -154,7 +154,7 @@ views:
                 entity: switch.pool_relay4
                 name: Aux4
       - type: vertical-stack
-        title: Hydrolysis Module Info
+        title: Electrolysis Module Info
         cards:
           - type: grid
             columns: 2
@@ -204,7 +204,7 @@ views:
                 name: Redox
               - type: tile
                 entity: binary_sensor.pool_hidro_module_installed
-                name: Hydrolysis
+                name: Electrolysis
               - type: tile
                 entity: binary_sensor.pool_cl_module_installed
                 name: Chlorine
