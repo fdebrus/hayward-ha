@@ -254,7 +254,7 @@ class AquariteTimeSensorEntity(CoordinatorEntity, SensorEntity):
 class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
 
     _attr_icon = "mdi:gauge"
-    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_native_unit_of_measurement = "g/h"
 
     def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
 
