@@ -1,12 +1,9 @@
-"""Aquarite Binary_Sensor entity."""
-
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.entity import EntityCategory
 
 from .const import DOMAIN, BRAND, MODEL, PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
 
@@ -17,8 +14,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     if not dataservice:
         return False
 
-    pool_id = entry.data["pool_id"]
-    pool_name = entry.data.get("pool_name", pool_id)
+    pool_id = dataservice.get_value("id")
+    pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
         AquariteBinarySensorEntity(hass, dataservice, "Hidro Flow Status", "hidro.fl1", pool_id, pool_name),
@@ -48,13 +45,12 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
 
     entities.append(
         AquariteBinarySensorEntity(
-            hass, dataservice,
-            "Electrolysis Low" if dataservice.get_value("hidro.is_electrolysis") else "Hidrolysis Low",
-            "hidro.low", pool_id, pool_name
+            hass, dataservice, "Electrolysis Low" if dataservice.get_value("hidro.is_electrolysis") else "Hidrolysis Low", "hidro.low", pool_id, pool_name
         )
     )
 
     async_add_entities(entities)
+    
     return True
 
 
@@ -62,45 +58,32 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     """Aquarite Binary Sensor Entity such as flow sensors FL1 & FL2."""
 
     def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
+        """Initialize an Aquarite Binary Sensor Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
         self._pool_id = pool_id
         self._pool_name = pool_name
-        self._value_path = value_path
         self._attr_name = f"{self._pool_name}_{name}"
-        self._attr_unique_id = f"{self._pool_id}-{name}"
-        # Uncomment for diagnostic entities:
-        # self._attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._dataservice.data is not None
+        self._value_path = value_path
+        self._unique_id = f"{self._pool_id}-{name}"
 
     @property
     def device_class(self):
-        if self._value_path in {
-            "hidro.fl1", "hidro.low", "modules.cl.pump_status",
-            "modules.rx.pump_status", "modules.ph.al3"
-        }:
+        """Return the class of the binary sensor."""
+        if self._value_path in {"hidro.fl1", "hidro.low", "modules.cl.pump_status", "modules.rx.pump_status", "modules.ph.al3"}:
             return BinarySensorDeviceClass.PROBLEM
-        elif self._value_path in {
-            "main.hasCD", "main.hasCL", "main.hasRX", "main.hasPH",
-            "main.hasHidro", "main.hasIO", "present"
-        }:
+        elif self._value_path in {"main.hasCD","main.hasCL","main.hasRX","main.hasPH","main.hasHidro","main.hasIO","present"}:
             return BinarySensorDeviceClass.CONNECTIVITY
         return BinarySensorDeviceClass.RUNNING
 
     @property
     def is_on(self):
         """Return true if the device is on."""
-        try:
-            return bool(self._dataservice.get_value(self._value_path))
-        except Exception:
-            return False
+        return bool(self._dataservice.get_value(self._value_path))
 
     @property
     def device_info(self):
+        """Return the device info."""
         return {
             "identifiers": {(DOMAIN, self._pool_id)},
             "name": self._pool_name,
@@ -108,48 +91,50 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
             "model": MODEL,
         }
 
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id
 
 class AquariteBinarySensorTankEntity(CoordinatorEntity, BinarySensorEntity):
-    """Aquarite Binary Sensor Entity for Tank status."""
+    """Aquarite Binary Sensor Entity Tank."""
 
     def __init__(self, hass: HomeAssistant, dataservice, name, pool_id, pool_name) -> None:
+        """Initialize an Aquarite Binary Sensor Entity."""
         super().__init__(dataservice)
         self._dataservice = dataservice
         self._pool_id = pool_id
         self._pool_name = pool_name
         self._attr_name = f"{self._pool_name}_{name}"
-        self._attr_unique_id = f"{self._pool_id}-{name}"
-        # Uncomment if this is a diagnostic sensor:
-        # self._attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._dataservice.data is not None
+        self._unique_id = f"{self._pool_id}-{name}"
 
     @property
     def device_class(self):
+        """Return the class of the binary sensor."""
         return BinarySensorDeviceClass.PROBLEM
 
     @property
     def is_on(self):
-        """Return True if any tank is not empty."""
-        try:
-            tank_modules = [
-                "modules.ph.tank",
-                "modules.rx.tank",
-                "modules.cl.tank",
-                "modules.cd.tank",
-            ]
-            return any(self._dataservice.get_value(module) for module in tank_modules)
-        except Exception:
-            return False
+        """Return false if the tank is empty."""
+        tank_modules = [
+            "modules.ph.tank",
+            "modules.rx.tank",
+            "modules.cl.tank",
+            "modules.cd.tank",
+        ]
+        return any(self._dataservice.get_value(module) for module in tank_modules)
 
     @property
     def device_info(self):
+        """Return the device info."""
         return {
             "identifiers": {(DOMAIN, self._pool_id)},
             "name": self._pool_name,
             "manufacturer": BRAND,
             "model": MODEL,
         }
+
+    @property
+    def unique_id(self):
+        """The unique id of the sensor."""
+        return self._unique_id

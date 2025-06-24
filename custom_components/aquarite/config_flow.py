@@ -38,37 +38,22 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
         if user_input is not None:
             self.data["pool_id"] = user_input["pool_id"]
-            # Store the pool name in config entry data
-            pool_name = self.data['pools'][self.data["pool_id"]]
-            await self.async_set_unique_id(f"{self.data[CONF_USERNAME]}_{self.data['pool_id']}")
-            return self.async_create_entry(
-                title=pool_name,
-                data={
-                    **self.data,
-                    "pool_name": pool_name,
-                }
-            )
+            return await self.async_create_entry(title=self.data['pools'][self.data["pool_id"]], data=self.data)
 
         try:
             auth = IdentityToolkitAuth(self.hass, self.data[CONF_USERNAME], self.data[CONF_PASSWORD])
-            await auth.authenticate()
+            token_data = await auth.authenticate()
+
             api = Aquarite(auth, self.hass, async_get_clientsession(self.hass))
-            self.data['pools'] = await api.get_pools()
-            if not self.data['pools']:
-                errors["base"] = "no_pools_found"
+
         except UnauthorizedException:
             errors["base"] = "auth_error"
-        except Exception:
-            errors["base"] = "unknown_error"
-
-        if errors:
             return self.async_show_form(
                 step_id="user", data_schema=AUTH_SCHEMA, errors=errors
             )
 
-        POOL_SCHEMA = vol.Schema({
-            vol.Required("pool_id"): vol.In(self.data['pools'])
-        })
+        self.data['pools'] = await api.get_pools()
+        POOL_SCHEMA = vol.Schema({vol.Optional("pool_id"): vol.In(self.data['pools'])})
 
         return self.async_show_form(
             step_id="pool", data_schema=POOL_SCHEMA, errors=errors
@@ -76,5 +61,13 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, user_input=None):
         """Reauthenticate the user."""
-        self.data = None  # reset for fresh auth
         return await self.async_step_user()
+
+    async def async_create_entry(self, title: str, data: dict) -> dict:
+        """Create an entry."""
+        existing_entry = ""
+        if existing_entry:
+            self.hass.config_entries.async_update_entry(existing_entry, data=data)
+            await self.hass.config_entries.async_reload(existing_entry.entry_id)
+            return self.async_abort(reason="reauth_successful")
+        return super().async_create_entry(title=title, data=data)

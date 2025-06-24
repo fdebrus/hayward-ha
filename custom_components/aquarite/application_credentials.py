@@ -52,28 +52,20 @@ class IdentityToolkitAuth:
             "password": self.password,
             "returnSecureToken": True
         })
-
-        try:
-            async with self.session.post(url, headers=headers, data=data, timeout=15) as resp:
-                if resp.status != 200:
-                    error_response = await resp.json()
-                    _LOGGER.error(f"Authentication failed: {error_response}")
-                    raise UnauthorizedException(f"Authentication failed: {error_response.get('error', {}).get('message', 'unknown error')}")
-
-                self.tokens = await resp.json()
-                self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
-                self.credentials = Credentials(
-                    token=self.tokens['idToken'],
-                    refresh_token=self.tokens['refreshToken'],
-                    token_uri=self.token_url,
-                    client_id=None,
-                    client_secret=None
-                )
-                self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
-                _LOGGER.debug("Authentication successful; Firestore client created.")
-        except asyncio.TimeoutError:
-            _LOGGER.error("Timeout while attempting to authenticate.")
-            raise UnauthorizedException("Timeout during authentication.")
+        async with self.session.post(url, headers=headers, data=data) as resp:
+            if resp.status == 400:
+                raise UnauthorizedException("Failed to authenticate.")
+            self.tokens = await resp.json()
+            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+            self.credentials = Credentials(
+                token=self.tokens['idToken'],
+                refresh_token=self.tokens['refreshToken'],
+                token_uri=self.token_url,
+                client_id=None,
+                client_secret=None
+            )
+            _LOGGER.debug(f'{self.credentials}')
+            self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
 
     async def refresh_token(self):
         """Refresh the access token using the refresh token."""

@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Hayward Username",
+          "password": "Password"
+        },
+        "description": "Enter your Hayward credentials.",
+        "title": "Authentication"
+      },
+      "reauth_confirm": {
+        "title": "[%key:common::config_flow::title::reauth%]",
+        "description": "The Hayward integration needs to re-authenticate your account"
+      },
+      "location": {
+        "data": {
+          "CONF_LOCATION_ID": "Pools:"
+        },
+        "description": "Please choose the pool for this HA",
+        "title": "Setup Pool"
+      }
+    },
+    "error": {
+      "auth_error": "Authorization failed, check username and password."
+    },
+    "abort": {
+      "reauth_successful": "New login info has been saved"
+    }
+  }
+}

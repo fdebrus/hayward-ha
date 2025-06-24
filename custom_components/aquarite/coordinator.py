@@ -27,23 +27,12 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         """Initialize the coordinator."""
         self.auth = auth
         self.api = api
-        self.pool_id = None
+        self.pool_id: Optional[str] = None
         self.watch = None
         self.data = None
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
-
-    async def async_added_to_hass(self):
-        """Register update intervals when added to Home Assistant."""
-        self.periodic_health_task = asyncio.create_task(self.periodic_health_check())
-        self.periodic_polling_task = asyncio.create_task(self.periodic_polling())
-        self.token_refresh_task = asyncio.create_task(self.auth.start_token_refresh_routine(self))
-
-    async def async_will_remove_from_hass(self):
-        """Cancel tasks when entity is removed."""
-        self.periodic_health_task.cancel()
-        self.periodic_polling_task.cancel()
-        self.token_refresh_task.cancel()
-        await self.unsubscribe()
+        self.hass.loop.create_task(self.periodic_health_check())
+        self.hass.loop.create_task(self.periodic_polling())
 
     def set_pool_id(self, pool_id: str):
         """Set the pool ID."""
@@ -94,8 +83,6 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             client = await self.auth.get_client()
             doc_ref = client.collection("pools").document(self.pool_id)
-            if self.watch is not None:
-                self.watch.unsubscribe()  # explicitly unsubscribe previous watcher if existing
             self.watch = doc_ref.on_snapshot(self.on_snapshot)
             _LOGGER.debug(f"Subscribed with new listener for pool_id {self.pool_id}")
         except Exception as e:
@@ -111,7 +98,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     def on_snapshot(self, doc_snapshot, changes, read_time):
         """Handles document snapshots."""
         try:
-            _LOGGER.debug(f"Snapshot received at {read_time}. Changes detected: {[change.type.name for change in changes]}")
+            _LOGGER.debug(f"Snapshot received. Changes: {changes}, Read Time: {read_time}")
             for change in changes:
                 _LOGGER.debug(f"Received change {change.type} in Firestore")
             for doc in doc_snapshot:
@@ -131,20 +118,9 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.debug(f"Unsubscribed from pool ID: {self.pool_id}")
 
     async def _async_update_data(self) -> Any:
-        """Fetch data from Firestore or your backend."""
-        try:
-            client = await self.auth.get_client()
-            doc_ref = client.collection("pools").document(self.pool_id)
-            doc = await asyncio.to_thread(doc_ref.get)
-            data = doc.to_dict()
-            if not data:
-                raise ValueError("No data returned from Firestore for pool_id %s", self.pool_id)
-            _LOGGER.debug("Fetched data for pool_id %s: %s", self.pool_id, data)
-            return data
-        except Exception as err:
-            _LOGGER.error("Error updating data: %s", err, exc_info=True)
-            # Optionally: raise UpdateFailed(f"Error fetching data: {err}") for HA retry/backoff logic
-            return None
+        """No-op update method."""
+        _LOGGER.debug("No-op update method called.")
+        return
 
     async def periodic_health_check(self):
         """Periodic task to check the Firestore client connection status."""
@@ -176,3 +152,17 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         except (TypeError, KeyError):
             value = None
         return value
+    
+    def get_pool_name(self, pool_id: str) -> str:
+        """Return the name of the pool from document."""
+        data_dict = self.data
+        _LOGGER.debug(f"-- DATA -- {self.data} / POOLID {pool_id}")
+        if data_dict and data_dict.get("id") == pool_id:
+            try:
+                pool_name = data_dict["form"]["names"][0]["name"]
+            except (KeyError, IndexError):
+                pool_name = data_dict.get("form", {}).get("name", "Unknown")
+        else:
+            _LOGGER.error(f"Pool ID {pool_id} does not match the document's ID.")
+            pool_name = "Unknown"
+        return pool_name
