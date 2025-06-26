@@ -245,11 +245,16 @@ class AquariteIntervalTimeSensorEntity(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        """Return value in 'HH:MM' format."""
+        """Return value as 'HH:MM' or 'HH:MM (+Xd)' if >24h."""
         seconds = int(self._dataservice.get_value(self._value_path))
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
-        return f"{hours:02d}:{minutes:02d}"
+        if hours < 24:
+            return f"{hours:02d}:{minutes:02d}"
+        else:
+            display_hours = hours % 24
+            days_later = hours // 24
+            return f"{display_hours:02d}:{minutes:02d} (+{days_later}d)"
 
 class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
 
@@ -373,7 +378,7 @@ class AquariteTimeSensorEntity(CoordinatorEntity, SensorEntity):
 class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
 
     _attr_icon = "mdi:gauge"
-    _attr_native_unit_of_measurement = "g/h"
+    _attr_native_unit_of_measurement = "gr/h"
 
     def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
 

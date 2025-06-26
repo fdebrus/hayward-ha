@@ -8,5 +8,5 @@
     "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
     "dependencies": ["application_credentials"],
     "codeowners": ["@fdebrus"],
-    "version": "0.3.7"
+    "version": "0.3.6"
 }

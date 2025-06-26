@@ -42,7 +42,7 @@ class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
         "modules.rx.status.value": "mV",
         "modules.ph.status.low_value": "pH",
         "modules.ph.status.high_value": "pH",
-        "hidro.level": "g/h",
+        "hidro.level": "gr/h",
     }
 
     def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, value_min, value_max, name, value_path):
