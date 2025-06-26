@@ -40,6 +40,17 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
         ),
     )
 
+    entities.append(
+        AquariteTemperatureSensorEntity(
+            hass,
+            dataservice,
+            pool_id,
+            pool_name,
+            "Filtration Intel Temperature",
+            "filtration.intel.temp",
+        ),
+    )
+
     if dataservice.get_value( PATH_HASCD ):
         entities.append(
             AquariteValueSensorEntity(
@@ -123,14 +134,122 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
                 dataservice,
                 pool_id,
                 pool_name,
-                "Hidrolysis Cell Time",
-                "hidro.cellTotalTime",
-            ),
+                "Filtration Intel Time",
+                "filtration.intel.time",
+                native_unit_of_measurement="h",
+            )
         )
+
+    entities.append(
+        AquariteTemperatureSensorEntity(
+            hass,
+            dataservice,
+            pool_id,
+            pool_name,
+            "Filtration Smart Min Temp",
+            "filtration.smart.tempMin",
+        ),
+    )
+
+    entities.append(
+        AquariteTemperatureSensorEntity(
+            hass,
+            dataservice,
+            pool_id,
+            pool_name,
+            "Filtration Smart High Temp",
+            "filtration.smart.tempHigh",
+        ),
+    )
+
+    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 1 From", "filtration.interval1.from", "mdi:clock-start"))
+    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 1 To", "filtration.interval1.to", "mdi:clock-end"))
+
+    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 2 From", "filtration.interval2.from", "mdi:clock-start"))
+    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 2 To", "filtration.interval2.to", "mdi:clock-end"))
+
+    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 3 From", "filtration.interval3.from", "mdi:clock-start"))
+    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 3 To", "filtration.interval3.to", "mdi:clock-end"))
+
+    entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 1", "filtration.timerVel1"))
+    entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 2", "filtration.timerVel2"))
+    entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 3", "filtration.timerVel3"))
 
     async_add_entities(entities)
 
     return True
+
+class AquariteSpeedLabelSensorEntity(CoordinatorEntity, SensorEntity):
+    _attr_icon = "mdi:speedometer"
+
+    SPEED_LABELS = {
+        0: "Slow",
+        1: "Medium",
+        2: "High",
+    }
+
+    def __init__(self, hass, dataservice, pool_id, pool_name, name, value_path):
+        super().__init__(dataservice)
+        self._dataservice = dataservice
+        self._pool_id = pool_id
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
+        self._value_path = value_path
+        self._unique_id = dataservice.get_value("id") + "-" + name
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._pool_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+    @property
+    def native_value(self):
+        value = self._dataservice.get_value(self._value_path)
+        try:
+            int_value = int(value)
+        except (ValueError, TypeError):
+            int_value = -1
+        return self.SPEED_LABELS.get(int_value, "Unknown")
+
+class AquariteIntervalTimeSensorEntity(CoordinatorEntity, SensorEntity):
+    def __init__(self, hass, dataservice, pool_id, pool_name, name, value_path, icon=None):
+        super().__init__(dataservice)
+        self._dataservice = dataservice
+        self._pool_id = pool_id
+        self._pool_name = pool_name
+        self._attr_name = f"{self._pool_name}_{name}"
+        self._value_path = value_path
+        self._attr_icon = icon
+        self._unique_id = dataservice.get_value("id") + "-" + name
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._pool_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+    @property
+    def native_value(self):
+        """Return value in 'HH:MM' format."""
+        seconds = int(self._dataservice.get_value(self._value_path))
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        return f"{hours:02d}:{minutes:02d}"
 
 class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
 
@@ -247,9 +366,9 @@ class AquariteTimeSensorEntity(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         """Return value of sensor."""
-        seconds = float(self._dataservice.get_value(self._value_path))
-        hours = seconds / 3600 
-        return round(hours, 2)
+        minutes = float(self._dataservice.get_value(self._value_path))
+        hours = minutes / 60 
+        return hours
 
 class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
 
