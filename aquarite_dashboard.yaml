@@ -1,216 +1,341 @@
 views:
-  - type: custom:masonry-layout
+  - type: sections
     icon: mdi:pool
     layout:
       width: 320
-    cards:
-      - type: vertical-stack
-        title: Aquarite
+    cards: []
+    sections:
+      - type: grid
         cards:
-          - type: horizontal-stack
+          - type: vertical-stack
+            title: Aquarite
             cards:
+              - type: horizontal-stack
+                cards:
+                  - type: tile
+                    entity: sensor.pool_temperature
+                    name: Temperature
+                    color: blue
+                  - type: tile
+                    entity: sensor.pool_ph
+                    name: pH
+                    color: green
+              - type: custom:mini-graph-card
+                entities:
+                  - entity: sensor.pool_temperature
+                    name: Temperature
+                    color: var(--blue-color)
+                  - entity: sensor.pool_ph
+                    name: pH
+                    color: var(--green-color)
+                    y_axis: secondary
+                hours_to_show: 24
+                line_width: 3
+                font_size: 50
+                animate: true
+                show:
+                  name: false
+                  icon: false
+                  state: false
+                  legend: true
+                  fill: fade
               - type: tile
-                entity: sensor.pool_temperature
-                name: Temperature
-                color: blue
-              - type: tile
-                entity: sensor.pool_ph
-                name: pH
-                color: green
-          - type: custom:mini-graph-card
-            entities:
-              - entity: sensor.pool_temperature
-                name: Temperature
-                color: var(--blue-color)
-              - entity: sensor.pool_ph
-                name: pH
-                color: var(--green-color)
-                y_axis: secondary
-            hours_to_show: 24
-            line_width: 3
-            font_size: 50
-            animate: true
-            show:
-              name: false
-              icon: false
-              state: false
-              legend: true
-              fill: fade
-          - type: tile
-            entity: sensor.pool_rx
-            name: Redox
-            color: cyan
-          - type: custom:mini-graph-card
-            entities:
-              - entity: sensor.pool_rx
+                entity: sensor.pool_rx
                 name: Redox
-                color: var(--cyan-color)
-            hours_to_show: 24
-            line_width: 3
-            font_size: 50
-            animate: true
-            show:
-              name: false
-              icon: false
-              state: false
-              legend: true
-              fill: fade
-      - type: vertical-stack
-        title: Main Controls
+                color: cyan
+              - type: custom:mini-graph-card
+                entities:
+                  - entity: sensor.pool_rx
+                    name: Redox
+                    color: var(--cyan-color)
+                hours_to_show: 24
+                line_width: 3
+                font_size: 50
+                animate: true
+                show:
+                  name: false
+                  icon: false
+                  state: false
+                  legend: true
+                  fill: fade
+          - type: conditional
+            conditions:
+              - entity: select.pool_pump_mode
+                state: Intel
+            card:
+              type: horizontal-stack
+              cards:
+                - type: tile
+                  entity: sensor.pool_filtration_intel_temperature
+                  name: Reference Temp
+                  icon: mdi:thermometer
+                  features_position: bottom
+                  vertical: false
+                - type: tile
+                  entity: sensor.pool_filtration_intel_time
+                  name: Daily Runtime
+                  icon: mdi:timer-outline
+            grid_options:
+              columns: 12
+              rows: 1
+          - type: conditional
+            conditions:
+              - entity: select.pool_pump_mode
+                state: Smart
+            card:
+              type: horizontal-stack
+              cards:
+                - type: tile
+                  entity: sensor.pool_filtration_smart_min_temp
+                  name: Min Temp (Smart)
+                  icon: mdi:thermometer-low
+                - type: tile
+                  entity: sensor.pool_filtration_smart_high_temp
+                  name: High Temp (Smart)
+                  icon: mdi:thermometer-high
+                - type: tile
+                  entity: binary_sensor.pool_filtration_smart_freeze
+                  name: Freeze Protection
+                  icon: mdi:snowflake
+          - type: conditional
+            conditions:
+              - condition: or
+                conditions:
+                  - condition: state
+                    entity: select.pool_pump_mode
+                    state: Auto
+                  - condition: state
+                    entity: select.pool_pump_mode
+                    state: Smart
+                  - condition: state
+                    entity: select.pool_pump_mode
+                    state: Heat
+            card:
+              type: grid
+              columns: 3
+              square: false
+              cards:
+                - type: tile
+                  entity: sensor.pool_filtration_interval_1_from
+                  name: Start 1
+                  icon: mdi:clock-start
+                - type: tile
+                  entity: sensor.pool_filtration_interval_1_to
+                  name: End 1
+                  icon: mdi:clock-end
+                - type: tile
+                  entity: sensor.pool_filtration_timer_speed_1
+                  name: Speed 1
+                  icon: mdi:speedometer
+                - type: tile
+                  entity: sensor.pool_filtration_interval_2_from
+                  name: Start 2
+                  icon: mdi:clock-start
+                - type: tile
+                  entity: sensor.pool_filtration_interval_2_to
+                  name: End 2
+                  icon: mdi:clock-end
+                - type: tile
+                  entity: sensor.pool_filtration_timer_speed_2
+                  name: Speed 2
+                  icon: mdi:speedometer
+                - type: tile
+                  entity: sensor.pool_filtration_interval_3_from
+                  name: Start 3
+                  icon: mdi:clock-start
+                - type: tile
+                  entity: sensor.pool_filtration_interval_3_to
+                  name: End 3
+                  icon: mdi:clock-end
+                - type: tile
+                  entity: sensor.pool_filtration_timer_speed_3
+                  name: Speed 3
+                  icon: mdi:speedometer
+          - type: vertical-stack
+            title: Main Controls
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - show_name: true
+                    show_icon: true
+                    type: button
+                    show_state: true
+                    tap_action:
+                      action: toggle
+                    entity: switch.pool_filtration_status
+                    icon: phu:pool-filter
+                    name: Filtration
+                    icon_height: 60px
+                  - features:
+                      - type: select-options
+                    type: tile
+                    entity: select.pool_pump_mode
+                    name: Filtration Mode
+                    icon: mdi:auto-mode
+                    hide_state: true
+                    features_position: bottom
+                    vertical: false
+              - type: horizontal-stack
+                cards:
+                  - features:
+                      - type: select-options
+                    type: tile
+                    entity: select.pool_pump_speed
+                    name: Velocity
+                    icon: mdi:speedometer
+                    hide_state: true
+                    features_position: bottom
+                    vertical: false
+                  - features:
+                      - type: select-options
+                    type: tile
+                    entity: switch.pool_electrolysis_boost
+                    icon: mdi:lightning-bolt-outline
+                    name: Electrolysis Boost
+                    hide_state: true
+              - type: horizontal-stack
+                cards:
+                  - type: tile
+                    entity: binary_sensor.pool_heating_status
+                    icon: mdi:thermometer-plus
+                    name: Heating Status
+                  - type: tile
+                    entity: light.pool_light
+                    icon: mdi:light-recessed
+                    name: Light
+      - type: grid
         cards:
-          - type: horizontal-stack
+          - type: vertical-stack
+            title: Setpoints
             cards:
-              - show_name: true
-                show_icon: true
-                type: button
-                show_state: true
-                tap_action:
-                  action: toggle
-                entity: switch.pool_filtration_status
-                icon: phu:pool-filter
-                name: Filtration
-                icon_height: 60px
-              - features:
-                  - type: select-options
-                type: tile
-                entity: select.pool_pump_mode
-                name: Mode
-                icon: mdi:auto-mode
-                hide_state: true
-          - type: horizontal-stack
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - features:
+                      - type: numeric-input
+                        style: slider
+                    type: tile
+                    entity: number.pool_ph_low
+                    name: pH Min
+                    icon: mdi:ph
+                    features_position: bottom
+                    vertical: false
+                  - type: tile
+                    entity: number.pool_ph_max
+                    name: pH Max
+                    icon: mdi:ph
+                    features:
+                      - type: numeric-input
+                        style: slider
+                  - type: tile
+                    entity: number.pool_redox_setpoint
+                    name: Redox (mV)
+                    icon: phu:pool-electric-lvl
+                    features:
+                      - type: numeric-input
+                        style: slider
+                  - features:
+                      - type: numeric-input
+                        style: slider
+                    type: tile
+                    entity: number.pool_electrolysis_setpoint
+                    name: Electrolysis (g/h)
+                    icon: phu:pool-clorine
+                    features_position: bottom
+                    vertical: false
+          - type: vertical-stack
+            title: Electrolysis Module Info
             cards:
-              - features:
-                  - type: select-options
-                type: tile
-                entity: select.pool_pump_speed
-                name: Speed
-                icon: mdi:speedometer
-                hide_state: true
-              - features:
-                  - type: select-options
-                type: tile
-                entity: switch.pool_electrolysis_boost
-                icon: mdi:lightning-bolt-outline
-                name: Boost
-                hide_state: true
-          - type: horizontal-stack
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: tile
+                    entity: sensor.pool_electrolysis
+                    name: State
+                    icon: mdi:water-sync
+                    features_position: bottom
+                    vertical: false
+                  - type: tile
+                    entity: binary_sensor.pool_electrolysis_low
+                    icon: mdi:alarm-light-outline
+                    name: Production Low
+                  - type: tile
+                    entity: switch.pool_electrolysis_cover
+                    name: Cover
+                    icon: mdi:window-shutter-cog
+                    features_position: bottom
+                    vertical: false
+          - type: vertical-stack
+            title: Installed Modules
             cards:
-              - type: tile
-                entity: light.pool_light
-                icon: mdi:light-recessed
-                name: Light
-      - type: vertical-stack
-        title: Setpoints
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: tile
+                    entity: binary_sensor.pool_ph_module_installed
+                    name: pH
+                    features_position: bottom
+                    vertical: false
+                  - type: tile
+                    entity: binary_sensor.pool_rx_module_installed
+                    name: Redox
+                    features_position: bottom
+                    vertical: false
+                  - type: tile
+                    entity: binary_sensor.pool_hidro_module_installed
+                    name: Electrolysis
+                    features_position: bottom
+                    vertical: false
+                  - type: tile
+                    entity: binary_sensor.pool_cl_module_installed
+                    name: Chlorine
+                  - type: tile
+                    entity: binary_sensor.pool_cd_module_installed
+                    name: Conductivity
+                  - type: tile
+                    entity: binary_sensor.pool_io_module_installed
+                    name: Ionization
+                  - type: tile
+                    entity: binary_sensor.pool_connected
+                    name: Pool Connected
+                    features_position: bottom
+                    vertical: false
+                    icon: mdi:cloud
+      - type: grid
         cards:
-          - type: grid
-            columns: 2
-            square: false
+          - type: vertical-stack
+            title: pH Module Info
             cards:
-              - features:
-                  - style: slider
-                    type: numeric-input
-                type: tile
-                entity: number.pool_ph_low
-                name: pH Min
-                icon: mdi:ph
-              - features:
-                  - style: slider
-                    type: numeric-input
-                type: tile
-                entity: number.pool_ph_max
-                name: pH Max
-                icon: mdi:ph
-              - features:
-                  - style: slider
-                    type: numeric-input
-                type: tile
-                entity: number.pool_redox_setpoint
-                name: Redox (mV)
-                icon: phu:pool-electric-lvl
-              - features:
-                  - style: slider
-                    type: numeric-input
-                type: tile
-                entity: number.pool_electrolysis_setpoint
-                name: Electrolysis (g/h)
-                icon: phu:pool-clorine
-      - type: vertical-stack
-        title: AUX Relays Switch
-        cards:
-          - type: grid
-            columns: 2
-            square: false
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: tile
+                    entity: binary_sensor.pool_ph_pump_alarm
+                    name: Controller Alarm
+                  - type: tile
+                    entity: binary_sensor.pool_ph_acid_pump
+                    name: Pump
+                    icon: phu:pool-filter
+          - type: vertical-stack
+            title: AUX Relays Switch
             cards:
-              - type: tile
-                entity: switch.pool_relay1
-                name: Aux1
-              - type: tile
-                entity: switch.pool_relay2
-                name: Aux2
-              - type: tile
-                entity: switch.pool_relay3
-                name: Aux3
-              - type: tile
-                entity: switch.pool_relay4
-                name: Aux4
-      - type: vertical-stack
-        title: Electrolysis Module Info
-        cards:
-          - type: grid
-            columns: 2
-            square: false
-            cards:
-              - type: tile
-                entity: sensor.pool_electrolysis
-                name: State
-                icon: mdi:water-sync
-              - type: tile
-                entity: binary_sensor.pool_electrolysis_low
-                icon: mdi:alarm-light-outline
-                name: Production Low
-              - type: tile
-                entity: switch.pool_electrolysis_cover
-                name: Cover
-                icon: mdi:window-shutter-cog
-              - type: tile
-                entity: sensor.pool_hidrolysis_cell_time
-                name: Runtime Total
-      - type: vertical-stack
-        title: pH Module Info
-        cards:
-          - type: grid
-            columns: 2
-            square: false
-            cards:
-              - type: tile
-                entity: binary_sensor.pool_ph_pump_alarm
-                name: Controller Alarm
-              - type: tile
-                entity: binary_sensor.pool_ph_acid_pump
-                name: Pump
-                icon: phu:pool-filter
-      - type: vertical-stack
-        title: Installed Modules
-        cards:
-          - type: grid
-            columns: 2
-            square: false
-            cards:
-              - type: tile
-                entity: binary_sensor.pool_ph_module_installed
-                name: pH
-              - type: tile
-                entity: binary_sensor.pool_rx_module_installed
-                name: Redox
-              - type: tile
-                entity: binary_sensor.pool_hidro_module_installed
-                name: Electrolysis
-              - type: tile
-                entity: binary_sensor.pool_cl_module_installed
-                name: Chlorine
-              - type: tile
-                entity: binary_sensor.pool_cd_module_installed
-                name: Conductivity
-              - type: tile
-                entity: binary_sensor.pool_io_module_installed
-                name: Ionization
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: tile
+                    entity: switch.pool_relay1
+                    name: Aux1
+                  - type: tile
+                    entity: switch.pool_relay2
+                    name: Aux2
+                  - type: tile
+                    entity: switch.pool_relay3
+                    name: Aux3
+                  - type: tile
+                    entity: switch.pool_relay4
+                    name: Aux4
