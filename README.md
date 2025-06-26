@@ -19,15 +19,16 @@ Example dashboard, inspired from the great work of https://github.com/alexdelpre
 
 ![image](https://github.com/user-attachments/assets/11c6467f-6a9e-4469-af36-3613e40a6b92)
 
-Based on the selected filtration mode, display will show different datapoints
+Based on the selected filtration mode, display will show different datapoints:
 
-Intel
-![image](https://github.com/user-attachments/assets/c5a3b070-072d-421b-955f-a41667d738b7)
+**Intel**
+<br>
+<img src="https://github.com/user-attachments/assets/c5a3b070-072d-421b-955f-a41667d738b7" width="600">
 
-Smart
-![image](https://github.com/user-attachments/assets/b9cb0f21-34a3-4c25-9332-02eee6988963)
+**Smart**
+<br>
+<img src="https://github.com/user-attachments/assets/b9cb0f21-34a3-4c25-9332-02eee6988963" width="600">
 
-...
 
 # Credits
 
