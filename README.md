@@ -17,7 +17,17 @@ It will automatically add all the sensors to your Home Assistant installation.
 
 Example dashboard, inspired from the great work of https://github.com/alexdelprete/HA-NeoPool-MQTT
 
-![image](https://github.com/user-attachments/assets/622d6f68-14d7-47d4-8c79-f2060329b155)
+![image](https://github.com/user-attachments/assets/11c6467f-6a9e-4469-af36-3613e40a6b92)
+
+Based on the selected filtration mode, display will show different datapoints
+
+Intel
+![image](https://github.com/user-attachments/assets/c5a3b070-072d-421b-955f-a41667d738b7)
+
+Smart
+![image](https://github.com/user-attachments/assets/b9cb0f21-34a3-4c25-9332-02eee6988963)
+
+...
 
 # Credits
 
