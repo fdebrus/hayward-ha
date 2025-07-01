@@ -3,7 +3,7 @@ Dagen / Vistapool / Sugarvalley / Poolwatch / Kripsol
 
 ## Requirements
 - An Dagen / Vistapool / Sugarvalley / Poolwatch / Kripsol / AquaRite with wifi module connected to the internet.
-- The controller must be added to an Hayward account.
+- The controller must be added to an cloud account.
 
 ## Installation
 Component is installed via HACS or alternative by downloading the files and placing them in your custom_components folder.
