@@ -2,7 +2,7 @@
 Dagen / Vistapool / Sugarvalley / Poolwatch / Kripsol
 
 ## Requirements
-- An Hayward AquaRite with wifi module connected to the internet.
+- An Dagen / Vistapool / Sugarvalley / Poolwatch / Kripsol / AquaRite with wifi module connected to the internet.
 - The controller must be added to an Hayward account.
 
 ## Installation
