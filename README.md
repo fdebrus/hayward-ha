@@ -29,6 +29,9 @@ Based on the selected filtration mode, display will show different datapoints:
 <br>
 <img src="https://github.com/user-attachments/assets/b9cb0f21-34a3-4c25-9332-02eee6988963" width="600">
 
+You can also sync your pool controller time with HA calling a service
+
+![image](https://github.com/user-attachments/assets/5b9896b1-b5b8-481f-933e-4e7482072fab)
 
 # Credits
 
