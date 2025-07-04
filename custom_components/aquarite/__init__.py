@@ -53,6 +53,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         # Forward the entry setups for the defined platforms
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+        async def handle_sync_time(call):
+            await coordinator.set_pool_time_to_now()
+        hass.services.async_register(DOMAIN, "sync_pool_time", handle_sync_time)
+
         return True
 
     except Exception as e:

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import json
+from zoneinfo import ZoneInfo
 from datetime import datetime
 from typing import Any, Optional
 
@@ -121,6 +122,31 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         """No-op update method."""
         _LOGGER.debug("No-op update method called.")
         return
+
+    async def set_pool_time_to_now(self):
+        """Set the pool device time to Home Assistant's current LOCAL time as seconds since 1970-01-01 00:00:00 LOCAL."""
+        if not self.pool_id:
+            _LOGGER.error("No pool_id set in coordinator!")
+            return
+
+        ha_tz_name = self.hass.config.time_zone
+        if not ha_tz_name:
+            _LOGGER.error("HA timezone not set, defaulting to UTC")
+            ha_tz = timezone.utc
+        else:
+            ha_tz = ZoneInfo(ha_tz_name)
+
+        now_local = datetime.now(ha_tz)
+        now_naive = now_local.replace(tzinfo=None)
+        local_epoch = datetime(1970, 1, 1)
+        unix_timestamp_local = int((now_naive - local_epoch).total_seconds())
+
+        _LOGGER.info(f"Setting Aquarite pool time to {unix_timestamp_local} (Local: {now_local}) for pool_id {self.pool_id}")
+
+        try:
+            await self.api.set_value(self.pool_id, "main.localTime", unix_timestamp_local)
+        except Exception as e:
+            _LOGGER.error(f"Failed to set pool time: {e}")
 
     async def periodic_health_check(self):
         """Periodic task to check the Firestore client connection status."""
