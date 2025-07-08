@@ -15,6 +15,17 @@ Afterwards you can go to the Integrations sections and click the add integration
 
 It will automatically add all the sensors to your Home Assistant installation.
 
+if you wish to create a map in HA with the pool location, you need to create a geo_location in configuration.yaml
+
+```yaml
+geo_location:
+  - platform: template
+    sources:
+      - name: "<pool_name> Location"
+        latitude: "{{ states('sensor.<pool_name>_latitude') | float }}"
+        longitude: "{{ states('sensor.<pool_name>_longitude') | float }}"
+```
+
 Example dashboard, inspired from the great work of https://github.com/alexdelprete/HA-NeoPool-MQTT
 
 ![image](https://github.com/user-attachments/assets/11c6467f-6a9e-4469-af36-3613e40a6b92)
