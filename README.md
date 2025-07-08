@@ -22,10 +22,10 @@ template:
   - device_tracker:
       - name: "<pool_name>_location"
         state: "home"  # or any static value like "online"
-        icon: mdi:pool
         attributes:
           latitude: "{{ states('sensor.<pool_name>_latitude') | float }}"
           longitude: "{{ states('sensor.<pool_name>_longitude') | float }}"
+          icon: mdi:pool
 ```
 
 Example dashboard, inspired from the great work of https://github.com/alexdelprete/HA-NeoPool-MQTT
