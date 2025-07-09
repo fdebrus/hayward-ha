@@ -164,16 +164,22 @@ async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> 
 
     entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 1 From", "filtration.interval1.from", "mdi:clock-start"))
     entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 1 To", "filtration.interval1.to", "mdi:clock-end"))
-
     entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 2 From", "filtration.interval2.from", "mdi:clock-start"))
     entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 2 To", "filtration.interval2.to", "mdi:clock-end"))
-
     entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 3 From", "filtration.interval3.from", "mdi:clock-start"))
     entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 3 To", "filtration.interval3.to", "mdi:clock-end"))
-
     entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 1", "filtration.timerVel1"))
     entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 2", "filtration.timerVel2"))
     entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 3", "filtration.timerVel3"))
+
+    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "City", "city","mdi:city"))
+    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Street", "street", "mdi:road"))
+    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Zipcode", "zipcode", "mdi:numeric"))
+    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Country", "country", "mdi:earth"))
+    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Latitude", "lat", "mdi:latitude"))
+    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Longitude", "lng", "mdi:longitude"))
+
+    entities.append(AquaritePoolNameSensorEntity(hass, dataservice, pool_id))
 
     async_add_entities(entities)
 
@@ -448,3 +454,62 @@ class AquariteRxValueSensorEntity(CoordinatorEntity, SensorEntity):
     def native_value(self) -> int:
         """Return value of sensor."""
         return int(self._dataservice.get_value(self._value_path))
+
+class AquariteLocationSensorEntity(CoordinatorEntity, SensorEntity):
+    def __init__(self, hass, dataservice, pool_id, pool_name, name, form_key, icon=None):
+        super().__init__(dataservice)
+        self._dataservice = dataservice
+        self._pool_id = pool_id
+        self._pool_name = pool_name
+        self._form_key = form_key
+        self._attr_name = f"{self._pool_name}_{name}"
+        self._unique_id = dataservice.get_value("id") + "-" + name
+        self._attr_icon = icon
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {
+                (DOMAIN, self._pool_id)
+            },
+            "name": self._pool_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+    @property
+    def native_value(self):
+        form = self._dataservice.get_value("form")
+        if not form:
+            return None
+        return form.get(self._form_key)
+
+class AquaritePoolNameSensorEntity(CoordinatorEntity, SensorEntity):
+    def __init__(self, hass, dataservice, pool_id):
+        super().__init__(dataservice)
+        self._dataservice = dataservice
+        self._pool_id = pool_id
+        self._unique_id = dataservice.get_value("id") + "-name"
+        self._attr_name = f"{dataservice.get_pool_name(pool_id)} Name"
+        self._attr_icon = "mdi:pool"
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+    @property
+    def native_value(self):
+        return self._dataservice.get_pool_name(self._pool_id)

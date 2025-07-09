@@ -7,6 +7,7 @@
     "config_flow": true,
     "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
     "dependencies": ["application_credentials"],
+    "supported_platforms": ["binary_sensor", "light", "switch", "sensor", "select", "number", "device_tracker"],
     "codeowners": ["@fdebrus"],
     "version": "0.3.8"
 }
