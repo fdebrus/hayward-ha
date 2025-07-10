@@ -1,44 +1,41 @@
-"""Aquarite Light entity."""
-
 from homeassistant.components.light import LightEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-
 from .const import DOMAIN, BRAND, MODEL
 
-async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
 
-    dataservice = hass.data[DOMAIN]["coordinator"]
+def get_value(data, path):
+    keys = path.split(".")
+    for key in keys:
+        if isinstance(data, dict):
+            data = data.get(key)
+        else:
+            return None
+    return data
 
-    if not dataservice:
-        return False
-        
-    pool_id = dataservice.get_value("id")
-    pool_name = dataservice.get_pool_name(pool_id)
-    
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    pool_id = coordinator.pool_id
+    pool_name = coordinator.get_pool_name()
+
     entities = [
-        AquariteLightEntity(hass, dataservice, pool_id, pool_name, "Light", "light.status")
+        AquariteLightEntity(coordinator, pool_id, pool_name, "Light", "light.status"),
     ]
-
     async_add_entities(entities)
-
     return True
 
+
 class AquariteLightEntity(CoordinatorEntity, LightEntity):
-
-    def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
-
-        super().__init__(dataservice)
-        self._dataservice = dataservice
+    def __init__(self, coordinator, pool_id, pool_name, name, value_path):
+        super().__init__(coordinator)
         self._pool_id = pool_id
         self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
+        self._attr_name = f"{pool_name}_{name}"
         self._value_path = value_path
-        self._unique_id = f"{self._pool_id}{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
 
     @property
     def device_info(self):
-        """Return the device info."""
         return {
             "identifiers": {(DOMAIN, self._pool_id)},
             "name": self._pool_name,
@@ -48,7 +45,6 @@ class AquariteLightEntity(CoordinatorEntity, LightEntity):
 
     @property
     def unique_id(self):
-        """The unique id of the sensor."""
         return self._unique_id
 
     @property
@@ -61,13 +57,10 @@ class AquariteLightEntity(CoordinatorEntity, LightEntity):
 
     @property
     def is_on(self):
-        """Return true if the device is on."""
-        return bool(self._dataservice.get_value(self._value_path))
+        return bool(get_value(self.coordinator.data, self._value_path))
 
     async def async_turn_on(self, **kwargs):
-        """Turn the entity on."""
-        await self._dataservice.api.set_value(self._pool_id, self._value_path, 1)
+        await self.coordinator.api.set_value(self._pool_id, self._value_path, 1)
 
     async def async_turn_off(self, **kwargs):
-        """Turn the entity off."""
-        await self._dataservice.api.set_value(self._pool_id, self._value_path, 0)
+        await self.coordinator.api.set_value(self._pool_id, self._value_path, 0)

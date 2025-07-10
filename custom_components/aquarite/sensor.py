@@ -1,8 +1,5 @@
-"""Aquarite Sensor entities."""
-
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
-from homeassistant.const import PERCENTAGE, UnitOfElectricPotential, UnitOfTemperature
-from homeassistant.core import HomeAssistant
+from homeassistant.const import UnitOfElectricPotential, UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -17,489 +14,212 @@ from .const import (
     PATH_HASUV,
 )
 
-async def async_setup_entry(hass : HomeAssistant, entry, async_add_entities) -> bool:
-    
-    dataservice = hass.data[DOMAIN]["coordinator"]
 
-    if not dataservice:
-        return False
+def get_value(data, path):
+    """Helper to get value from nested dict by dot path."""
+    keys = path.split(".")
+    for key in keys:
+        if isinstance(data, dict):
+            data = data.get(key)
+        else:
+            return None
+    return data
 
-    pool_id = dataservice.get_value("id")
-    pool_name = dataservice.get_pool_name(pool_id)
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    data = coordinator.data
+    pool_id = coordinator.pool_id
+    pool_name = coordinator.get_pool_name()
 
     entities = []
 
+    # Temperature sensors
     entities.append(
-        AquariteTemperatureSensorEntity(
-            hass,
-            dataservice,
-            pool_id,
-            pool_name,
-            "Temperature",
-            "main.temperature",
-        ),
+        AquariteTemperatureSensor(
+            coordinator, pool_id, pool_name, "Temperature", "main.temperature"
+        )
     )
-
     entities.append(
-        AquariteTemperatureSensorEntity(
-            hass,
-            dataservice,
+        AquariteTemperatureSensor(
+            coordinator,
             pool_id,
             pool_name,
             "Filtration Intel Temperature",
             "filtration.intel.temp",
-        ),
+        )
     )
 
-    if dataservice.get_value( PATH_HASCD ):
+    # Value sensors
+    if get_value(data, PATH_HASCD):
         entities.append(
-            AquariteValueSensorEntity(
-                hass,
-                dataservice,
-                pool_id,
-                pool_name,
-                "CD",
-                "modules.cd.current",
-            ),
+            AquariteValueSensor(
+                coordinator, pool_id, pool_name, "CD", "modules.cd.current"
+            )
         )
-
-    if dataservice.get_value( PATH_HASCL ):
+    if get_value(data, PATH_HASCL):
         entities.append(
-            AquariteValueSensorEntity(
-                hass,
-                dataservice,
+            AquariteValueSensor(
+                coordinator,
                 pool_id,
                 pool_name,
                 "Cl",
                 "modules.cl.current",
-                None,
-                None,
-                "mdi:gauge"
-            ),
+                icon="mdi:gauge",
+            )
         )
-
-    if dataservice.get_value( PATH_HASPH ):
+    if get_value(data, PATH_HASPH):
         entities.append(
-            AquariteValueSensorEntity(
-                hass,
-                dataservice,
+            AquariteValueSensor(
+                coordinator,
                 pool_id,
                 pool_name,
                 "pH",
                 "modules.ph.current",
-                SensorDeviceClass.PH,
-                None
-            ),
+                device_class=SensorDeviceClass.PH,
+            )
         )
-
-    if dataservice.get_value( PATH_HASRX ):
+    if get_value(data, PATH_HASRX):
         entities.append(
-            AquariteRxValueSensorEntity(
-                hass,
-                dataservice,
-                pool_id,
-                pool_name,
-                "Rx",
-                "modules.rx.current",
-            ),
+            AquariteRxValueSensor(
+                coordinator, pool_id, pool_name, "Rx", "modules.rx.current"
+            )
         )
-
-    if dataservice.get_value( PATH_HASUV ):
+    if get_value(data, PATH_HASUV):
         entities.append(
-            AquariteValueSensorEntity(
-                hass,
-                dataservice,
-                pool_id,
-                pool_name,
-                "UV",
-                "modules.uv.current",
-            ),
+            AquariteValueSensor(
+                coordinator, pool_id, pool_name, "UV", "modules.uv.current"
+            )
         )
-
-    if dataservice.get_value( PATH_HASHIDRO ):
+    if get_value(data, PATH_HASHIDRO):
+        hydro_name = (
+            "Electrolysis" if get_value(data, "hidro.is_electrolysis") else "Hidrolysis"
+        )
         entities.append(
-            AquariteHydrolyserSensorEntity(
-                hass,
-                dataservice,
-                pool_id,
-                pool_name,
-                "Electrolysis" if dataservice.get_value( "hidro.is_electrolysis") else "Hidrolysis",
-                "hidro.current",
-            ),
-        )
-
-    entities.append(
-            AquariteTimeSensorEntity(
-                hass,
-                dataservice,
-                pool_id,
-                pool_name,
-                "Filtration Intel Time",
-                "filtration.intel.time",
-                native_unit_of_measurement="h",
+            AquariteHydrolyserSensor(
+                coordinator, pool_id, pool_name, hydro_name, "hidro.current"
             )
         )
 
+    # Time, interval, speed sensors
     entities.append(
-        AquariteTemperatureSensorEntity(
-            hass,
-            dataservice,
+        AquariteTimeSensor(
+            coordinator,
+            pool_id,
+            pool_name,
+            "Filtration Intel Time",
+            "filtration.intel.time",
+            native_unit_of_measurement="h",
+        )
+    )
+    entities.append(
+        AquariteTemperatureSensor(
+            coordinator,
             pool_id,
             pool_name,
             "Filtration Smart Min Temp",
             "filtration.smart.tempMin",
-        ),
+        )
     )
-
     entities.append(
-        AquariteTemperatureSensorEntity(
-            hass,
-            dataservice,
+        AquariteTemperatureSensor(
+            coordinator,
             pool_id,
             pool_name,
             "Filtration Smart High Temp",
             "filtration.smart.tempHigh",
-        ),
+        )
     )
 
-    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 1 From", "filtration.interval1.from", "mdi:clock-start"))
-    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 1 To", "filtration.interval1.to", "mdi:clock-end"))
-    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 2 From", "filtration.interval2.from", "mdi:clock-start"))
-    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 2 To", "filtration.interval2.to", "mdi:clock-end"))
-    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 3 From", "filtration.interval3.from", "mdi:clock-start"))
-    entities.append(AquariteIntervalTimeSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Interval 3 To", "filtration.interval3.to", "mdi:clock-end"))
-    entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 1", "filtration.timerVel1"))
-    entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 2", "filtration.timerVel2"))
-    entities.append(AquariteSpeedLabelSensorEntity(hass, dataservice, pool_id, pool_name, "Filtration Timer Speed 3", "filtration.timerVel3"))
+    for i in range(1, 4):
+        entities.append(
+            AquariteIntervalTimeSensor(
+                coordinator,
+                pool_id,
+                pool_name,
+                f"Filtration Interval {i} From",
+                f"filtration.interval{i}.from",
+                "mdi:clock-start",
+            )
+        )
+        entities.append(
+            AquariteIntervalTimeSensor(
+                coordinator,
+                pool_id,
+                pool_name,
+                f"Filtration Interval {i} To",
+                f"filtration.interval{i}.to",
+                "mdi:clock-end",
+            )
+        )
+        entities.append(
+            AquariteSpeedLabelSensor(
+                coordinator,
+                pool_id,
+                pool_name,
+                f"Filtration Timer Speed {i}",
+                f"filtration.timerVel{i}",
+            )
+        )
 
-    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "City", "city","mdi:city"))
-    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Street", "street", "mdi:road"))
-    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Zipcode", "zipcode", "mdi:numeric"))
-    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Country", "country", "mdi:earth"))
-    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Latitude", "lat", "mdi:latitude"))
-    entities.append(AquariteLocationSensorEntity(hass, dataservice, pool_id, pool_name, "Longitude", "lng", "mdi:longitude"))
+    # Location sensors
+    entities.append(
+        AquariteLocationSensor(
+            coordinator, pool_id, pool_name, "City", "city", "mdi:city"
+        )
+    )
+    entities.append(
+        AquariteLocationSensor(
+            coordinator, pool_id, pool_name, "Street", "street", "mdi:road"
+        )
+    )
+    entities.append(
+        AquariteLocationSensor(
+            coordinator, pool_id, pool_name, "Zipcode", "zipcode", "mdi:numeric"
+        )
+    )
+    entities.append(
+        AquariteLocationSensor(
+            coordinator, pool_id, pool_name, "Country", "country", "mdi:earth"
+        )
+    )
+    entities.append(
+        AquariteLocationSensor(
+            coordinator, pool_id, pool_name, "Latitude", "lat", "mdi:latitude"
+        )
+    )
+    entities.append(
+        AquariteLocationSensor(
+            coordinator, pool_id, pool_name, "Longitude", "lng", "mdi:longitude"
+        )
+    )
 
-    entities.append(AquaritePoolNameSensorEntity(hass, dataservice, pool_id))
+    entities.append(AquaritePoolNameSensor(coordinator, pool_id, pool_name))
 
     async_add_entities(entities)
 
-    return True
 
-class AquariteSpeedLabelSensorEntity(CoordinatorEntity, SensorEntity):
-    _attr_icon = "mdi:speedometer"
+# ---- Entity Classes ----
 
-    SPEED_LABELS = {
-        0: "Slow",
-        1: "Medium",
-        2: "High",
-    }
 
-    def __init__(self, hass, dataservice, pool_id, pool_name, name, value_path):
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._value_path = value_path
-        self._unique_id = dataservice.get_value("id") + "-" + name
-
-    @property
-    def unique_id(self):
-        return self._unique_id
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._pool_id)},
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def native_value(self):
-        value = self._dataservice.get_value(self._value_path)
-        try:
-            int_value = int(value)
-        except (ValueError, TypeError):
-            int_value = -1
-        return self.SPEED_LABELS.get(int_value, "Unknown")
-
-class AquariteIntervalTimeSensorEntity(CoordinatorEntity, SensorEntity):
-    def __init__(self, hass, dataservice, pool_id, pool_name, name, value_path, icon=None):
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._value_path = value_path
-        self._attr_icon = icon
-        self._unique_id = dataservice.get_value("id") + "-" + name
-
-    @property
-    def unique_id(self):
-        return self._unique_id
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._pool_id)},
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def native_value(self):
-        """Return value as 'HH:MM' or 'HH:MM (+Xd)' if >24h."""
-        seconds = int(self._dataservice.get_value(self._value_path))
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        if hours < 24:
-            return f"{hours:02d}:{minutes:02d}"
-        else:
-            display_hours = hours % 24
-            days_later = hours // 24
-            return f"{display_hours:02d}:{minutes:02d} (+{days_later}d)"
-
-class AquariteTemperatureSensorEntity(CoordinatorEntity, SensorEntity):
-
+class AquariteTemperatureSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
-    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
-
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id 
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._value_path = value_path
-        self._unique_id = dataservice.get_value("id") + "-" + name
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return {
-            "identifiers": {
-                (DOMAIN, self._pool_id)
-            },
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def native_value(self):
-        """Return temperature."""
-        return self._dataservice.get_value(self._value_path)
-
-    @property
-    def unit_of_measurement(self) -> str:
-        """Return the unit of measurement."""
-        return UnitOfTemperature.CELSIUS
-
-class AquariteValueSensorEntity(CoordinatorEntity, SensorEntity):
-
-    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path, device_class:SensorDeviceClass = None, native_unit_of_measurement:str = None, icon:str = None) -> None:
-
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id 
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._value_path = value_path
-        self._attr_device_class = device_class
-        self._attr_native_unit_of_measurement = native_unit_of_measurement
-        self._attr_icon = icon
-        self._unique_id = dataservice.get_value("id") + "-" + name
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return {
-            "identifiers": {
-                (DOMAIN, self._pool_id)
-            },
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def native_value(self):
-        """Return value of sensor."""
-        value = self._dataservice.get_value(self._value_path)
-        return float(value) / 100
-
-class AquariteTimeSensorEntity(CoordinatorEntity, SensorEntity):
-
-    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path, device_class:SensorDeviceClass = None, native_unit_of_measurement:str = None, icon:str = None) -> None:
-
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id 
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._value_path = value_path
-        self._attr_device_class = device_class
-        self._attr_native_unit_of_measurement = native_unit_of_measurement
-        self._attr_icon = icon
-        self._unique_id = dataservice.get_value("id") + "-" + name
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return {
-            "identifiers": {
-                (DOMAIN, self._pool_id)
-            },
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def native_value(self):
-        """Return value of sensor."""
-        minutes = float(self._dataservice.get_value(self._value_path))
-        hours = minutes / 60 
-        return hours
-
-class AquariteHydrolyserSensorEntity(CoordinatorEntity, SensorEntity):
-
-    _attr_icon = "mdi:gauge"
-    _attr_native_unit_of_measurement = "gr/h"
-
-    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
-
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id 
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._value_path = value_path
-        self._unique_id = dataservice.get_value("id") + "-" + name
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return {
-            "identifiers": {
-                (DOMAIN, self._pool_id)
-            },
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def native_value(self) -> float:
-        """Return value of sensor."""
-        return float(self._dataservice.get_value(self._value_path)) / 10
-
-class AquariteRxValueSensorEntity(CoordinatorEntity, SensorEntity):
-
-    _attr_icon = "mdi:gauge"
-    _attr_native_unit_of_measurement = UnitOfElectricPotential.MILLIVOLT
-
-    def __init__(self, hass : HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
-
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id 
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._value_path = value_path
-        self._unique_id = dataservice.get_value("id") + "-" + name
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-        
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return {
-            "identifiers": {
-                (DOMAIN, self._pool_id)
-            },
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-    
-    @property
-    def native_value(self) -> int:
-        """Return value of sensor."""
-        return int(self._dataservice.get_value(self._value_path))
-
-class AquariteLocationSensorEntity(CoordinatorEntity, SensorEntity):
-    def __init__(self, hass, dataservice, pool_id, pool_name, name, form_key, icon=None):
-        super().__init__(dataservice)
-        self._dataservice = dataservice
+    def __init__(self, coordinator, pool_id, pool_name, name, value_path):
+        super().__init__(coordinator)
         self._pool_id = pool_id
-        self._pool_name = pool_name
-        self._form_key = form_key
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._unique_id = dataservice.get_value("id") + "-" + name
-        self._attr_icon = icon
+        self._attr_name = f"{pool_name}_{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
+        self._value_path = value_path
 
     @property
     def unique_id(self):
         return self._unique_id
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {
-                (DOMAIN, self._pool_id)
-            },
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
 
     @property
     def native_value(self):
-        form = self._dataservice.get_value("form")
-        if not form:
-            return None
-        return form.get(self._form_key)
-
-class AquaritePoolNameSensorEntity(CoordinatorEntity, SensorEntity):
-    def __init__(self, hass, dataservice, pool_id):
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id
-        self._unique_id = dataservice.get_value("id") + "-name"
-        self._attr_name = f"{dataservice.get_pool_name(pool_id)} Name"
-        self._attr_icon = "mdi:pool"
-
-    @property
-    def unique_id(self):
-        return self._unique_id
+        return get_value(self.coordinator.data, self._value_path)
 
     @property
     def device_info(self):
@@ -510,6 +230,275 @@ class AquaritePoolNameSensorEntity(CoordinatorEntity, SensorEntity):
             "model": MODEL,
         }
 
+
+class AquariteValueSensor(CoordinatorEntity, SensorEntity):
+    def __init__(
+        self,
+        coordinator,
+        pool_id,
+        pool_name,
+        name,
+        value_path,
+        device_class=None,
+        native_unit_of_measurement=None,
+        icon=None,
+    ):
+        super().__init__(coordinator)
+        self._pool_id = pool_id
+        self._attr_name = f"{pool_name}_{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
+        self._value_path = value_path
+        self._attr_device_class = device_class
+        self._attr_native_unit_of_measurement = native_unit_of_measurement
+        self._attr_icon = icon
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
     @property
     def native_value(self):
-        return self._dataservice.get_pool_name(self._pool_id)
+        value = get_value(self.coordinator.data, self._value_path)
+        return float(value) / 100 if value is not None else None
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+
+class AquariteRxValueSensor(CoordinatorEntity, SensorEntity):
+    _attr_icon = "mdi:gauge"
+    _attr_native_unit_of_measurement = UnitOfElectricPotential.MILLIVOLT
+
+    def __init__(self, coordinator, pool_id, pool_name, name, value_path):
+        super().__init__(coordinator)
+        self._pool_id = pool_id
+        self._attr_name = f"{pool_name}_{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
+        self._value_path = value_path
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def native_value(self):
+        value = get_value(self.coordinator.data, self._value_path)
+        return int(value) if value is not None else None
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+
+class AquariteHydrolyserSensor(CoordinatorEntity, SensorEntity):
+    _attr_icon = "mdi:gauge"
+    _attr_native_unit_of_measurement = "gr/h"
+
+    def __init__(self, coordinator, pool_id, pool_name, name, value_path):
+        super().__init__(coordinator)
+        self._pool_id = pool_id
+        self._attr_name = f"{pool_name}_{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
+        self._value_path = value_path
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def native_value(self):
+        value = get_value(self.coordinator.data, self._value_path)
+        return float(value) / 10 if value is not None else None
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+
+class AquariteTimeSensor(CoordinatorEntity, SensorEntity):
+    def __init__(
+        self,
+        coordinator,
+        pool_id,
+        pool_name,
+        name,
+        value_path,
+        device_class=None,
+        native_unit_of_measurement=None,
+        icon=None,
+    ):
+        super().__init__(coordinator)
+        self._pool_id = pool_id
+        self._attr_name = f"{pool_name}_{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
+        self._value_path = value_path
+        self._attr_device_class = device_class
+        self._attr_native_unit_of_measurement = native_unit_of_measurement
+        self._attr_icon = icon
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def native_value(self):
+        minutes = get_value(self.coordinator.data, self._value_path)
+        return float(minutes) / 60 if minutes is not None else None
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+
+class AquariteIntervalTimeSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator, pool_id, pool_name, name, value_path, icon=None):
+        super().__init__(coordinator)
+        self._pool_id = pool_id
+        self._attr_name = f"{pool_name}_{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
+        self._value_path = value_path
+        self._attr_icon = icon
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def native_value(self):
+        seconds = get_value(self.coordinator.data, self._value_path)
+        if seconds is None:
+            return None
+        try:
+            seconds = int(seconds)
+        except (ValueError, TypeError):
+            return None
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        if hours < 24:
+            return f"{hours:02d}:{minutes:02d}"
+        else:
+            display_hours = hours % 24
+            days_later = hours // 24
+            return f"{display_hours:02d}:{minutes:02d} (+{days_later}d)"
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+
+class AquariteSpeedLabelSensor(CoordinatorEntity, SensorEntity):
+    _attr_icon = "mdi:speedometer"
+
+    SPEED_LABELS = {0: "Slow", 1: "Medium", 2: "High"}
+
+    def __init__(self, coordinator, pool_id, pool_name, name, value_path):
+        super().__init__(coordinator)
+        self._pool_id = pool_id
+        self._attr_name = f"{pool_name}_{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
+        self._value_path = value_path
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def native_value(self):
+        value = get_value(self.coordinator.data, self._value_path)
+        try:
+            int_value = int(value)
+        except (ValueError, TypeError):
+            int_value = -1
+        return self.SPEED_LABELS.get(int_value, "Unknown")
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+
+class AquariteLocationSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator, pool_id, pool_name, name, form_key, icon=None):
+        super().__init__(coordinator)
+        self._pool_id = pool_id
+        self._pool_name = pool_name
+        self._form_key = form_key
+        self._attr_name = f"{pool_name}_{name}"
+        self._unique_id = f"{pool_id}-{name.replace(' ', '_').lower()}"
+        self._attr_icon = icon
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def native_value(self):
+        form = get_value(self.coordinator.data, "form")
+        if not form:
+            return None
+        return form.get(self._form_key)
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }
+
+
+class AquaritePoolNameSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator, pool_id, pool_name):
+        super().__init__(coordinator)
+        self._pool_id = pool_id
+        self._unique_id = f"{pool_id}-name"
+        self._attr_name = f"{pool_name} Name"
+        self._attr_icon = "mdi:pool"
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def native_value(self):
+        return self._attr_name
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._pool_id)},
+            "name": self._attr_name,
+            "manufacturer": BRAND,
+            "model": MODEL,
+        }

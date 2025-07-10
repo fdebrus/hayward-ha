@@ -1,4 +1,5 @@
-"""Constants."""
+"""Constants for Aquarite integration."""
+
 DOMAIN = "aquarite"
 BRAND = "Hayward"
 MODEL = "Aquarite"
@@ -10,10 +11,4 @@ PATH_HASRX = "main.hasRX"
 PATH_HASUV = "main.hasUV"
 PATH_HASHIDRO = "main.hasHidro"
 
-API_KEY = "AIzaSyBLaxiyZ2nS1KgRBqWe-NY4EG7OzG5fKpE"
-BASE_URL = "https://identitytoolkit.googleapis.com/v1/accounts"
-TOKEN_URL = "https://securetoken.googleapis.com/v1/token"
-HAYWARD_REST_API = "https://europe-west1-hayward-europe.cloudfunctions.net/"
-
-HEALTH_CHECK_INTERVAL = 300  # Interval for periodic health checks in seconds
-POLL_INTERVAL= 60 # Interval for periodic pooling from the Firestore document
+POLL_INTERVAL = 60  # Interval for periodic polling from the Firestore document

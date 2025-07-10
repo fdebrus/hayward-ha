@@ -1,82 +1,91 @@
 import logging
 import asyncio
-
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.components import binary_sensor, light, switch, sensor, select, number, device_tracker
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from pyaquarite import AquariteAuth, AquariteAPI, AuthenticationError
 
 from .const import DOMAIN
-from .application_credentials import IdentityToolkitAuth
-from .aquarite import Aquarite
 from .coordinator import AquariteDataUpdateCoordinator
 
+PLATFORMS = [
+    "sensor",
+    "switch",
+    "light",
+    "number",
+    "select",
+    "binary_sensor",
+    "device_tracker",
+]
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [binary_sensor.DOMAIN, light.DOMAIN, switch.DOMAIN, sensor.DOMAIN, select.DOMAIN, number.DOMAIN, device_tracker.DOMAIN]
+async def start_firestore_listener(auth, pool_id, update_callback):
+    # Use your custom authenticated Firestore client (user-token based)
+    client = await auth.get_client()
+    doc_ref = client.collection("pools").document(pool_id)
 
-async def async_setup(hass: HomeAssistant, config: dict):
-    hass.data.setdefault(DOMAIN, {})
-    return True
+    def on_snapshot(doc_snapshot, changes, read_time):
+        for doc in doc_snapshot:
+            data = doc.to_dict()
+            _LOGGER.debug("Firestore update for pool %s: %s", pool_id, data)
+            update_callback(data)
+    return doc_ref.on_snapshot(on_snapshot)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up Aquarite from a config entry."""
+    """Set up Aquarite integration from a config entry."""
+    hass.data.setdefault(DOMAIN, {})
+
     try:
-        # Get user configuration from the entry
-        user_config = entry.data
-        
-        # Authenticate using the provided credentials
-        auth = IdentityToolkitAuth(hass, user_config["username"], user_config["password"])
+        api_key = "AIzaSyBLaxiyZ2nS1KgRBqWe-NY4EG7OzG5fKpE"
+        auth = AquariteAuth(
+            entry.data["username"], entry.data["password"], api_key=api_key
+        )
         await auth.authenticate()
 
-        # Initialize aiohttp session using Home Assistant's helper
-        aiohttp_session = async_get_clientsession(hass)
+        api = AquariteAPI(auth)
+        coordinator = AquariteDataUpdateCoordinator(hass, api, entry.data["pool_id"])
+        await coordinator.async_config_entry_first_refresh()
 
-        # Create an instance of the Aquarite API client
-        api = Aquarite(auth, hass, aiohttp_session)
+        # Start Firestore listener using user-token-based client
+        firestore_watch = await start_firestore_listener(
+            auth, entry.data["pool_id"], coordinator.handle_firestore_update
+        )
+        coordinator.firestore_watch = firestore_watch
 
-        # Initialize the coordinator with the API client
-        coordinator = AquariteDataUpdateCoordinator(hass, auth, api)
-        coordinator.set_pool_id(user_config["pool_id"])
-        
-        # Fetch initial pool data
-        coordinator.data = await api.fetch_pool_data(user_config["pool_id"])
-        await coordinator.subscribe()
+        hass.data[DOMAIN][entry.entry_id] = {
+            "auth": auth,
+            "api": api,
+            "coordinator": coordinator,
+        }
 
-        # Store the coordinator and aiohttp session in Home Assistant's data
-        hass.data[DOMAIN]["coordinator"] = coordinator
-        hass.data[DOMAIN]["aiohttp_session"] = aiohttp_session
-
-        # Start the token refresh routine
-        asyncio.create_task(auth.start_token_refresh_routine(coordinator))
-
-        # Forward the entry setups for the defined platforms
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         async def handle_sync_time(call):
-            await coordinator.set_pool_time_to_now()
+            import time
+            timestamp = call.data.get("timestamp", int(time.time()))
+            await api.set_value(entry.data["pool_id"], "main.localTime", timestamp)
+
         hass.services.async_register(DOMAIN, "sync_pool_time", handle_sync_time)
 
         return True
 
+    except AuthenticationError as e:
+        _LOGGER.error(f"Authentication failed: {e}")
+        return False
     except Exception as e:
-        _LOGGER.error(f"Error setting up entry {entry.entry_id}: {e}")
+        _LOGGER.error(f"Setup failed: {e}")
         return False
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Unload Aquarite config entry."""
-    try:
-        # Retrieve and close the coordinator and aiohttp session
-        coordinator = hass.data[DOMAIN].get("coordinator")
-        if coordinator:
-            await coordinator.auth.close()
-        
-        aiohttp_session = hass.data[DOMAIN].get("aiohttp_session")
-        if aiohttp_session:
-            await aiohttp_session.close()
+    """Unload Aquarite integration entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
-        # Unload the platforms associated with this entry
-        return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    except Exception as e:
-        _LOGGER.error(f"Error unloading entry {entry.entry_id}: {e}")
-        return False
+    data = hass.data[DOMAIN].pop(entry.entry_id, None)
+    if data:
+        await data["auth"].close()
+        await data["api"].close()
+        coordinator = data.get("coordinator")
+        if coordinator and hasattr(coordinator, "async_close"):
+            await coordinator.async_close()
+
+    return unload_ok

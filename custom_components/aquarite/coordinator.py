@@ -1,194 +1,138 @@
-import asyncio
 import logging
-import json
-from zoneinfo import ZoneInfo
-from datetime import datetime
+from datetime import timedelta
 from typing import Any, Optional
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from google.cloud import firestore_v1
-from google.api_core.exceptions import GoogleAPICallError
-
-from .application_credentials import IdentityToolkitAuth
-from .aquarite import Aquarite
-from .const import DOMAIN, HEALTH_CHECK_INTERVAL, POLL_INTERVAL
+from .const import POLL_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
-# suppress warning message from google.api_core.bidi
-logger = logging.getLogger('google.api_core.bidi')
-logger.setLevel(logging.ERROR)
-
 class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
-    """Aquarite custom coordinator."""
+    """Aquarite Data Coordinator."""
 
-    def __init__(self, hass: HomeAssistant, auth: IdentityToolkitAuth, api: Aquarite) -> None:
-        """Initialize the coordinator."""
-        self.auth = auth
+    def __init__(self, hass: HomeAssistant, api, pool_id: str) -> None:
+        """Initialize the coordinator with pool_id."""
         self.api = api
-        self.pool_id: Optional[str] = None
-        self.watch = None
-        self.data = None
-        super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
-        self.hass.loop.create_task(self.periodic_health_check())
-        self.hass.loop.create_task(self.periodic_polling())
-
-    def set_pool_id(self, pool_id: str):
-        """Set the pool ID."""
-        _LOGGER.debug(f"Setting pool ID: {pool_id}")
-        self.pool_id = pool_id
-
-    async def async_set_updated_data(self, data) -> None:
-        """Update data and notify listeners."""
-        self.data = data
-        self.async_update_listeners()
-
-    async def async_updated_data(self, data) -> None:
-        """Update data."""
-        await self.auth.get_client()
-        super().async_set_updated_data(data)
-
-    def set_updated_data(self, data) -> None:
-        """Receive Data."""
-        if isinstance(data, str):
-            data = json.loads(data)
-        _LOGGER.debug(f"{data}")
-        asyncio.run_coroutine_threadsafe(self.async_updated_data(data), self.hass.loop).result()
-
-    async def periodic_polling(self):
-        """Periodically poll the Firestore document for state reconciliation."""
-        while True:
-            await asyncio.sleep(POLL_INTERVAL)
-            await self.poll_state()
-
-    async def poll_state(self):
-        try:
-            client = await self.auth.get_client()
-            doc_ref = client.collection("pools").document(self.pool_id)
-            doc = await asyncio.to_thread(doc_ref.get)
-            latest_data = doc.to_dict()
-            if latest_data != self.data:
-                _LOGGER.warning("Periodic poll: state out of sync, updating coordinator.")
-                await self.async_set_updated_data(latest_data)
-        except Exception as e:
-            _LOGGER.error(f"Polling error: {e}")
-
-    async def subscribe(self):
-        """Subscribe to the pool's updates."""
-        _LOGGER.debug(f"Subscribing to updates for pool ID: {self.pool_id}")
-        await self.setup_subscription()
-
-    async def setup_subscription(self):
-        try:
-            client = await self.auth.get_client()
-            doc_ref = client.collection("pools").document(self.pool_id)
-            self.watch = doc_ref.on_snapshot(self.on_snapshot)
-            _LOGGER.debug(f"Subscribed with new listener for pool_id {self.pool_id}")
-        except Exception as e:
-            _LOGGER.error(f"Error setting up subscription: {e}")
-            await self.refresh_subscription()
-
-    async def refresh_subscription(self):
-        """Refresh the subscription to handle invalid client or network issues."""
-        _LOGGER.debug(f"Refreshing subscription for pool ID: {self.pool_id}")
-        await self.unsubscribe()
-        await self.setup_subscription()
-
-    def on_snapshot(self, doc_snapshot, changes, read_time):
-        """Handles document snapshots."""
-        try:
-            _LOGGER.debug(f"Snapshot received. Changes: {changes}, Read Time: {read_time}")
-            for change in changes:
-                _LOGGER.debug(f"Received change {change.type} in Firestore")
-            for doc in doc_snapshot:
-                try:
-                    self.set_updated_data(doc.to_dict())
-                except Exception as handler_error:
-                    _LOGGER.error(f"Error executing handler: {handler_error}")
-        except Exception as e:
-            _LOGGER.error(f"Error in on_snapshot: {e}")
-            asyncio.create_task(self.refresh_subscription())
-
-    async def unsubscribe(self):
-        """Unsubscribe from the current watch."""
-        if self.watch is not None:
-            self.watch.unsubscribe()
-            self.watch = None
-            _LOGGER.debug(f"Unsubscribed from pool ID: {self.pool_id}")
+        self.pool_id: Optional[str] = pool_id
+        self.firestore_watch = None
+        self._pending_data = None
+        super().__init__(
+            hass,
+            logger=_LOGGER,
+            name="Aquarite",
+            update_interval=timedelta(seconds=POLL_INTERVAL),
+        )
 
     async def _async_update_data(self) -> Any:
-        """No-op update method."""
-        _LOGGER.debug("No-op update method called.")
-        return
+        """Fetch data from the API (called ONLY by main event loop)."""
+        if not self.pool_id:
+            _LOGGER.error("No pool_id set in coordinator!")
+            return None
+        try:
+            pool_data = await self.api.get_pool_data(self.pool_id)
+            return pool_data
+        except Exception as err:
+            _LOGGER.error(f"Error updating data for pool_id {self.pool_id}: {err}")
+            return getattr(self, "data", None)
+
+    def handle_firestore_update(self, data):
+        """
+        This is ALWAYS called from the Firestore callback thread.
+        It MUST NOT call any async methods or use `await`.
+        It MUST only schedule async work to the main event loop.
+        """
+        _LOGGER.debug("handle_firestore_update: Got Firestore update for pool %s", self.pool_id)
+        self._pending_data = data
+        # Use call_soon_threadsafe to ensure this happens in the HA event loop!
+        self.hass.loop.call_soon_threadsafe(
+            lambda: self.safe_create_task(self.async_handle_update())
+        )
+
+    def safe_create_task(self, coro):
+        """Safely create an async task in the main event loop."""
+        import asyncio
+        try:
+            asyncio.create_task(coro)
+        except Exception as e:
+            _LOGGER.error(f"Failed to create async task: {e}")
+
+    async def async_handle_update(self):
+        """
+        This runs on the Home Assistant event loop (safe for async).
+        It copies _pending_data into self.data, and triggers entity updates.
+        """
+        if self._pending_data is not None:
+            _LOGGER.debug("async_handle_update: Applying pending Firestore data for pool %s", self.pool_id)
+            self.data = self._pending_data
+            self._pending_data = None
+        else:
+            _LOGGER.debug("async_handle_update: No pending Firestore data for pool %s", self.pool_id)
+        await self.async_request_refresh()
+
+    def get_value(self, path: str) -> Any:
+        """Return value from nested dict by dot path."""
+        value = getattr(self, "data", None)
+        if value is None:
+            return None
+        for key in path.split("."):
+            if isinstance(value, dict):
+                value = value.get(key)
+            elif isinstance(value, list):
+                try:
+                    key = int(key)
+                    value = value[key]
+                except Exception:
+                    return None
+            else:
+                return None
+        return value
+
+    def get_pool_name(self):
+        """Return the pool name for this config entry's pool."""
+        data = getattr(self, "data", None)
+        if not data:
+            _LOGGER.debug("get_pool_name: No data available in coordinator")
+            return "Unknown"
+        try:
+            form = data.get("form", {})
+            names = form.get("names", [])
+            _LOGGER.debug(f"get_pool_name: form={form}, names={names}")
+            if isinstance(names, list) and names:
+                name = names[0].get("name")
+                _LOGGER.debug(f"get_pool_name: Found names[0].name = {name}")
+                if name:
+                    return name
+            name = form.get("name")
+            _LOGGER.debug(f"get_pool_name: Fallback form.name = {name}")
+            if name:
+                return name
+        except Exception as e:
+            _LOGGER.error(f"Error extracting pool name: {e}")
+        _LOGGER.debug("get_pool_name: Pool name not found, returning 'Unknown'")
+        return "Unknown"
 
     async def set_pool_time_to_now(self):
-        """Set the pool device time to Home Assistant's current LOCAL time as seconds since 1970-01-01 00:00:00 LOCAL."""
+        """Set the pool device time to Home Assistant's current local time."""
+        import time
         if not self.pool_id:
             _LOGGER.error("No pool_id set in coordinator!")
             return
-
-        ha_tz_name = self.hass.config.time_zone
-        if not ha_tz_name:
-            _LOGGER.error("HA timezone not set, defaulting to UTC")
-            ha_tz = timezone.utc
-        else:
-            ha_tz = ZoneInfo(ha_tz_name)
-
-        now_local = datetime.now(ha_tz)
-        now_naive = now_local.replace(tzinfo=None)
-        local_epoch = datetime(1970, 1, 1)
-        unix_timestamp_local = int((now_naive - local_epoch).total_seconds())
-
-        _LOGGER.info(f"Setting Aquarite pool time to {unix_timestamp_local} (Local: {now_local}) for pool_id {self.pool_id}")
-
+        unix_timestamp_local = int(time.time())
+        _LOGGER.info(
+            f"Setting Aquarite pool time to {unix_timestamp_local} for pool_id {self.pool_id}"
+        )
         try:
-            await self.api.set_value(self.pool_id, "main.localTime", unix_timestamp_local)
+            await self.api.set_value(
+                self.pool_id, "main.localTime", unix_timestamp_local
+            )
         except Exception as e:
             _LOGGER.error(f"Failed to set pool time: {e}")
 
-    async def periodic_health_check(self):
-        """Periodic task to check the Firestore client connection status."""
-        while True:
-            await asyncio.sleep(HEALTH_CHECK_INTERVAL)
-            await self.check_connection_status()
-
-    async def check_connection_status(self):
-        """Check the Firestore client's connection status and refresh if necessary."""
-        try:
-            client = await self.auth.get_client()
-            doc_ref = client.collection("pools").document(self.pool_id)
-            doc = await asyncio.to_thread(doc_ref.get)
-            _LOGGER.debug(f"Connection status check successful for pool ID: {self.pool_id}")
-        except GoogleAPICallError as e:
-            _LOGGER.debug(f"Connection status check failed: {e}, refreshing subscription.")
-            await self.refresh_subscription()
-        except Exception as e:
-            _LOGGER.debug(f"Unexpected error during connection status check: {e}")
-            await self.refresh_subscription()
-
-    def get_value(self, path: str) -> Any:
-        """Return part from document."""
-        keys = path.split('.')
-        value = self.data
-        try:
-            for key in keys:
-                value = value[key]
-        except (TypeError, KeyError):
-            value = None
-        return value
-    
-    def get_pool_name(self, pool_id: str) -> str:
-        """Return the name of the pool from document."""
-        data_dict = self.data
-        _LOGGER.debug(f"-- DATA -- {self.data} / POOLID {pool_id}")
-        if data_dict and data_dict.get("id") == pool_id:
-            try:
-                pool_name = data_dict["form"]["names"][0]["name"]
-            except (KeyError, IndexError):
-                pool_name = data_dict.get("form", {}).get("name", "Unknown")
-        else:
-            _LOGGER.error(f"Pool ID {pool_id} does not match the document's ID.")
-            pool_name = "Unknown"
-        return pool_name
+    async def async_close(self):
+        """Call this on unload to clean up Firestore listener."""
+        if self.firestore_watch:
+            _LOGGER.info("Unsubscribing Firestore watch for pool %s", self.pool_id)
+            self.firestore_watch.unsubscribe()
+            self.firestore_watch = None

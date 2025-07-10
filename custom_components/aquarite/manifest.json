@@ -1,13 +1,12 @@
 {
     "domain": "aquarite",
     "name": "Aquarite",
-    "iot_class": "cloud_push",
+    "iot_class": "cloud_polling",
     "loggers": "custom_components.aquarite",
-    "requirements": ["google-auth>=2.29.0","google-cloud-firestore>=2.16.0"],
+    "requirements": ["pyaquarite==0.0.2"],
     "config_flow": true,
-    "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
-    "dependencies": ["application_credentials"],
+    "documentation": "https://github.com/fdebrus/hayward-ha",
     "supported_platforms": ["binary_sensor", "light", "switch", "sensor", "select", "number", "device_tracker"],
     "codeowners": ["@fdebrus"],
-    "version": "0.4.0"
+    "version": "0.5.0"
 }
