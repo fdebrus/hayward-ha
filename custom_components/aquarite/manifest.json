@@ -3,7 +3,7 @@
     "name": "Aquarite",
     "iot_class": "cloud_polling",
     "loggers": "custom_components.aquarite",
-    "requirements": ["pyaquarite>=0.0.1"],
+    "requirements": ["pyaquarite==0.0.2"],
     "config_flow": true,
     "documentation": "https://github.com/fdebrus/hayward-ha",
     "supported_platforms": ["binary_sensor", "light", "switch", "sensor", "select", "number", "device_tracker"],

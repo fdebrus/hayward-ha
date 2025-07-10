@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 
@@ -18,6 +19,17 @@ PLATFORMS = [
 ]
 _LOGGER = logging.getLogger(__name__)
 
+async def start_firestore_listener(auth, pool_id, update_callback):
+    # Use your custom authenticated Firestore client (user-token based)
+    client = await auth.get_client()
+    doc_ref = client.collection("pools").document(pool_id)
+
+    def on_snapshot(doc_snapshot, changes, read_time):
+        for doc in doc_snapshot:
+            data = doc.to_dict()
+            _LOGGER.debug("Firestore update for pool %s: %s", pool_id, data)
+            update_callback(data)
+    return doc_ref.on_snapshot(on_snapshot)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up Aquarite integration from a config entry."""
@@ -34,6 +46,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         coordinator = AquariteDataUpdateCoordinator(hass, api, entry.data["pool_id"])
         await coordinator.async_config_entry_first_refresh()
 
+        # Start Firestore listener using user-token-based client
+        firestore_watch = await start_firestore_listener(
+            auth, entry.data["pool_id"], coordinator.handle_firestore_update
+        )
+        coordinator.firestore_watch = firestore_watch
+
         hass.data[DOMAIN][entry.entry_id] = {
             "auth": auth,
             "api": api,
@@ -44,7 +62,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         async def handle_sync_time(call):
             import time
-
             timestamp = call.data.get("timestamp", int(time.time()))
             await api.set_value(entry.data["pool_id"], "main.localTime", timestamp)
 
@@ -59,7 +76,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         _LOGGER.error(f"Setup failed: {e}")
         return False
 
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload Aquarite integration entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
@@ -68,5 +84,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     if data:
         await data["auth"].close()
         await data["api"].close()
+        coordinator = data.get("coordinator")
+        if coordinator and hasattr(coordinator, "async_close"):
+            await coordinator.async_close()
 
     return unload_ok
