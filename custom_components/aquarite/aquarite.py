@@ -89,6 +89,16 @@ class Aquarite:
             coordinator = self.hass.data[DOMAIN].get("coordinator")
             current_path_config = self.extract_complete_info(coordinator.data, value_path)
             self.set_in_dict(current_path_config, value_path, value)
+            if value_path == "hidro.cloration_enabled":
+                hidro = current_path_config.get("hidro", {})
+                if value:
+                    hidro["cloration_enabled"] = 1
+                    hidro["reduction"] = 1
+                    hidro["disable"] = 1
+                else:
+                    hidro["cloration_enabled"] = 0
+                    hidro["reduction"] = 0
+                    hidro["disable"] = 1
             pool_data['changes'] = json.dumps(current_path_config)
             _LOGGER.debug(f"Setting {value_path} to {value} for pool ID {pool_id} --- {pool_data}")
             await self.send_command(pool_data)
