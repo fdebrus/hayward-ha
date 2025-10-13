@@ -6,7 +6,6 @@
     "requirements": ["google-auth>=2.29.0","google-cloud-firestore>=2.16.0"],
     "config_flow": true,
     "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
-    "dependencies": ["application_credentials"],
     "supported_platforms": ["binary_sensor", "light", "switch", "sensor", "select", "number", "device_tracker"],
     "codeowners": ["@fdebrus"],
     "version": "0.4.1"
