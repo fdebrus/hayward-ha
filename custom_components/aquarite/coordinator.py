@@ -53,9 +53,15 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         if isinstance(data, str):
             data = json.loads(data)
         _LOGGER.debug(f"{data}")
-        asyncio.run_coroutine_threadsafe(
+        future = asyncio.run_coroutine_threadsafe(
             self.async_set_updated_data(data), self.hass.loop
-        ).result()
+        )
+
+        def _log_future_exception(fut: asyncio.Future):
+            if (exc := fut.exception()) is not None:
+                _LOGGER.error("Error executing handler", exc_info=exc)
+
+        future.add_done_callback(_log_future_exception)
 
     async def periodic_polling(self):
         """Periodically poll the Firestore document for state reconciliation."""
