@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from copy import deepcopy
-from typing import Any, Dict, MutableMapping
+from typing import TYPE_CHECKING, Any, Dict, MutableMapping, Optional
 
 import aiohttp
 
@@ -11,6 +11,9 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DOMAIN, HAYWARD_REST_API
 from .application_credentials import IdentityToolkitAuth
+
+if TYPE_CHECKING:
+    from .coordinator import AquariteDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,6 +30,12 @@ class Aquarite:
         self.auth = auth
         self.hass = hass
         self.aiohttp_session = aiohttp_session
+        self.coordinator: Optional["AquariteDataUpdateCoordinator"] = None
+
+    def set_coordinator(self, coordinator: "AquariteDataUpdateCoordinator") -> None:
+        """Attach the coordinator for data lookups."""
+
+        self.coordinator = coordinator
 
     async def get_pools(self) -> Dict[str, str]:
         """Get all pools for the current user."""
@@ -56,8 +65,10 @@ class Aquarite:
 
     def get_pool_data_as_json(self, pool_id: str) -> dict:
         """Get the pool data."""
-        coordinator = self.hass.data[DOMAIN].get("coordinator")
-        pool = coordinator.data
+        if not self.coordinator:
+            raise RuntimeError("Coordinator not configured for Aquarite API client")
+
+        pool = self.coordinator.data
 
         data = {
             "gateway": pool.get("wifi"),

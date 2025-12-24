@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import json
 from zoneinfo import ZoneInfo
@@ -30,9 +31,12 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self.pool_id: Optional[str] = None
         self.watch = None
         self.data = None
+        self._health_task: asyncio.Task | None = None
+        self._poll_task: asyncio.Task | None = None
+
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
-        self.hass.loop.create_task(self.periodic_health_check())
-        self.hass.loop.create_task(self.periodic_polling())
+        self._health_task = hass.async_create_task(self.periodic_health_check())
+        self._poll_task = hass.async_create_task(self.periodic_polling())
 
     def set_pool_id(self, pool_id: str):
         """Set the pool ID."""
@@ -118,6 +122,17 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             self.watch.unsubscribe()
             self.watch = None
             _LOGGER.debug(f"Unsubscribed from pool ID: {self.pool_id}")
+
+    async def async_shutdown(self) -> None:
+        """Cancel background tasks and unsubscribe from updates."""
+
+        await self.unsubscribe()
+
+        for task in (self._health_task, self._poll_task):
+            if task:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
 
     async def _async_update_data(self) -> Any:
         """No-op update method."""

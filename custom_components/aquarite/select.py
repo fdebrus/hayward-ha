@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
@@ -14,12 +15,15 @@ PUMP_MODE_OPTIONS: tuple[str, ...] = ("Manual", "Auto", "Heat", "Smart", "Intel"
 PUMP_SPEED_OPTIONS: tuple[str, ...] = ("Slow", "Medium", "High")
 
 
-async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+) -> bool:
     """Set up a config entry."""
-    dataservice = hass.data[DOMAIN]["coordinator"]
-
-    if not dataservice:
+    entry_data = hass.data[DOMAIN].get(entry.entry_id)
+    if not entry_data:
         return False
+
+    dataservice = entry_data["coordinator"]
 
     pool_id = dataservice.get_value("id")
     pool_name = dataservice.get_pool_name(pool_id)

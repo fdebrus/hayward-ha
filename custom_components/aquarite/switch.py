@@ -1,5 +1,6 @@
 """Aquarite Switch entity."""
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
@@ -16,12 +17,15 @@ SWITCH_ENTITY_DEFINITIONS = (
     ("Filtration Status", "filtration.status"),
 )
 
-async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+) -> bool:
     """Set up a config entry."""
-    dataservice = hass.data[DOMAIN]["coordinator"]
-
-    if not dataservice:
+    entry_data = hass.data[DOMAIN].get(entry.entry_id)
+    if not entry_data:
         return False
+
+    dataservice = entry_data["coordinator"]
 
     pool_id = dataservice.get_value("id")
     pool_name = dataservice.get_pool_name(pool_id)

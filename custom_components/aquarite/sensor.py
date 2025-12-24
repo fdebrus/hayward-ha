@@ -187,10 +187,11 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> bool:
-    dataservice = hass.data[DOMAIN]["coordinator"]
-
-    if not dataservice:
+    entry_data = hass.data[DOMAIN].get(entry.entry_id)
+    if not entry_data:
         return False
+
+    dataservice = entry_data["coordinator"]
 
     pool_id = dataservice.get_value("id")
     pool_name = dataservice.get_pool_name(pool_id)
