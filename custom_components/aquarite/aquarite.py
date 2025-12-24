@@ -106,7 +106,10 @@ class Aquarite:
     async def set_value(self, pool_id: str, value_path: str, value: Any) -> None:
         try:
             pool_data = self.get_pool_data_as_json(pool_id)
-            coordinator = self.hass.data[DOMAIN].get("coordinator")
+            coordinator = self.coordinator
+            if not coordinator:
+                raise RuntimeError("Coordinator not configured for Aquarite API client")
+
             current_path_config = self.extract_complete_info(coordinator.data, value_path)
             self.set_in_dict(current_path_config, value_path, value)
             if value_path == "hidro.cloration_enabled":
