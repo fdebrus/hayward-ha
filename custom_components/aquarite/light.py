@@ -1,21 +1,28 @@
 """Aquarite Light entity."""
 
-from homeassistant.components.light import LightEntity
+from homeassistant.components.light import ColorMode, LightEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .entity import AquariteEntity
 from .const import DOMAIN
 
-async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> bool:
+    """Set up the Aquarite light platform."""
 
     dataservice = hass.data[DOMAIN]["coordinator"]
 
     if not dataservice:
         return False
-        
+
     pool_id = dataservice.get_value("id")
     pool_name = dataservice.get_pool_name(pool_id)
-    
+
     entities = [
         AquariteLightEntity(hass, dataservice, pool_id, pool_name, "Light", "light.status")
     ]
@@ -31,14 +38,8 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
         super().__init__(dataservice, pool_id, pool_name, name_suffix=name)
         self._value_path = value_path
         self._attr_unique_id = self.build_unique_id(name, delimiter="")
-
-    @property
-    def color_mode(self):
-        return "ONOFF"
-
-    @property
-    def supported_color_modes(self):
-        return {"ONOFF"}
+        self._attr_supported_color_modes = {ColorMode.ONOFF}
+        self._attr_color_mode = ColorMode.ONOFF
 
     @property
     def is_on(self):
