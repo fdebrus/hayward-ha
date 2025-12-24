@@ -4,6 +4,7 @@
     "codeowners": ["@fdebrus"],
     "config_flow": true,
     "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
+    "dependencies": ["application_credentials"],
     "iot_class": "cloud_push",
     "loggers": ["custom_components.aquarite"],
     "requirements": [

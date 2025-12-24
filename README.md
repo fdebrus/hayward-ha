@@ -4,6 +4,8 @@ Home Assistant integration for controlling and monitoring Hayward-branded pool c
 ## Requirements
 - A supported controller with a Wi-Fi module connected to the internet.
 - The controller must already be linked to a cloud account.
+- Enable the Home Assistant `application_credentials` integration so the Aquarite API
+  key can be stored securely and reused for token refreshes.
 
 ## Installation
 You can install the integration through HACS or manually.

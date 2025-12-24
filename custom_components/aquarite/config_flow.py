@@ -10,7 +10,11 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
-from .application_credentials import IdentityToolkitAuth, UnauthorizedException
+from .application_credentials import (
+    IdentityToolkitAuth,
+    UnauthorizedException,
+    async_get_api_key,
+)
 from .aquarite import Aquarite
 from .const import DOMAIN
 
@@ -62,6 +66,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_USERNAME: self.data[CONF_USERNAME],
                 CONF_PASSWORD: self.data[CONF_PASSWORD],
                 "pool_id": pool_id,
+                "api_key": self.data.get("api_key"),
             }
 
             if self._reauth_entry:
@@ -82,8 +87,12 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         try:
+            self.data["api_key"] = await async_get_api_key(self.hass)
             auth = IdentityToolkitAuth(
-                self.hass, self.data[CONF_USERNAME], self.data[CONF_PASSWORD]
+                self.hass,
+                self.data[CONF_USERNAME],
+                self.data[CONF_PASSWORD],
+                self.data["api_key"],
             )
             await auth.authenticate()
 
