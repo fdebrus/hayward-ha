@@ -46,7 +46,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     async def async_set_updated_data(self, data: Any) -> None:
         """Update data and notify listeners via the coordinator."""
         await self.auth.get_client()
-        await super().async_set_updated_data(data)
+        super().async_set_updated_data(data)
 
     def set_updated_data(self, data) -> None:
         """Receive Data."""
