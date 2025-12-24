@@ -2,9 +2,9 @@
 
 from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, BRAND, MODEL
+from .entity import AquariteEntity
+from .const import DOMAIN
 
 import logging
 _LOGGER = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     
     return True
 
-class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
+class AquariteNumberEntity(AquariteEntity, NumberEntity):
 
     SCALE_MAP = {
         "modules.ph.status.low_value": 100,
@@ -46,32 +46,13 @@ class AquariteNumberEntity(CoordinatorEntity, NumberEntity):
     }
 
     def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, value_min, value_max, name, value_path):
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id
-        self._pool_name = pool_name
+        super().__init__(dataservice, pool_id, pool_name, name_suffix=name)
         self._attr_native_min_value = value_min
         self._attr_native_max_value = value_max
         self._attr_native_step = 0.01
-        self._attr_name = f"{self._pool_name}_{name}"
         self._value_path = value_path
-        self._unique_id = f"{self._pool_id}-{name}"
+        self._attr_unique_id = self.build_unique_id(name)
         self._attr_unit_of_measurement = self.UNIT_MAP.get(value_path)
-
-    @property
-    def unique_id(self):
-        """The unique id of the number."""
-        return self._unique_id
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return {
-            "identifiers": {(DOMAIN, self._pool_id)},
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
 
     @property
     def native_value(self):

@@ -6,9 +6,9 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from .entity import AquariteEntity
 
-from .const import BRAND, DOMAIN, MODEL, PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
+from .const import DOMAIN, PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
 
 
 PROBLEM_VALUE_PATHS = {
@@ -121,7 +121,7 @@ async def async_setup_entry(
     return True
 
 
-class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
+class AquariteBinarySensorEntity(AquariteEntity, BinarySensorEntity):
     """Aquarite Binary Sensor Entity such as flow sensors FL1 & FL2."""
 
     def __init__(
@@ -134,14 +134,10 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     ) -> None:
         """Initialize an Aquarite Binary Sensor Entity."""
 
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id
-        self._pool_name = pool_name
+        super().__init__(dataservice, pool_id, pool_name, name_suffix=config.name)
         self._value_path = config.value_path
-        self._unique_id = f"{self._pool_id}-{config.name}"
         self._device_class = config.device_class
-        self._attr_name = f"{self._pool_name}_{config.name}"
+        self._attr_unique_id = self.build_unique_id(config.name)
 
     @property
     def device_class(self):
@@ -161,34 +157,14 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
         """Return true if the device is on."""
         return bool(self._dataservice.get_value(self._value_path))
 
-    @property
-    def device_info(self):
-        """Return the device info."""
 
-        return {
-            "identifiers": {(DOMAIN, self._pool_id)},
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
-
-class AquariteBinarySensorTankEntity(CoordinatorEntity, BinarySensorEntity):
+class AquariteBinarySensorTankEntity(AquariteEntity, BinarySensorEntity):
     """Aquarite Binary Sensor Entity Tank."""
 
     def __init__(self, hass: HomeAssistant, dataservice, name, pool_id, pool_name) -> None:
         """Initialize an Aquarite Binary Sensor Entity."""
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._unique_id = f"{self._pool_id}-{name}"
+        super().__init__(dataservice, pool_id, pool_name, name_suffix=name)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def device_class(self):
@@ -201,17 +177,4 @@ class AquariteBinarySensorTankEntity(CoordinatorEntity, BinarySensorEntity):
 
         return any(self._dataservice.get_value(module) for module in TANK_MODULE_PATHS)
 
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return {
-            "identifiers": {(DOMAIN, self._pool_id)},
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
+    
