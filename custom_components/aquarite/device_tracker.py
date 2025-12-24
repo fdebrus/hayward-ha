@@ -17,7 +17,11 @@ async def async_setup_entry(
 ) -> None:
     """Set up the pool location tracker."""
 
-    coordinator = hass.data[DOMAIN]["coordinator"]
+    entry_data = hass.data[DOMAIN].get(entry.entry_id)
+    if not entry_data:
+        return
+
+    coordinator = entry_data["coordinator"]
 
     pool_id = coordinator.get_value("id")
     pool_name = coordinator.get_pool_name(pool_id)

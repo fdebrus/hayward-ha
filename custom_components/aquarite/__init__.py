@@ -42,6 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         coordinator = AquariteDataUpdateCoordinator(hass, auth, api)
         coordinator.set_pool_id(user_config["pool_id"])
         auth.set_coordinator(coordinator)
+        api.set_coordinator(coordinator)
         
         # Fetch initial pool data
         coordinator.data = await api.fetch_pool_data(user_config["pool_id"])
@@ -90,7 +91,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
                 await token_task
 
         if coordinator:
-            await coordinator.unsubscribe()
+            await coordinator.async_shutdown()
             await coordinator.auth.close()
 
         # Unload the platforms associated with this entry
