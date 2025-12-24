@@ -107,7 +107,7 @@ class IdentityToolkitAuth:
         return self.client
 
     async def start_token_refresh_routine(self, coordinator):
-        while True:
+        while not self.hass.is_stopping:
             try:
                 await self.ensure_active_token()
                 await asyncio.sleep(self.calculate_sleep_duration())

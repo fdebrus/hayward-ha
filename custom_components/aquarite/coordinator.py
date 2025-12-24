@@ -35,8 +35,14 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self._poll_task: asyncio.Task | None = None
 
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
-        self._health_task = hass.async_create_task(self.periodic_health_check())
-        self._poll_task = hass.async_create_task(self.periodic_polling())
+        self._health_task = hass.async_create_background_task(
+            self.periodic_health_check(),
+            name="Aquarite periodic health check",
+        )
+        self._poll_task = hass.async_create_background_task(
+            self.periodic_polling(),
+            name="Aquarite periodic polling",
+        )
 
     def set_pool_id(self, pool_id: str):
         """Set the pool ID."""
@@ -65,7 +71,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def periodic_polling(self):
         """Periodically poll the Firestore document for state reconciliation."""
-        while True:
+        while not self.hass.is_stopping:
             await asyncio.sleep(POLL_INTERVAL)
             if not self.pool_id:
                 _LOGGER.debug("Skipping poll; pool_id not yet set.")
@@ -172,7 +178,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def periodic_health_check(self):
         """Periodic task to check the Firestore client connection status."""
-        while True:
+        while not self.hass.is_stopping:
             await asyncio.sleep(HEALTH_CHECK_INTERVAL)
             if not self.pool_id:
                 _LOGGER.debug("Skipping health check; pool_id not yet set.")

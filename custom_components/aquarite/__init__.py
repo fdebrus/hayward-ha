@@ -49,7 +49,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         await coordinator.subscribe()
 
         # Start the token refresh routine
-        refresh_task = hass.async_create_task(auth.start_token_refresh_routine(coordinator))
+        refresh_task = hass.async_create_background_task(
+            auth.start_token_refresh_routine(coordinator),
+            name="Aquarite token refresh",
+        )
 
         # Store the coordinator and aiohttp session in Home Assistant's data per entry
         hass.data[DOMAIN][entry.entry_id] = {
