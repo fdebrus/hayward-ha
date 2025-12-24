@@ -37,10 +37,6 @@ class IdentityToolkitAuth:
 
         self.coordinator = coordinator
 
-    async def close(self):
-        """Close the aiohttp session."""
-        await self.session.close()
-
     async def authenticate(self):
         await self.signin()
         return {
