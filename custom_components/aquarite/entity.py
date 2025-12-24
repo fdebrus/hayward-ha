@@ -36,7 +36,10 @@ class AquariteEntity(CoordinatorEntity[AquariteDataUpdateCoordinator]):
         if full_name:
             self._attr_name = full_name
         elif name_suffix:
-            self._attr_name = f"{pool_name}_{name_suffix}"
+            # When ``_attr_has_entity_name`` is True, Home Assistant automatically
+            # prefixes the device name to the entity name. Provide only the suffix
+            # here to avoid duplicating the pool name in the generated entity ID.
+            self._attr_name = name_suffix
 
     @property
     def pool_id(self) -> str:
