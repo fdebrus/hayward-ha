@@ -1,80 +1,158 @@
+from dataclasses import dataclass
+
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, BRAND, MODEL, PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
+from .const import BRAND, DOMAIN, MODEL, PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
 
-async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
+
+PROBLEM_VALUE_PATHS = {
+    "hidro.fl1",
+    "hidro.low",
+    "modules.cl.pump_status",
+    "modules.ph.al3",
+    "modules.rx.pump_status",
+}
+
+CONNECTIVITY_VALUE_PATHS = {
+    "main.hasCD",
+    "main.hasCL",
+    "main.hasHidro",
+    "main.hasIO",
+    "main.hasPH",
+    "main.hasRX",
+    "present",
+}
+
+TANK_MODULE_PATHS = (
+    "modules.ph.tank",
+    "modules.rx.tank",
+    "modules.cl.tank",
+    "modules.cd.tank",
+)
+
+
+@dataclass(frozen=True)
+class AquariteBinarySensorConfig:
+    """Configuration for a binary sensor entity."""
+
+    name: str
+    value_path: str
+    device_class: BinarySensorDeviceClass | None = None
+
+
+BASE_SENSORS: tuple[AquariteBinarySensorConfig, ...] = (
+    AquariteBinarySensorConfig("Hidro Flow Status", "hidro.fl1", BinarySensorDeviceClass.PROBLEM),
+    AquariteBinarySensorConfig("Filtration Status", "filtration.status", BinarySensorDeviceClass.RUNNING),
+    AquariteBinarySensorConfig("Backwash Status", "backwash.status", BinarySensorDeviceClass.RUNNING),
+    AquariteBinarySensorConfig("Hidro Cover Reduction", "hidro.cover", BinarySensorDeviceClass.RUNNING),
+    AquariteBinarySensorConfig("pH Pump Alarm", "modules.ph.al3", BinarySensorDeviceClass.PROBLEM),
+    AquariteBinarySensorConfig("CD Module Installed", "main.hasCD", BinarySensorDeviceClass.CONNECTIVITY),
+    AquariteBinarySensorConfig("CL Module Installed", "main.hasCL", BinarySensorDeviceClass.CONNECTIVITY),
+    AquariteBinarySensorConfig("RX Module Installed", "main.hasRX", BinarySensorDeviceClass.CONNECTIVITY),
+    AquariteBinarySensorConfig("pH Module Installed", "main.hasPH", BinarySensorDeviceClass.CONNECTIVITY),
+    AquariteBinarySensorConfig("IO Module Installed", "main.hasIO", BinarySensorDeviceClass.CONNECTIVITY),
+    AquariteBinarySensorConfig("Hidro Module Installed", "main.hasHidro", BinarySensorDeviceClass.CONNECTIVITY),
+    AquariteBinarySensorConfig("pH Acid Pump", "modules.ph.pump_high_on", BinarySensorDeviceClass.RUNNING),
+    AquariteBinarySensorConfig("Heating Status", "relays.filtration.heating.status", BinarySensorDeviceClass.RUNNING),
+    AquariteBinarySensorConfig("Filtration Smart Freeze", "filtration.smart.freeze", BinarySensorDeviceClass.RUNNING),
+    AquariteBinarySensorConfig("Connected", "present", BinarySensorDeviceClass.CONNECTIVITY),
+)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+) -> bool:
     """Set up a config entry."""
-    dataservice = hass.data[DOMAIN]["coordinator"]
 
+    dataservice = hass.data[DOMAIN]["coordinator"]
     if not dataservice:
         return False
 
     pool_id = dataservice.get_value("id")
     pool_name = dataservice.get_pool_name(pool_id)
 
-    entities = [
-        AquariteBinarySensorEntity(hass, dataservice, "Hidro Flow Status", "hidro.fl1", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "Filtration Status", "filtration.status", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "Backwash Status", "backwash.status", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "Hidro Cover Reduction", "hidro.cover", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "pH Pump Alarm", "modules.ph.al3", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "CD Module Installed", "main.hasCD", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "CL Module Installed", "main.hasCL", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "RX Module Installed", "main.hasRX", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "pH Module Installed", "main.hasPH", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "IO Module Installed", "main.hasIO", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "Hidro Module Installed", "main.hasHidro", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "pH Acid Pump", "modules.ph.pump_high_on", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "Heating Status", "relays.filtration.heating.status", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "Filtration Smart Freeze", "filtration.smart.freeze", pool_id, pool_name),
-        AquariteBinarySensorEntity(hass, dataservice, "Connected", "present", pool_id, pool_name)
-
+    entities: list[BinarySensorEntity] = [
+        AquariteBinarySensorEntity(hass, dataservice, config, pool_id, pool_name)
+        for config in BASE_SENSORS
     ]
 
     if dataservice.get_value("main.hasCL"):
-        entities.append(AquariteBinarySensorEntity(hass, dataservice, "Hidro FL2 Status", "hidro.fl2", pool_id, pool_name))
+        entities.append(
+            AquariteBinarySensorEntity(
+                hass,
+                dataservice,
+                AquariteBinarySensorConfig(
+                    "Hidro FL2 Status", "hidro.fl2", BinarySensorDeviceClass.PROBLEM
+                ),
+                pool_id,
+                pool_name,
+            )
+        )
 
     if any(
-        dataservice.get_value(path)
-        for path in [PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX]
+        dataservice.get_value(path) for path in (PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX)
     ):
         entities.append(AquariteBinarySensorTankEntity(hass, dataservice, "Acid Tank", pool_id, pool_name))
 
     entities.append(
         AquariteBinarySensorEntity(
-            hass, dataservice, "Electrolysis Low" if dataservice.get_value("hidro.is_electrolysis") else "Hidrolysis Low", "hidro.low", pool_id, pool_name
+            hass,
+            dataservice,
+            AquariteBinarySensorConfig(
+                "Electrolysis Low"
+                if dataservice.get_value("hidro.is_electrolysis")
+                else "Hidrolysis Low",
+                "hidro.low",
+                BinarySensorDeviceClass.PROBLEM,
+            ),
+            pool_id,
+            pool_name,
         )
     )
 
     async_add_entities(entities)
-    
+
     return True
 
 
 class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     """Aquarite Binary Sensor Entity such as flow sensors FL1 & FL2."""
 
-    def __init__(self, hass: HomeAssistant, dataservice, name, value_path, pool_id, pool_name) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        dataservice,
+        config: AquariteBinarySensorConfig,
+        pool_id,
+        pool_name,
+    ) -> None:
         """Initialize an Aquarite Binary Sensor Entity."""
+
         super().__init__(dataservice)
         self._dataservice = dataservice
         self._pool_id = pool_id
         self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
-        self._value_path = value_path
-        self._unique_id = f"{self._pool_id}-{name}"
+        self._value_path = config.value_path
+        self._unique_id = f"{self._pool_id}-{config.name}"
+        self._device_class = config.device_class
+        self._attr_name = f"{self._pool_name}_{config.name}"
 
     @property
     def device_class(self):
         """Return the class of the binary sensor."""
-        if self._value_path in {"hidro.fl1", "hidro.low", "modules.cl.pump_status", "modules.rx.pump_status", "modules.ph.al3"}:
+
+        if self._device_class:
+            return self._device_class
+
+        if self._value_path in PROBLEM_VALUE_PATHS:
             return BinarySensorDeviceClass.PROBLEM
-        elif self._value_path in {"main.hasCD","main.hasCL","main.hasRX","main.hasPH","main.hasHidro","main.hasIO","present"}:
+        if self._value_path in CONNECTIVITY_VALUE_PATHS:
             return BinarySensorDeviceClass.CONNECTIVITY
         return BinarySensorDeviceClass.RUNNING
 
@@ -86,6 +164,7 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_info(self):
         """Return the device info."""
+
         return {
             "identifiers": {(DOMAIN, self._pool_id)},
             "name": self._pool_name,
@@ -97,6 +176,7 @@ class AquariteBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     def unique_id(self):
         """The unique id of the sensor."""
         return self._unique_id
+
 
 class AquariteBinarySensorTankEntity(CoordinatorEntity, BinarySensorEntity):
     """Aquarite Binary Sensor Entity Tank."""
@@ -118,13 +198,8 @@ class AquariteBinarySensorTankEntity(CoordinatorEntity, BinarySensorEntity):
     @property
     def is_on(self):
         """Return false if the tank is empty."""
-        tank_modules = [
-            "modules.ph.tank",
-            "modules.rx.tank",
-            "modules.cl.tank",
-            "modules.cd.tank",
-        ]
-        return any(self._dataservice.get_value(module) for module in tank_modules)
+
+        return any(self._dataservice.get_value(module) for module in TANK_MODULE_PATHS)
 
     @property
     def device_info(self):
