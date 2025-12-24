@@ -9,7 +9,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .application_credentials import IdentityToolkitAuth
 from .aquarite import Aquarite
-from .const import DOMAIN
+from .const import API_KEY, DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,7 +29,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         user_config = entry.data
         
         # Authenticate using the provided credentials
-        auth = IdentityToolkitAuth(hass, user_config["username"], user_config["password"])
+        auth = IdentityToolkitAuth(
+            hass,
+            user_config["username"],
+            user_config["password"],
+            user_config.get("api_key", API_KEY),
+        )
         await auth.authenticate()
 
         # Initialize aiohttp session using Home Assistant's helper
