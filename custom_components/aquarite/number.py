@@ -112,7 +112,7 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         self._value_path = value_path
         self._attr_unique_id = self.build_unique_id(name)
         self._attr_unit_of_measurement = self.UNIT_MAP.get(value_path)
-        self._attr_native_step = self._calculate_step(value_path)
+        self._attr_native_step = self._get_scaled_step()
 
     @property
     def native_value(self):
@@ -136,7 +136,16 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         )
         self.async_write_ha_state()
 
-    def _calculate_step(self, value_path: str) -> float:
+    def _get_scaled_step(self) -> float:
         """Return a step value that matches the configured scale."""
-        scale = self.SCALE_MAP.get(value_path)
+        scale = self.SCALE_MAP.get(self._value_path)
         return 1 / scale if scale else 1.0
+
+    def _calculate_step(self, min_value: float, max_value: float) -> float:
+        """Return the step value advertised to Home Assistant."""
+
+        step = self._get_scaled_step()
+        if step:
+            return step
+
+        return super()._calculate_step(min_value, max_value)
