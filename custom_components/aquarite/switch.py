@@ -2,8 +2,19 @@
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 
-from .entity import AquariteEntity
 from .const import DOMAIN
+from .entity import AquariteEntity
+
+
+SWITCH_ENTITY_DEFINITIONS = (
+    ("Electrolysis Cover", "hidro.cover_enabled"),
+    ("Electrolysis Boost", "hidro.cloration_enabled"),
+    ("Relay1", "relays.relay1.info.onoff"),
+    ("Relay2", "relays.relay2.info.onoff"),
+    ("Relay3", "relays.relay3.info.onoff"),
+    ("Relay4", "relays.relay4.info.onoff"),
+    ("Filtration Status", "filtration.status"),
+)
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
     """Set up a config entry."""
@@ -16,13 +27,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
     pool_name = dataservice.get_pool_name(pool_id)
 
     entities = [
-        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Electrolysis Cover", "hidro.cover_enabled"),
-        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Electrolysis Boost", "hidro.cloration_enabled"),
-        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay1", "relays.relay1.info.onoff"),
-        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay2", "relays.relay2.info.onoff"),
-        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay3", "relays.relay3.info.onoff"),
-        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Relay4", "relays.relay4.info.onoff"),
-        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, "Filtration Status", "filtration.status")
+        AquariteSwitchEntity(hass, dataservice, pool_id, pool_name, name, value_path)
+        for name, value_path in SWITCH_ENTITY_DEFINITIONS
     ]
     
     async_add_entities(entities)
@@ -41,13 +47,11 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
     @property
     def extra_state_attributes(self) -> dict[str, str] | None:
         """Return extra attributes."""
-        if "relay" in self._attr_name: 
-            return {"name": self._dataservice.get_value(f"relays.{self._value_path}.name")}
-
-    @property
-    def is_on(self):
-        """Return true if the device is on."""
-        return bool(self._dataservice.get_value(self._value_path))
+        if "relays." in self._value_path:
+            relay_name_path = self._value_path.replace(".onoff", ".name")
+            relay_name = self._dataservice.get_value(relay_name_path)
+            if relay_name is not None:
+                return {"name": relay_name}
 
     @property
     def is_on(self):
