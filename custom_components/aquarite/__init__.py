@@ -66,15 +66,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload Aquarite config entry."""
     try:
-        # Retrieve and close the coordinator and aiohttp session
-        coordinator = hass.data[DOMAIN].get("coordinator")
-        if coordinator:
-            await coordinator.auth.close()
-        
-        aiohttp_session = hass.data[DOMAIN].get("aiohttp_session")
-        if aiohttp_session:
-            await aiohttp_session.close()
-
         # Unload the platforms associated with this entry
         return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     except Exception as e:
