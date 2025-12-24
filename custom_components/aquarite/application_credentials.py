@@ -9,7 +9,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from google.oauth2.credentials import Credentials
 from google.cloud.firestore_v1 import Client as FirestoreClient
 
-from .const import DOMAIN, API_KEY, BASE_URL, TOKEN_URL
+from .const import API_KEY, BASE_URL, TOKEN_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +30,12 @@ class IdentityToolkitAuth:
         self.credentials = None
         self.client = None
         self.session = async_get_clientsession(hass)
+        self.coordinator = None
+
+    def set_coordinator(self, coordinator) -> None:
+        """Attach the coordinator to allow token refresh callbacks."""
+
+        self.coordinator = coordinator
 
     async def authenticate(self):
         await self.signin()
@@ -92,8 +98,8 @@ class IdentityToolkitAuth:
         """Get the current client, refreshing if necessary."""
         if self.expiry and datetime.datetime.now() >= (self.expiry - datetime.timedelta(minutes=5)):
             await self.refresh_token()
-            coordinator = self.hass.data[DOMAIN].get("coordinator")
-            await coordinator.refresh_subscription()
+            if self.coordinator:
+                await self.coordinator.refresh_subscription()
         return self.client
 
     async def start_token_refresh_routine(self, coordinator):
