@@ -1,25 +1,37 @@
 # Hayward AquaRite integration for Home Assistant
-Dagen / Vistapool / Sugarvalley / Poolwatch / Kripsol
+Home Assistant integration for controlling and monitoring Hayward-branded pool controllers (Dagen / Vistapool / Sugarvalley / Poolwatch / Kripsol / AquaRite).
 
 ## Requirements
-- An Dagen / Vistapool / Sugarvalley / Poolwatch / Kripsol / AquaRite with wifi module connected to the internet.
-- The controller must be added to an cloud account.
+- A supported controller with a Wi-Fi module connected to the internet.
+- The controller must already be linked to a cloud account.
 
 ## Installation
-Component is installed via HACS or alternative by downloading the files and placing them in your custom_components folder.
+You can install the integration through HACS or manually.
 
-Afterwards you can go to the Integrations sections and click the add integration button. Search for Aquarite and choose to add the integration.
+### Option 1: HACS (recommended)
+1. In Home Assistant, open **HACS → Integrations**.
+2. Search for **Aquarite** and install the integration.
+3. Restart Home Assistant when prompted.
 
-- First step will ask you to enter you username and password. 
-- Second step will ask you to choose the pool (controller) you want to add
+### Option 2: Manual installation
+1. Download this repository.
+2. Copy the `custom_components` folder into your Home Assistant `custom_components` directory.
+3. Restart Home Assistant.
 
-It will automatically add all the sensors to your Home Assistant installation.
+### Configuration
+1. In Home Assistant, go to **Settings → Devices & Services**.
+2. Click **Add Integration** and search for **Aquarite**.
+3. When prompted, enter your cloud account username and password.
+4. Choose the pool controller you want to add.
 
-Example dashboard, inspired from the great work of https://github.com/alexdelprete/HA-NeoPool-MQTT
+Sensors are automatically created once the integration is configured.
 
-![image](https://github.com/user-attachments/assets/11c6467f-6a9e-4469-af36-3613e40a6b92)
+## Dashboard examples
+Example dashboard inspired by the great work of https://github.com/alexdelprete/HA-NeoPool-MQTT
 
-Based on the selected filtration mode, display will show different datapoints:
+![Dashboard example](https://github.com/user-attachments/assets/11c6467f-6a9e-4469-af36-3613e40a6b92)
+
+Based on the selected filtration mode, the display shows different data points:
 
 **Intel**
 <br>
@@ -29,23 +41,21 @@ Based on the selected filtration mode, display will show different datapoints:
 <br>
 <img src="https://github.com/user-attachments/assets/b9cb0f21-34a3-4c25-9332-02eee6988963" width="600">
 
-You can also sync your pool controller time with HA calling a service
+You can also sync your pool controller time with Home Assistant by calling the provided service:
 
-![image](https://github.com/user-attachments/assets/5b9896b1-b5b8-481f-933e-4e7482072fab)
+![Time sync service](https://github.com/user-attachments/assets/5b9896b1-b5b8-481f-933e-4e7482072fab)
 
 # Credits
 
-Big thanks to 
+Special thanks to:
 
-@djerik who started the work on this integration, source of my work.
-
-@alexdelprete for the work done on the local integration of NeoPool, great idea's and further inspiration. https://github.com/alexdelprete/HA-NeoPool-MQTT
-
-@curzon01 for a fanstastic dashboard.
+- @djerik, who started the work on this integration.
+- @alexdelprete for the NeoPool local integration, great ideas, and further inspiration. https://github.com/alexdelprete/HA-NeoPool-MQTT
+- @curzon01 for the fantastic dashboard.
 
 # Issues/Discussion
 
-For discussions/general requests, please refer to [this](https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136) thread in HA community.
+For discussions or requests, please refer to [this Home Assistant community thread](https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136).
 
 <a href="https://buymeacoffee.com/fdebrus" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/black_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a><br>
 
@@ -53,5 +63,5 @@ For discussions/general requests, please refer to [this](https://community.home-
 
 This project is licensed under a Non-Commercial License – see the [LICENSE](LICENSE) file for details.
 
-**Disclaimer:**  
+**Disclaimer:**
 This project is not affiliated with, endorsed by, or sponsored by Hayward Industries, Inc. “Hayward” is a registered trademark of its respective owner. Any mention of “Hayward” is for compatibility or descriptive purposes only.

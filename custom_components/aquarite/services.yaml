@@ -1,3 +1,4 @@
 sync_pool_time:
+  name: Sync pool time
   description: "Sync the Home Assistant date and time to the pool controller."
   fields: {}

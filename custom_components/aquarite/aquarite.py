@@ -1,36 +1,54 @@
-import logging
-import json
-import copy
 import asyncio
+import json
+import logging
+from copy import deepcopy
+from typing import TYPE_CHECKING, Any, Dict, MutableMapping, Optional
+
+import aiohttp
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from typing import Any
-
-from .const import DOMAIN, HAYWARD_REST_API, BRAND, MODEL
+from .const import DOMAIN, HAYWARD_REST_API
 from .application_credentials import IdentityToolkitAuth
+
+if TYPE_CHECKING:
+    from .coordinator import AquariteDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 class Aquarite:
     """Aquarite API client."""
 
-    def __init__(self, auth: IdentityToolkitAuth, hass: HomeAssistant, aiohttp_session: async_get_clientsession) -> None:
+    def __init__(
+        self,
+        auth: IdentityToolkitAuth,
+        hass: HomeAssistant,
+        aiohttp_session: async_get_clientsession,
+    ) -> None:
         """Initialize the API client."""
         self.auth = auth
         self.hass = hass
         self.aiohttp_session = aiohttp_session
+        self.coordinator: Optional["AquariteDataUpdateCoordinator"] = None
 
-    async def get_pools(self):
+    def set_coordinator(self, coordinator: "AquariteDataUpdateCoordinator") -> None:
+        """Attach the coordinator for data lookups."""
+
+        self.coordinator = coordinator
+
+    async def get_pools(self) -> Dict[str, str]:
         """Get all pools for the current user."""
-        data = {}
+        data: Dict[str, str] = {}
         client = await self.auth.get_client()
-        user_dict = await asyncio.to_thread(client.collection("users").document(self.auth.tokens["localId"]).get)
+        user_dict = await asyncio.to_thread(
+            client.collection("users").document(self.auth.tokens["localId"]).get
+        )
         user_dict = user_dict.to_dict()
         for poolId in user_dict.get("pools", []):
-            pooldict = await asyncio.to_thread(client.collection("pools").document(poolId).get)
+            pooldict = await asyncio.to_thread(
+                client.collection("pools").document(poolId).get
+            )
             pooldict = pooldict.to_dict()
             if pooldict is not None:
                 try:
@@ -40,15 +58,17 @@ class Aquarite:
                 data[poolId] = name
         return data
 
-    async def fetch_pool_data(self, pool_id) -> dict:
+    async def fetch_pool_data(self, pool_id: str) -> dict:
         client = await self.auth.get_client()
         pool_data = await asyncio.to_thread(client.collection("pools").document(pool_id).get)
         return pool_data.to_dict()
 
     def get_pool_data_as_json(self, pool_id: str) -> dict:
         """Get the pool data."""
-        coordinator = self.hass.data[DOMAIN].get("coordinator")
-        pool = coordinator.data
+        if not self.coordinator:
+            raise RuntimeError("Coordinator not configured for Aquarite API client")
+
+        pool = self.coordinator.data
 
         data = {
             "gateway": pool.get("wifi"),
@@ -61,7 +81,7 @@ class Aquarite:
         }
         return data
 
-    async def send_command(self, data) -> None:
+    async def send_command(self, data: Dict[str, Any]) -> None:
         headers = {"Authorization": f"Bearer {self.auth.tokens['idToken']}"}
         try:
             async with self.aiohttp_session.post(
@@ -86,7 +106,10 @@ class Aquarite:
     async def set_value(self, pool_id: str, value_path: str, value: Any) -> None:
         try:
             pool_data = self.get_pool_data_as_json(pool_id)
-            coordinator = self.hass.data[DOMAIN].get("coordinator")
+            coordinator = self.coordinator
+            if not coordinator:
+                raise RuntimeError("Coordinator not configured for Aquarite API client")
+
             current_path_config = self.extract_complete_info(coordinator.data, value_path)
             self.set_in_dict(current_path_config, value_path, value)
             if value_path == "hidro.cloration_enabled":
@@ -111,29 +134,35 @@ class Aquarite:
 
 ### UTILS
 
-    def set_in_dict(self, data_dict, path, value):
+    def set_in_dict(self, data_dict: MutableMapping[str, Any], path: str, value: Any) -> None:
         map_list = path.split(".")
-        temp = data_dict
+        temp: MutableMapping[str, Any] = data_dict
         for key in map_list[:-1]:
-            if key not in temp:
+            if key not in temp or not isinstance(temp[key], MutableMapping):
                 temp[key] = {}
             temp = temp[key]
         last_key = map_list[-1]
         temp[last_key] = value
 
-    def extract_complete_info(self, data, path):
-        keys = path.split('.')
-        subset = data
+    def extract_complete_info(self, data: MutableMapping[str, Any], path: str) -> Dict[str, Any]:
+        keys = path.split(".")
         if len(keys) > 2:
-            keys = keys[:2]
+            selected_keys = keys[:2]
         elif len(keys) > 1:
-            keys = keys[:1]
-        try:
-            for key in keys:
+            selected_keys = keys[:1]
+        else:
+            selected_keys = keys
+        subset: Any = data
+        for key in selected_keys:
+            try:
                 subset = subset[key]
-        except KeyError:
-            return f"Key error: Key '{key}' not found in data"
-        result = subset
-        for key in reversed(keys):
+            except KeyError as exc:
+                raise ValueError(f"Key '{key}' not found in data while extracting '{path}'") from exc
+            except TypeError as exc:
+                raise ValueError(f"Unexpected data structure while extracting '{path}'") from exc
+
+        result: Any = deepcopy(subset)
+        for key in reversed(selected_keys):
             result = {key: result}
+
         return result

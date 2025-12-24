@@ -1,19 +1,19 @@
 import asyncio
+import contextlib
 import logging
 import json
 from zoneinfo import ZoneInfo
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from google.cloud import firestore_v1
 from google.api_core.exceptions import GoogleAPICallError
 
 from .application_credentials import IdentityToolkitAuth
 from .aquarite import Aquarite
-from .const import DOMAIN, HEALTH_CHECK_INTERVAL, POLL_INTERVAL
+from .const import HEALTH_CHECK_INTERVAL, POLL_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,22 +31,26 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self.pool_id: Optional[str] = None
         self.watch = None
         self.data = None
+        self._health_task: asyncio.Task | None = None
+        self._poll_task: asyncio.Task | None = None
+
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
-        self.hass.loop.create_task(self.periodic_health_check())
-        self.hass.loop.create_task(self.periodic_polling())
+        self._health_task = hass.async_create_background_task(
+            self.periodic_health_check(),
+            name="Aquarite periodic health check",
+        )
+        self._poll_task = hass.async_create_background_task(
+            self.periodic_polling(),
+            name="Aquarite periodic polling",
+        )
 
     def set_pool_id(self, pool_id: str):
         """Set the pool ID."""
         _LOGGER.debug(f"Setting pool ID: {pool_id}")
         self.pool_id = pool_id
 
-    async def async_set_updated_data(self, data) -> None:
-        """Update data and notify listeners."""
-        self.data = data
-        self.async_update_listeners()
-
-    async def async_updated_data(self, data) -> None:
-        """Update data."""
+    async def async_set_updated_data(self, data: Any) -> None:
+        """Update data and notify listeners via the coordinator."""
         await self.auth.get_client()
         super().async_set_updated_data(data)
 
@@ -55,12 +59,23 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         if isinstance(data, str):
             data = json.loads(data)
         _LOGGER.debug(f"{data}")
-        asyncio.run_coroutine_threadsafe(self.async_updated_data(data), self.hass.loop).result()
+        future = asyncio.run_coroutine_threadsafe(
+            self.async_set_updated_data(data), self.hass.loop
+        )
+
+        def _log_future_exception(fut: asyncio.Future):
+            if (exc := fut.exception()) is not None:
+                _LOGGER.error("Error executing handler", exc_info=exc)
+
+        future.add_done_callback(_log_future_exception)
 
     async def periodic_polling(self):
         """Periodically poll the Firestore document for state reconciliation."""
-        while True:
+        while not self.hass.is_stopping:
             await asyncio.sleep(POLL_INTERVAL)
+            if not self.pool_id:
+                _LOGGER.debug("Skipping poll; pool_id not yet set.")
+                continue
             await self.poll_state()
 
     async def poll_state(self):
@@ -70,10 +85,12 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             doc = await asyncio.to_thread(doc_ref.get)
             latest_data = doc.to_dict()
             if latest_data != self.data:
-                _LOGGER.warning("Periodic poll: state out of sync, updating coordinator.")
+                _LOGGER.warning(
+                    "Periodic poll: state out of sync, updating coordinator."
+                )
                 await self.async_set_updated_data(latest_data)
         except Exception as e:
-            _LOGGER.error(f"Polling error: {e}")
+            _LOGGER.error("Polling error", exc_info=e)
 
     async def subscribe(self):
         """Subscribe to the pool's updates."""
@@ -118,6 +135,17 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             self.watch = None
             _LOGGER.debug(f"Unsubscribed from pool ID: {self.pool_id}")
 
+    async def async_shutdown(self) -> None:
+        """Cancel background tasks and unsubscribe from updates."""
+
+        await self.unsubscribe()
+
+        for task in (self._health_task, self._poll_task):
+            if task:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+
     async def _async_update_data(self) -> Any:
         """No-op update method."""
         _LOGGER.debug("No-op update method called.")
@@ -150,8 +178,11 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def periodic_health_check(self):
         """Periodic task to check the Firestore client connection status."""
-        while True:
+        while not self.hass.is_stopping:
             await asyncio.sleep(HEALTH_CHECK_INTERVAL)
+            if not self.pool_id:
+                _LOGGER.debug("Skipping health check; pool_id not yet set.")
+                continue
             await self.check_connection_status()
 
     async def check_connection_status(self):
@@ -159,13 +190,19 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             client = await self.auth.get_client()
             doc_ref = client.collection("pools").document(self.pool_id)
-            doc = await asyncio.to_thread(doc_ref.get)
-            _LOGGER.debug(f"Connection status check successful for pool ID: {self.pool_id}")
+            await asyncio.to_thread(doc_ref.get)
+            _LOGGER.debug(
+                "Connection status check successful for pool ID: %s", self.pool_id
+            )
         except GoogleAPICallError as e:
-            _LOGGER.debug(f"Connection status check failed: {e}, refreshing subscription.")
+            _LOGGER.debug(
+                "Connection status check failed: %s, refreshing subscription.", e
+            )
             await self.refresh_subscription()
         except Exception as e:
-            _LOGGER.debug(f"Unexpected error during connection status check: {e}")
+            _LOGGER.debug(
+                "Unexpected error during connection status check: %s", e
+            )
             await self.refresh_subscription()
 
     def get_value(self, path: str) -> Any:

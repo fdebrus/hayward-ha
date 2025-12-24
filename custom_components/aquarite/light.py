@@ -1,21 +1,29 @@
 """Aquarite Light entity."""
 
-from homeassistant.components.light import LightEntity
+from homeassistant.components.light import ColorMode, LightEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, BRAND, MODEL
+from .entity import AquariteEntity
+from .const import DOMAIN
 
-async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> bool:
+    """Set up the Aquarite light platform."""
 
-    dataservice = hass.data[DOMAIN]["coordinator"]
-
-    if not dataservice:
+    entry_data = hass.data[DOMAIN].get(entry.entry_id)
+    if not entry_data:
         return False
-        
+
+    dataservice = entry_data["coordinator"]
+
     pool_id = dataservice.get_value("id")
     pool_name = dataservice.get_pool_name(pool_id)
-    
+
     entities = [
         AquariteLightEntity(hass, dataservice, pool_id, pool_name, "Light", "light.status")
     ]
@@ -24,40 +32,15 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> b
 
     return True
 
-class AquariteLightEntity(CoordinatorEntity, LightEntity):
+class AquariteLightEntity(AquariteEntity, LightEntity):
 
     def __init__(self, hass: HomeAssistant, dataservice, pool_id, pool_name, name, value_path) -> None:
 
-        super().__init__(dataservice)
-        self._dataservice = dataservice
-        self._pool_id = pool_id
-        self._pool_name = pool_name
-        self._attr_name = f"{self._pool_name}_{name}"
+        super().__init__(dataservice, pool_id, pool_name, name_suffix=name)
         self._value_path = value_path
-        self._unique_id = f"{self._pool_id}{name}"
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return {
-            "identifiers": {(DOMAIN, self._pool_id)},
-            "name": self._pool_name,
-            "manufacturer": BRAND,
-            "model": MODEL,
-        }
-
-    @property
-    def unique_id(self):
-        """The unique id of the sensor."""
-        return self._unique_id
-
-    @property
-    def color_mode(self):
-        return "ONOFF"
-
-    @property
-    def supported_color_modes(self):
-        return {"ONOFF"}
+        self._attr_unique_id = self.build_unique_id(name, delimiter="")
+        self._attr_supported_color_modes = {ColorMode.ONOFF}
+        self._attr_color_mode = ColorMode.ONOFF
 
     @property
     def is_on(self):
