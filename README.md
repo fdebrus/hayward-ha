@@ -9,13 +9,13 @@
     <img src="https://img.shields.io/badge/Maintainer-fdebrus-green?style=flat" alt="Maintainer">
   </a>&nbsp;
   <a href="https://github.com/fdebrus/hayward-ha/releases">
-    <img src="https://img.shields.io/github/v/release/fdebrus/hayward-aquarite-ha?style=flat&label=release" alt="Release">
+    <img src="https://img.shields.io/github/v/release/fdebrus/hayward-ha?style=flat&label=release" alt="Release">
   </a>&nbsp;
   <a href="https://github.com/fdebrus/hayward-ha/issues">
-    <img src="https://img.shields.io/github/issues/fdebrus/hayward-aquarite-ha?style=flat" alt="Issues">
+    <img src="https://img.shields.io/github/issues/fdebrus/hayward-ha?style=flat" alt="Issues">
   </a>&nbsp;
   <a href="https://github.com/fdebrus/hayward-ha/stargazers">
-    <img src="https://img.shields.io/github/stars/fdebrus/hayward-aquarite-ha?style=flat" alt="Stars">
+    <img src="https://img.shields.io/github/stars/fdebrus/hayward-ha?style=flat" alt="Stars">
   </a>
 </p>
 
