@@ -22,8 +22,6 @@ Home Assistant custom integration for monitoring and controlling **Hayward-brand
 
 The integration connects to the **official Hayward cloud API** and exposes your pool equipment as native Home Assistant entities.
 
----
-
 ## Features
 
 - Secure cloud authentication using your existing Hayward account  
@@ -33,15 +31,11 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 - Background token refresh and health monitoring  
 - Service to synchronize the pool controller clock with Home Assistant  
 
----
-
 ## Requirements
 
 - A supported Hayward-compatible pool controller  
 - A Wi-Fi module connected to the internet  
 - The controller must already be linked to your Hayward cloud account  
-
----
 
 ## Installation
 
@@ -60,8 +54,6 @@ You can install the integration using **HACS** (recommended) or manually.
 2. Copy the `custom_components/hayward_aquarite` directory into your Home Assistant `custom_components` folder
 3. Restart Home Assistant
 
----
-
 ## Configuration
 
 1. In Home Assistant, go to **Settings → Devices & Services**
@@ -71,8 +63,6 @@ You can install the integration using **HACS** (recommended) or manually.
 5. Select the pool controller you want to add
 
 All supported entities and sensors are created automatically once the integration is set up.
-
----
 
 ## Dashboard examples
 
@@ -89,8 +79,6 @@ https://github.com/alexdelprete/HA-NeoPool-MQTT
 
 <img src="https://github.com/user-attachments/assets/b9cb0f21-34a3-4c25-9332-02eee6988963" width="600">
 
----
-
 ## Time synchronization service
 
 The integration exposes a service allowing you to **synchronize the pool controller’s internal clock** with Home Assistant’s timezone.
@@ -98,8 +86,6 @@ The integration exposes a service allowing you to **synchronize the pool control
 This is useful to ensure correct scheduling and reporting, especially after power outages or controller restarts.
 
 ![Time sync service](https://github.com/user-attachments/assets/5b9896b1-b5b8-481f-9332-4e7482072fab)
-
----
 
 ## Credits
 
@@ -110,15 +96,11 @@ Special thanks to:
   https://github.com/alexdelprete/HA-NeoPool-MQTT  
 - **@curzon01** – dashboard design and UX inspiration  
 
----
-
 ## Issues & Discussion
 
 For support, feature requests, and discussions, please use the Home Assistant community thread:
 
 👉 https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136
-
----
 
 ## Support the project
 
@@ -128,14 +110,10 @@ If you find this integration useful, consider supporting its development:
   <img src="https://www.buymeacoffee.com/assets/img/custom_images/black_img.png" alt="Buy Me A Coffee">
 </a>
 
----
-
 ## License
 
 This project is licensed under a **Non-Commercial License**.  
 See the [LICENSE](LICENSE) file for details.
-
----
 
 ### Disclaimer
 
