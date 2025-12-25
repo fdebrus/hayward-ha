@@ -5,16 +5,16 @@
     <img src="https://img.shields.io/badge/Donate-Buy%20Me%20A%20Coffee-FFDD00?style=flat&logo=buymeacoffee" alt="Donate">
   </a>&nbsp;
   <img src="https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-blue?style=flat&logo=homeassistant" alt="Home Assistant Integration">&nbsp;
-  <a href="https://github.com/fdebrus/hayward-aquarite-ha">
+  <a href="https://github.com/fdebrus/hayward-ha">
     <img src="https://img.shields.io/badge/Maintainer-fdebrus-green?style=flat" alt="Maintainer">
   </a>&nbsp;
-  <a href="https://github.com/fdebrus/hayward-aquarite-ha/releases">
+  <a href="https://github.com/fdebrus/hayward-ha/releases">
     <img src="https://img.shields.io/github/v/release/fdebrus/hayward-aquarite-ha?style=flat&label=release" alt="Release">
   </a>&nbsp;
-  <a href="https://github.com/fdebrus/hayward-aquarite-ha/issues">
+  <a href="https://github.com/fdebrus/hayward-ha/issues">
     <img src="https://img.shields.io/github/issues/fdebrus/hayward-aquarite-ha?style=flat" alt="Issues">
   </a>&nbsp;
-  <a href="https://github.com/fdebrus/hayward-aquarite-ha/stargazers">
+  <a href="https://github.com/fdebrus/hayward-ha/stargazers">
     <img src="https://img.shields.io/github/stars/fdebrus/hayward-aquarite-ha?style=flat" alt="Stars">
   </a>
 </p>
