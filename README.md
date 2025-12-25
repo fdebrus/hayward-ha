@@ -92,8 +92,7 @@ This is useful to ensure correct scheduling and reporting, especially after powe
 Special thanks to:
 
 - **@djerik** – original work and early foundation of this integration  
-- **@alexdelprete** – NeoPool MQTT integration, design ideas, and inspiration  
-  https://github.com/alexdelprete/HA-NeoPool-MQTT  
+- **@alexdelprete** – NeoPool MQTT integration, design ideas, and inspiration https://github.com/alexdelprete/HA-NeoPool-MQTT  
 - **@curzon01** – dashboard design and UX inspiration  
 
 ## Issues & Discussion
@@ -102,20 +101,14 @@ For support, feature requests, and discussions, please use the Home Assistant co
 
 👉 https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136
 
-## Support the project
+## Trademark Notice
 
-If you find this integration useful, consider supporting its development:
-
-<a href="https://www.buymeacoffee.com/fdebrus" target="_blank">
-  <img src="https://www.buymeacoffee.com/assets/img/custom_images/black_img.png" alt="Buy Me A Coffee">
-</a>
+Hayward is a trademark of Hayward Industries, Inc. This project is an independent community effort and is not affiliated with, endorsed by, or sponsored by Hayward Industries, Inc.
 
 ## License
 
-This project is licensed under a **Non-Commercial License**.  
-See the [LICENSE](LICENSE) file for details.
-
-### Disclaimer
-
-This project is **not affiliated with, endorsed by, or sponsored by Hayward Industries, Inc.**  
-“Hayward” is a registered trademark of its respective owner and is used solely for compatibility and descriptive purposes.
+This project is provided for personal and other non-commercial use only. You may
+view, copy, modify, and share the code and documentation for non-commercial
+purposes. Commercial use of this software is not permitted without prior written
+permission from the maintainers. The software is provided "as is" without
+warranties of any kind.
