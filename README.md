@@ -1,22 +1,12 @@
 # Hayward AquaRite integration for Home Assistant
 
 <p align="left">
-  <a href="https://www.buymeacoffee.com/fdebrus">
-    <img src="https://img.shields.io/badge/Donate-Buy%20Me%20A%20Coffee-FFDD00?style=flat&logo=buymeacoffee" alt="Donate">
-  </a>&nbsp;
-  <img src="https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-blue?style=flat&logo=homeassistant" alt="Home Assistant Integration">&nbsp;
-  <a href="https://github.com/fdebrus/hayward-ha">
-    <img src="https://img.shields.io/badge/Maintainer-fdebrus-green?style=flat" alt="Maintainer">
-  </a>&nbsp;
-  <a href="https://github.com/fdebrus/hayward-ha/releases">
-    <img src="https://img.shields.io/github/v/release/fdebrus/hayward-ha?style=flat&label=release" alt="Release">
-  </a>&nbsp;
-  <a href="https://github.com/fdebrus/hayward-ha/issues">
-    <img src="https://img.shields.io/github/issues/fdebrus/hayward-ha?style=flat" alt="Issues">
-  </a>&nbsp;
-  <a href="https://github.com/fdebrus/hayward-ha/stargazers">
-    <img src="https://img.shields.io/github/stars/fdebrus/hayward-ha?style=flat" alt="Stars">
-  </a>
+  <a href="https://www.buymeacoffee.com/fdebrus"><img src="https://img.shields.io/badge/Donate-Buy%20Me%20A%20Coffee-FFDD00?style=flat&logo=buymeacoffee" alt="Donate"></a>
+  <img src="https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-blue?style=flat&logo=homeassistant" alt="Home Assistant Integration">
+  <a href="https://github.com/fdebrus/hayward-ha"><img src="https://img.shields.io/badge/Maintainer-fdebrus-green?style=flat" alt="Maintainer"></a>
+  <a href="https://github.com/fdebrus/hayward-ha/releases"><img src="https://img.shields.io/github/v/release/fdebrus/hayward-ha?style=flat&label=release" alt="Release"></a>
+  <a href="https://github.com/fdebrus/hayward-ha/issues"><img src="https://img.shields.io/github/issues/fdebrus/hayward-ha?style=flat" alt="Issues"></a>
+  <a href="https://github.com/fdebrus/hayward-ha/stargazers"><img src="https://img.shields.io/github/stars/fdebrus/hayward-ha?style=flat" alt="Stars"></a>
 </p>
 
 Home Assistant custom integration for monitoring and controlling **Hayward-branded pool controllers**, including:
