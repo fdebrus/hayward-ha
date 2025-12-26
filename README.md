@@ -85,7 +85,7 @@ The integration exposes a service allowing you to **synchronize the pool control
 
 This is useful to ensure correct scheduling and reporting, especially after power outages or controller restarts.
 
-![Time sync service](https://github.com/user-attachments/assets/5b9896b1-b5b8-481f-9332-4e7482072fab)
+![Time sync service](https://github.com/user-attachments/assets/5b9896b1-b5b8-481f-933e-4e7482072fab)
 
 ## Credits
 
