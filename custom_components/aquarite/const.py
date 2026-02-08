@@ -3,8 +3,6 @@
 DOMAIN = "aquarite"
 BRAND = "Hayward"
 MODEL = "Aquarite"
-CONF_REFERER = "referer"
-CONF_ORIGIN = "origin"
 
 PATH_PREFIX = "main."
 PATH_HASCD = f"{PATH_PREFIX}hasCD"
@@ -15,8 +13,11 @@ PATH_HASUV = f"{PATH_PREFIX}hasUV"
 PATH_HASHIDRO = f"{PATH_PREFIX}hasHidro"
 
 API_KEY = "AIzaSyBLaxiyZ2nS1KgRBqWe-NY4EG7OzG5fKpE"
-BASE_URL = "https://identitytoolkit.googleapis.com/v1/accounts"
-TOKEN_URL = "https://securetoken.googleapis.com/v1/token"
+IDENTITY_TOOLKIT_BASE = "https://identitytoolkit.googleapis.com/v1/accounts"
+SECURETOKEN_URL = "https://securetoken.googleapis.com/v1/token"
+BASE_URL = IDENTITY_TOOLKIT_BASE
+TOKEN_URL = SECURETOKEN_URL
+API_REFERRER = "https://hayward-europe.web.app/"
 HAYWARD_REST_API = "https://europe-west1-hayward-europe.cloudfunctions.net/"
 
 # Time intervals (seconds)

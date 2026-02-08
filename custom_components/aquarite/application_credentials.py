@@ -1,7 +1,7 @@
-import json
 import datetime
 import logging
 import asyncio
+from urllib.parse import urlparse
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -9,7 +9,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from google.oauth2.credentials import Credentials
 from google.cloud.firestore_v1 import Client as FirestoreClient
 
-from .const import API_KEY, BASE_URL, TOKEN_URL
+from .const import API_KEY, API_REFERRER, IDENTITY_TOOLKIT_BASE, SECURETOKEN_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,17 +23,13 @@ class IdentityToolkitAuth:
         hass: HomeAssistant,
         email: str,
         password: str,
-        referer: str | None = None,
-        origin: str | None = None,
     ):
         self.api_key = API_KEY
         self.hass = hass
         self.email = email
         self.password = password
-        self.referer = referer
-        self.origin = origin
-        self.base_url = BASE_URL
-        self.token_url = TOKEN_URL
+        self.base_url = IDENTITY_TOOLKIT_BASE
+        self.token_url = SECURETOKEN_URL
         self.tokens = None
         self.expiry = None
         self.credentials = None
@@ -54,13 +50,29 @@ class IdentityToolkitAuth:
             "expiresIn": self.tokens["expiresIn"],
         }
 
-    def _build_headers(self) -> dict[str, str]:
-        headers = {"Content-Type": "application/json; charset=UTF-8"}
-        if self.referer:
-            headers["Referer"] = self.referer
-        if self.origin:
-            headers["Origin"] = self.origin
+    def _build_headers(self, content_type: str) -> dict[str, str]:
+        headers = {"Content-Type": content_type}
+        if API_REFERRER:
+            headers["Referer"] = API_REFERRER
+            origin = self._derive_origin(API_REFERRER)
+            if origin:
+                headers["Origin"] = origin
         return headers
+
+    @staticmethod
+    def _derive_origin(referrer: str) -> str | None:
+        parsed = urlparse(referrer)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+        return referrer or None
+
+    @staticmethod
+    async def _safe_json(resp) -> dict:
+        try:
+            data = await resp.json(content_type=None)
+        except Exception:
+            return {}
+        return data if isinstance(data, dict) else {}
 
     @staticmethod
     def _format_auth_error(payload: dict, status: int) -> str:
@@ -82,6 +94,8 @@ class IdentityToolkitAuth:
             normalized["expiresIn"] = normalized["expires_in"]
         if "idToken" not in normalized and "id_token" in normalized:
             normalized["idToken"] = normalized["id_token"]
+        if "idToken" not in normalized and "access_token" in normalized:
+            normalized["idToken"] = normalized["access_token"]
         if "refreshToken" not in normalized and "refresh_token" in normalized:
             normalized["refreshToken"] = normalized["refresh_token"]
         return normalized
@@ -89,26 +103,34 @@ class IdentityToolkitAuth:
     async def signin(self):
         """Sign in and set the tokens and expiry."""
         url = f"{self.base_url}:signInWithPassword?key={self.api_key}"
-        headers = self._build_headers()
-        data = json.dumps({
+        headers = self._build_headers("application/json; charset=UTF-8")
+        data = {
             "email": self.email,
             "password": self.password,
-            "returnSecureToken": True
-        })
-        async with self.session.post(url, headers=headers, data=data) as resp:
-            payload = await resp.json()
+            "returnSecureToken": True,
+        }
+        async with self.session.post(url, headers=headers, json=data) as resp:
+            payload = await self._safe_json(resp)
             if resp.status != 200:
                 raise UnauthorizedException(self._format_auth_error(payload, resp.status))
             self.tokens = self._normalize_tokens(payload)
             # Normalize token response keys (camelCase vs snake_case)
             # fail fast if the response is not what we expect
-            if "idToken" not in self.tokens or "refreshToken" not in self.tokens or "expiresIn" not in self.tokens:
-                raise UnauthorizedException("Unexpected token response: missing required fields.")
+            if (
+                "idToken" not in self.tokens
+                or "refreshToken" not in self.tokens
+                or "expiresIn" not in self.tokens
+            ):
+                raise UnauthorizedException(
+                    "Unexpected token response (missing keys)."
+                )
 
             try:
                 expires_in = int(self.tokens["expiresIn"])
             except (TypeError, ValueError):
-                raise UnauthorizedException("Unexpected token response: invalid expiry.") from None
+                raise UnauthorizedException(
+                    "Unexpected token response (invalid expiry)."
+                ) from None
 
             self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=expires_in)
             self.credentials = Credentials(
@@ -124,13 +146,13 @@ class IdentityToolkitAuth:
     async def refresh_token(self):
         """Refresh the access token using the refresh token."""
         url = f"{self.token_url}?key={self.api_key}"
-        headers = self._build_headers()
-        data = json.dumps({
+        headers = self._build_headers("application/x-www-form-urlencoded; charset=UTF-8")
+        data = {
             "grant_type": "refresh_token",
-            "refresh_token": self.tokens["refreshToken"]
-        })
+            "refresh_token": self.tokens["refreshToken"],
+        }
         async with self.session.post(url, headers=headers, data=data) as resp:
-            payload = await resp.json()
+            payload = await self._safe_json(resp)
             if resp.status != 200:
                 raise UnauthorizedException(self._format_auth_error(payload, resp.status))
             new_tokens = self._normalize_tokens(payload)
@@ -140,11 +162,15 @@ class IdentityToolkitAuth:
 
             expires_in = new_tokens.get("expiresIn")
             if expires_in is None:
-                raise UnauthorizedException("Unexpected refresh response: missing expiry.")
+                raise UnauthorizedException(
+                    "Unexpected refresh response (missing expiry)."
+                )
             try:
                 expires_in_int = int(expires_in)
             except (TypeError, ValueError):
-                raise UnauthorizedException("Unexpected refresh response: invalid expiry.") from None
+                raise UnauthorizedException(
+                    "Unexpected refresh response (invalid expiry)."
+                ) from None
 
             self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=expires_in_int)
             self.credentials = Credentials(
