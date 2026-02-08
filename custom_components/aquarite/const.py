@@ -3,6 +3,8 @@
 DOMAIN = "aquarite"
 BRAND = "Hayward"
 MODEL = "Aquarite"
+CONF_REFERER = "referer"
+CONF_ORIGIN = "origin"
 
 PATH_PREFIX = "main."
 PATH_HASCD = f"{PATH_PREFIX}hasCD"
