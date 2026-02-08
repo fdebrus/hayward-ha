@@ -12,10 +12,15 @@ import homeassistant.helpers.config_validation as cv
 
 from .application_credentials import IdentityToolkitAuth, UnauthorizedException
 from .aquarite import Aquarite
-from .const import DOMAIN
+from .const import CONF_ORIGIN, CONF_REFERER, DOMAIN
 
 AUTH_SCHEMA = vol.Schema(
-    {vol.Required(CONF_USERNAME): cv.string, vol.Required(CONF_PASSWORD): cv.string}
+    {
+        vol.Required(CONF_USERNAME): cv.string,
+        vol.Required(CONF_PASSWORD): cv.string,
+        vol.Optional(CONF_REFERER): cv.string,
+        vol.Optional(CONF_ORIGIN): cv.string,
+    }
 )
 
 
@@ -36,6 +41,10 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_USERNAME: user_input[CONF_USERNAME],
                 CONF_PASSWORD: user_input[CONF_PASSWORD],
             }
+            if user_input.get(CONF_REFERER):
+                self.data[CONF_REFERER] = user_input[CONF_REFERER]
+            if user_input.get(CONF_ORIGIN):
+                self.data[CONF_ORIGIN] = user_input[CONF_ORIGIN]
             return await self.async_step_pool()
 
         schema = AUTH_SCHEMA
@@ -63,6 +72,10 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_PASSWORD: self.data[CONF_PASSWORD],
                 "pool_id": pool_id,
             }
+            if self.data.get(CONF_REFERER):
+                entry_data[CONF_REFERER] = self.data[CONF_REFERER]
+            if self.data.get(CONF_ORIGIN):
+                entry_data[CONF_ORIGIN] = self.data[CONF_ORIGIN]
 
             if self._reauth_entry:
                 self.hass.config_entries.async_update_entry(
@@ -83,7 +96,11 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             auth = IdentityToolkitAuth(
-                self.hass, self.data[CONF_USERNAME], self.data[CONF_PASSWORD]
+                self.hass,
+                self.data[CONF_USERNAME],
+                self.data[CONF_PASSWORD],
+                self.data.get(CONF_REFERER),
+                self.data.get(CONF_ORIGIN),
             )
             await auth.authenticate()
 

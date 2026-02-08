@@ -18,11 +18,20 @@ class UnauthorizedException(Exception):
     pass
 
 class IdentityToolkitAuth:
-    def __init__(self, hass: HomeAssistant, email: str, password: str):
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        email: str,
+        password: str,
+        referer: str | None = None,
+        origin: str | None = None,
+    ):
         self.api_key = API_KEY
         self.hass = hass
         self.email = email
         self.password = password
+        self.referer = referer
+        self.origin = origin
         self.base_url = BASE_URL
         self.token_url = TOKEN_URL
         self.tokens = None
@@ -45,37 +54,63 @@ class IdentityToolkitAuth:
             "expiresIn": self.tokens["expiresIn"],
         }
 
+    def _build_headers(self) -> dict[str, str]:
+        headers = {"Content-Type": "application/json; charset=UTF-8"}
+        if self.referer:
+            headers["Referer"] = self.referer
+        if self.origin:
+            headers["Origin"] = self.origin
+        return headers
+
+    @staticmethod
+    def _format_auth_error(payload: dict, status: int) -> str:
+        error = payload.get("error", {})
+        code = error.get("code", status)
+        message = error.get("message", "Unknown error")
+        status_text = error.get("status")
+        if status_text:
+            return (
+                "Authentication failed "
+                f"(code={code}, status={status_text}, message={message})."
+            )
+        return f"Authentication failed (code={code}, message={message})."
+
+    @staticmethod
+    def _normalize_tokens(tokens: dict) -> dict:
+        normalized = dict(tokens)
+        if "expiresIn" not in normalized and "expires_in" in normalized:
+            normalized["expiresIn"] = normalized["expires_in"]
+        if "idToken" not in normalized and "id_token" in normalized:
+            normalized["idToken"] = normalized["id_token"]
+        if "refreshToken" not in normalized and "refresh_token" in normalized:
+            normalized["refreshToken"] = normalized["refresh_token"]
+        return normalized
+
     async def signin(self):
         """Sign in and set the tokens and expiry."""
         url = f"{self.base_url}:signInWithPassword?key={self.api_key}"
-        headers = {"Content-Type": "application/json; charset=UTF-8",
-                "Referer": "https://hayward-europe.web.app/",
-                "Origin": "https://hayward-europe.web.app",
-                }
+        headers = self._build_headers()
         data = json.dumps({
             "email": self.email,
             "password": self.password,
             "returnSecureToken": True
         })
         async with self.session.post(url, headers=headers, data=data) as resp:
-            if resp.status == 400:
-                raise UnauthorizedException("Failed to authenticate.")
-            self.tokens = await resp.json()
+            payload = await resp.json()
+            if resp.status != 200:
+                raise UnauthorizedException(self._format_auth_error(payload, resp.status))
+            self.tokens = self._normalize_tokens(payload)
             # Normalize token response keys (camelCase vs snake_case)
-            if "expiresIn" not in self.tokens and "expires_in" in self.tokens:
-                self.tokens["expiresIn"] = self.tokens["expires_in"]
-
-            if "idToken" not in self.tokens and "id_token" in self.tokens:
-                self.tokens["idToken"] = self.tokens["id_token"]
-
-            if "refreshToken" not in self.tokens and "refresh_token" in self.tokens:
-                self.tokens["refreshToken"] = self.tokens["refresh_token"]
-
             # fail fast if the response is not what we expect
             if "idToken" not in self.tokens or "refreshToken" not in self.tokens or "expiresIn" not in self.tokens:
-                raise UnauthorizedException(f"Unexpected token response: {self.tokens}")
+                raise UnauthorizedException("Unexpected token response: missing required fields.")
 
-            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
+            try:
+                expires_in = int(self.tokens["expiresIn"])
+            except (TypeError, ValueError):
+                raise UnauthorizedException("Unexpected token response: invalid expiry.") from None
+
+            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=expires_in)
             self.credentials = Credentials(
                 token=self.tokens['idToken'],
                 refresh_token=self.tokens['refreshToken'],
@@ -83,26 +118,35 @@ class IdentityToolkitAuth:
                 client_id=None,
                 client_secret=None
             )
-            _LOGGER.debug(f'{self.credentials}')
+            _LOGGER.debug("Authenticated successfully; token expiry set.")
             self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
 
     async def refresh_token(self):
         """Refresh the access token using the refresh token."""
         url = f"{self.token_url}?key={self.api_key}"
-        headers = {"Content-Type": "application/json; charset=UTF-8"}
+        headers = self._build_headers()
         data = json.dumps({
             "grant_type": "refresh_token",
             "refresh_token": self.tokens["refreshToken"]
         })
         async with self.session.post(url, headers=headers, data=data) as resp:
+            payload = await resp.json()
             if resp.status != 200:
-                raise UnauthorizedException("Failed to refresh token.")
-            new_tokens = await resp.json()
-            self.tokens["idToken"] = new_tokens["id_token"]
-            self.tokens["idToken"] = new_tokens.get("id_token", self.tokens.get("idToken"))
-            if "refresh_token" in new_tokens:
-                self.tokens["refreshToken"] = new_tokens["refresh_token"]
-            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(new_tokens["expires_in"]))
+                raise UnauthorizedException(self._format_auth_error(payload, resp.status))
+            new_tokens = self._normalize_tokens(payload)
+            self.tokens["idToken"] = new_tokens.get("idToken", self.tokens.get("idToken"))
+            if "refreshToken" in new_tokens:
+                self.tokens["refreshToken"] = new_tokens["refreshToken"]
+
+            expires_in = new_tokens.get("expiresIn")
+            if expires_in is None:
+                raise UnauthorizedException("Unexpected refresh response: missing expiry.")
+            try:
+                expires_in_int = int(expires_in)
+            except (TypeError, ValueError):
+                raise UnauthorizedException("Unexpected refresh response: invalid expiry.") from None
+
+            self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=expires_in_int)
             self.credentials = Credentials(
                 token=self.tokens['idToken'],
                 refresh_token=self.tokens['refreshToken'],
@@ -110,7 +154,7 @@ class IdentityToolkitAuth:
                 client_id=None,
                 client_secret=None
             )
-            _LOGGER.debug(f'{self.credentials}')
+            _LOGGER.debug("Token refreshed successfully; token expiry updated.")
             self.client = FirestoreClient(project="hayward-europe", credentials=self.credentials)
 
     async def get_client(self):
