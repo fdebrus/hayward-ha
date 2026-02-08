@@ -15,7 +15,10 @@ from .aquarite import Aquarite
 from .const import DOMAIN
 
 AUTH_SCHEMA = vol.Schema(
-    {vol.Required(CONF_USERNAME): cv.string, vol.Required(CONF_PASSWORD): cv.string}
+    {
+        vol.Required(CONF_USERNAME): cv.string,
+        vol.Required(CONF_PASSWORD): cv.string,
+    }
 )
 
 
@@ -63,7 +66,6 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_PASSWORD: self.data[CONF_PASSWORD],
                 "pool_id": pool_id,
             }
-
             if self._reauth_entry:
                 self.hass.config_entries.async_update_entry(
                     self._reauth_entry, data=entry_data
@@ -83,7 +85,9 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             auth = IdentityToolkitAuth(
-                self.hass, self.data[CONF_USERNAME], self.data[CONF_PASSWORD]
+                self.hass,
+                self.data[CONF_USERNAME],
+                self.data[CONF_PASSWORD],
             )
             await auth.authenticate()
 

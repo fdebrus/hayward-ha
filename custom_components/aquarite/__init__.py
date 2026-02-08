@@ -5,9 +5,10 @@ import logging
 from homeassistant.components import binary_sensor, device_tracker, light, number, select, sensor, switch
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .application_credentials import IdentityToolkitAuth
+from .application_credentials import IdentityToolkitAuth, UnauthorizedException
 from .aquarite import Aquarite
 from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
@@ -29,7 +30,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         user_config = entry.data
         
         # Authenticate using the provided credentials
-        auth = IdentityToolkitAuth(hass, user_config["username"], user_config["password"])
+        auth = IdentityToolkitAuth(
+            hass,
+            user_config["username"],
+            user_config["password"],
+        )
         await auth.authenticate()
 
         # Initialize aiohttp session using Home Assistant's helper
@@ -73,9 +78,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         return True
 
-    except Exception as e:
-        _LOGGER.error(f"Error setting up entry {entry.entry_id}: {e}")
-        return False
+    except UnauthorizedException as exc:
+        _LOGGER.warning("Authentication failed during setup: %s", exc)
+        raise ConfigEntryAuthFailed from exc
+    except Exception as exc:
+        _LOGGER.error("Error setting up entry %s: %s", entry.entry_id, exc)
+        raise ConfigEntryNotReady from exc
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload Aquarite config entry."""
