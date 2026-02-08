@@ -48,7 +48,10 @@ class IdentityToolkitAuth:
     async def signin(self):
         """Sign in and set the tokens and expiry."""
         url = f"{self.base_url}:signInWithPassword?key={self.api_key}"
-        headers = {"Content-Type": "application/json; charset=UTF-8"}
+        headers = {"Content-Type": "application/json; charset=UTF-8",
+                "Referer": "https://hayward-europe.web.app/",
+                "Origin": "https://hayward-europe.web.app",
+                }
         data = json.dumps({
             "email": self.email,
             "password": self.password,
@@ -58,6 +61,20 @@ class IdentityToolkitAuth:
             if resp.status == 400:
                 raise UnauthorizedException("Failed to authenticate.")
             self.tokens = await resp.json()
+            # Normalize token response keys (camelCase vs snake_case)
+            if "expiresIn" not in self.tokens and "expires_in" in self.tokens:
+                self.tokens["expiresIn"] = self.tokens["expires_in"]
+
+            if "idToken" not in self.tokens and "id_token" in self.tokens:
+                self.tokens["idToken"] = self.tokens["id_token"]
+
+            if "refreshToken" not in self.tokens and "refresh_token" in self.tokens:
+                self.tokens["refreshToken"] = self.tokens["refresh_token"]
+
+            # fail fast if the response is not what we expect
+            if "idToken" not in self.tokens or "refreshToken" not in self.tokens or "expiresIn" not in self.tokens:
+                raise UnauthorizedException(f"Unexpected token response: {self.tokens}")
+
             self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens["expiresIn"]))
             self.credentials = Credentials(
                 token=self.tokens['idToken'],
@@ -82,7 +99,9 @@ class IdentityToolkitAuth:
                 raise UnauthorizedException("Failed to refresh token.")
             new_tokens = await resp.json()
             self.tokens["idToken"] = new_tokens["id_token"]
-            self.tokens["refreshToken"] = new_tokens["refresh_token"]
+            self.tokens["idToken"] = new_tokens.get("id_token", self.tokens.get("idToken"))
+            if "refresh_token" in new_tokens:
+                self.tokens["refreshToken"] = new_tokens["refresh_token"]
             self.expiry = datetime.datetime.now() + datetime.timedelta(seconds=int(new_tokens["expires_in"]))
             self.credentials = Credentials(
                 token=self.tokens['idToken'],
