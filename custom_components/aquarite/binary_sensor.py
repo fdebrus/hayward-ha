@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -7,44 +6,17 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .entity import AquariteEntity
-
 from .const import DOMAIN, PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
 
-
-PROBLEM_VALUE_PATHS = {
-    "hidro.fl1",
-    "hidro.low",
-    "modules.cl.pump_status",
-    "modules.ph.al3",
-    "modules.rx.pump_status",
-}
-
-CONNECTIVITY_VALUE_PATHS = {
-    "main.hasCD",
-    "main.hasCL",
-    "main.hasHidro",
-    "main.hasIO",
-    "main.hasPH",
-    "main.hasRX",
-    "present",
-}
-
-TANK_MODULE_PATHS = (
-    "modules.ph.tank",
-    "modules.rx.tank",
-    "modules.cl.tank",
-    "modules.cd.tank",
-)
-
+PROBLEM_VALUE_PATHS = {"hidro.fl1", "hidro.low", "modules.cl.pump_status", "modules.ph.al3", "modules.rx.pump_status"}
+CONNECTIVITY_VALUE_PATHS = {"main.hasCD", "main.hasCL", "main.hasHidro", "main.hasIO", "main.hasPH", "main.hasRX", "present"}
+TANK_MODULE_PATHS = ("modules.ph.tank", "modules.rx.tank", "modules.cl.tank", "modules.cd.tank")
 
 @dataclass(frozen=True)
 class AquariteBinarySensorConfig:
-    """Configuration for a binary sensor entity."""
-
     name: str
     value_path: str
     device_class: BinarySensorDeviceClass | None = None
-
 
 BASE_SENSORS: tuple[AquariteBinarySensorConfig, ...] = (
     AquariteBinarySensorConfig("Hidro Flow Status", "hidro.fl1", BinarySensorDeviceClass.PROBLEM),
@@ -64,119 +36,50 @@ BASE_SENSORS: tuple[AquariteBinarySensorConfig, ...] = (
     AquariteBinarySensorConfig("Connected", "present", BinarySensorDeviceClass.CONNECTIVITY),
 )
 
-
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
-) -> bool:
-    """Set up a config entry."""
-
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> bool:
     entry_data = hass.data[DOMAIN].get(entry.entry_id)
-    if not entry_data:
-        return False
+    if not entry_data: return False
 
     dataservice = entry_data["coordinator"]
+    pool_id = dataservice.pool_id
+    pool_name = entry.title
 
-    pool_id = dataservice.get_value("id")
-    pool_name = dataservice.get_pool_name(pool_id)
-
-    entities: list[BinarySensorEntity] = [
-        AquariteBinarySensorEntity(hass, dataservice, config, pool_id, pool_name)
-        for config in BASE_SENSORS
-    ]
+    entities = [AquariteBinarySensorEntity(hass, dataservice, config, pool_id, pool_name) for config in BASE_SENSORS]
 
     if dataservice.get_value("main.hasCL"):
-        entities.append(
-            AquariteBinarySensorEntity(
-                hass,
-                dataservice,
-                AquariteBinarySensorConfig(
-                    "Hidro FL2 Status", "hidro.fl2", BinarySensorDeviceClass.PROBLEM
-                ),
-                pool_id,
-                pool_name,
-            )
-        )
+        entities.append(AquariteBinarySensorEntity(hass, dataservice, AquariteBinarySensorConfig("Hidro FL2 Status", "hidro.fl2", BinarySensorDeviceClass.PROBLEM), pool_id, pool_name))
 
-    if any(
-        dataservice.get_value(path) for path in (PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX)
-    ):
+    if any(dataservice.get_value(path) for path in (PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX)):
         entities.append(AquariteBinarySensorTankEntity(hass, dataservice, "Acid Tank", pool_id, pool_name))
 
-    entities.append(
-        AquariteBinarySensorEntity(
-            hass,
-            dataservice,
-            AquariteBinarySensorConfig(
-                "Electrolysis Low"
-                if dataservice.get_value("hidro.is_electrolysis")
-                else "Hidrolysis Low",
-                "hidro.low",
-                BinarySensorDeviceClass.PROBLEM,
-            ),
-            pool_id,
-            pool_name,
-        )
-    )
+    low_label = "Electrolysis Low" if dataservice.get_value("hidro.is_electrolysis") else "Hidrolysis Low"
+    entities.append(AquariteBinarySensorEntity(hass, dataservice, AquariteBinarySensorConfig(low_label, "hidro.low", BinarySensorDeviceClass.PROBLEM), pool_id, pool_name))
 
     async_add_entities(entities)
-
     return True
 
-
 class AquariteBinarySensorEntity(AquariteEntity, BinarySensorEntity):
-    """Aquarite Binary Sensor Entity such as flow sensors FL1 & FL2."""
-
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        dataservice,
-        config: AquariteBinarySensorConfig,
-        pool_id,
-        pool_name,
-    ) -> None:
-        """Initialize an Aquarite Binary Sensor Entity."""
-
+    def __init__(self, hass, dataservice, config, pool_id, pool_name):
         super().__init__(dataservice, pool_id, pool_name, name_suffix=config.name)
-        self._value_path = config.value_path
-        self._device_class = config.device_class
+        self._value_path, self._device_class = config.value_path, config.device_class
         self._attr_unique_id = self.build_unique_id(config.name)
 
     @property
     def device_class(self):
-        """Return the class of the binary sensor."""
-
-        if self._device_class:
-            return self._device_class
-
-        if self._value_path in PROBLEM_VALUE_PATHS:
-            return BinarySensorDeviceClass.PROBLEM
-        if self._value_path in CONNECTIVITY_VALUE_PATHS:
-            return BinarySensorDeviceClass.CONNECTIVITY
+        if self._device_class: return self._device_class
+        if self._value_path in PROBLEM_VALUE_PATHS: return BinarySensorDeviceClass.PROBLEM
+        if self._value_path in CONNECTIVITY_VALUE_PATHS: return BinarySensorDeviceClass.CONNECTIVITY
         return BinarySensorDeviceClass.RUNNING
 
     @property
     def is_on(self):
-        """Return true if the device is on."""
         return bool(self._dataservice.get_value(self._value_path))
 
-
 class AquariteBinarySensorTankEntity(AquariteEntity, BinarySensorEntity):
-    """Aquarite Binary Sensor Entity Tank."""
-
-    def __init__(self, hass: HomeAssistant, dataservice, name, pool_id, pool_name) -> None:
-        """Initialize an Aquarite Binary Sensor Entity."""
+    def __init__(self, hass, dataservice, name, pool_id, pool_name):
         super().__init__(dataservice, pool_id, pool_name, name_suffix=name)
-        self._attr_unique_id = self.build_unique_id(name)
-
-    @property
-    def device_class(self):
-        """Return the class of the binary sensor."""
-        return BinarySensorDeviceClass.PROBLEM
+        self._attr_unique_id, self._attr_device_class = self.build_unique_id(name), BinarySensorDeviceClass.PROBLEM
 
     @property
     def is_on(self):
-        """Return false if the tank is empty."""
-
         return any(self._dataservice.get_value(module) for module in TANK_MODULE_PATHS)
-
-    

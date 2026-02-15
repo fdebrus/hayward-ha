@@ -61,6 +61,10 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             pool_id: str = user_input["pool_id"]
+
+            await self.async_set_unique_id(pool_id)
+            self._abort_if_unique_id_configured()
+            
             entry_data = {
                 CONF_USERNAME: self.data[CONF_USERNAME],
                 CONF_PASSWORD: self.data[CONF_PASSWORD],
@@ -74,9 +78,6 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self._reauth_entry.entry_id
                 )
                 return self.async_abort(reason="reauth_successful")
-
-            await self.async_set_unique_id(pool_id)
-            self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
                 title=self._available_pools.get(pool_id, pool_id),

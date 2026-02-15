@@ -1,12 +1,11 @@
 """Aquarite Select entities."""
-
 from __future__ import annotations
-
 from collections.abc import Sequence
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity import AquariteEntity
@@ -14,80 +13,49 @@ from .entity import AquariteEntity
 PUMP_MODE_OPTIONS: tuple[str, ...] = ("Manual", "Auto", "Heat", "Smart", "Intel")
 PUMP_SPEED_OPTIONS: tuple[str, ...] = ("Slow", "Medium", "High")
 
-
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> bool:
-    """Set up a config entry."""
+    """Set up select entities."""
     entry_data = hass.data[DOMAIN].get(entry.entry_id)
     if not entry_data:
         return False
 
     dataservice = entry_data["coordinator"]
+    pool_id, pool_name = dataservice.pool_id, entry.title
 
-    pool_id = dataservice.get_value("id")
-    pool_name = dataservice.get_pool_name(pool_id)
-
-    entities = [
+    async_add_entities([
         AquaritePumpModeEntity(dataservice, pool_id, pool_name, "Pump Mode", "filtration.mode"),
         AquaritePumpSpeedEntity(dataservice, pool_id, pool_name, "Pump Speed", "filtration.manVel"),
-    ]
-
-    async_add_entities(entities)
-
+    ])
     return True
 
-
 class AquariteSelectEntity(AquariteEntity, SelectEntity):
-    """Shared functionality for Aquarite select entities."""
+    """Base for Aquarite select entities."""
 
-    def __init__(
-        self,
-        dataservice,
-        pool_id,
-        pool_name,
-        name: str,
-        value_path: str,
-        allowed_values: Sequence[str],
-    ) -> None:
+    def __init__(self, dataservice, pool_id, pool_name, name, value_path, options) -> None:
         super().__init__(dataservice, pool_id, pool_name, name_suffix=name)
-        self._value_path = value_path
-        self._allowed_values: tuple[str, ...] = tuple(allowed_values)
+        self._value_path, self._options_map = value_path, options
         self._attr_unique_id = self.build_unique_id(name, delimiter="")
-        self._attr_options = list(self._allowed_values)
+        self._attr_options = list(options)
 
     @property
     def current_option(self) -> str | None:
-        """Return the currently selected option, if available."""
-
         raw_value = self._dataservice.get_value(self._value_path)
-
         try:
-            return self._allowed_values[int(raw_value)]
+            return self._options_map[int(raw_value)]
         except (TypeError, ValueError, IndexError):
             return None
 
     async def async_select_option(self, option: str) -> None:
-        """Set the selected option."""
-
-        if option not in self._allowed_values:
-            raise ValueError(f"Invalid option {option!r} for {self.name}")
-
         await self._dataservice.api.set_value(
-            self._pool_id, self._value_path, self._allowed_values.index(option)
+            self._pool_id, self._value_path, self._options_map.index(option)
         )
 
-
 class AquaritePumpModeEntity(AquariteSelectEntity):
-    """Select entity representing the pump mode."""
-
-    def __init__(self, dataservice, pool_id, pool_name, name, value_path) -> None:
+    def __init__(self, dataservice, pool_id, pool_name, name, value_path):
         super().__init__(dataservice, pool_id, pool_name, name, value_path, PUMP_MODE_OPTIONS)
 
-
 class AquaritePumpSpeedEntity(AquariteSelectEntity):
-    """Select entity representing the pump speed."""
-
-    def __init__(self, dataservice, pool_id, pool_name, name, value_path) -> None:
+    def __init__(self, dataservice, pool_id, pool_name, name, value_path):
         super().__init__(dataservice, pool_id, pool_name, name, value_path, PUMP_SPEED_OPTIONS)
-
