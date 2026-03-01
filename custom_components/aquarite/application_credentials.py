@@ -170,6 +170,8 @@ class IdentityToolkitAuth:
 
     async def get_client(self):
         """Get the current client, refreshing if necessary."""
+        needs_subscription_refresh = False
+        
         async with self._lock:
             if self.client is None:
                 _LOGGER.debug("Firestore client not initialized, performing authentication.")
@@ -177,9 +179,12 @@ class IdentityToolkitAuth:
 
             if self._is_token_expiring():
                 await self.refresh_token()
-                if self.coordinator:
-                    await self.coordinator.refresh_subscription()
-            return self.client
+                needs_subscription_refresh = True
+                
+        if needs_subscription_refresh and self.coordinator:
+            await self.coordinator.refresh_subscription()
+            
+        return self.client
 
     def _is_token_expiring(self) -> bool:
         """Check if token is within 5 minutes of expiring."""
