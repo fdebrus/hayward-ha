@@ -53,6 +53,9 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self._poll_task = self.hass.async_create_background_task(
             self.periodic_polling(), "Aquarite state poll"
         )
+        self.hass.async_create_background_task(
+            self.auth.start_token_refresh_routine(self), "Aquarite token refresh"
+        )
 
     async def periodic_polling(self):
         """Periodic poll to ensure data consistency."""
@@ -74,6 +77,13 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             except Exception as e:
                 _LOGGER.error("Health check failed, resubscribing: %s", e)
                 await self.subscribe()
+
+    async def refresh_subscription(self):
+        """Resubscribe to Firestore after a token refresh."""
+        _LOGGER.debug("Refreshing Firestore subscription for %s", self.pool_id)
+        if self.watch:
+            await asyncio.to_thread(self.watch.unsubscribe)
+        await self.subscribe()
 
     async def async_shutdown(self) -> None:
         """Cleanly unsubscribe and cancel tasks."""

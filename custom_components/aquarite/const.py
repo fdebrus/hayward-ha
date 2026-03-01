@@ -16,6 +16,7 @@ API_KEY = "AIzaSyBLaxiyZ2nS1KgRBqWe-NY4EG7OzG5fKpE"
 IDENTITY_TOOLKIT_BASE = "https://identitytoolkit.googleapis.com/v1/accounts"
 SECURETOKEN_URL = "https://securetoken.googleapis.com/v1/token"
 API_REFERRER = "https://hayward-europe.web.app/"
+# API_REFERRER = "https://poolwatch.hayward.fr"
 HAYWARD_REST_API = "https://europe-west1-hayward-europe.cloudfunctions.net/"
 
 # Time intervals (seconds)
