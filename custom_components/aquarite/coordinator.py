@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from .const import HEALTH_CHECK_INTERVAL, POLL_INTERVAL
+from .const import HEALTH_CHECK_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
