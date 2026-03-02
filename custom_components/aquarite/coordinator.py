@@ -50,23 +50,9 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self._health_task = self.hass.async_create_background_task(
             self.periodic_health_check(), "Aquarite health check"
         )
-        self._poll_task = self.hass.async_create_background_task(
-            self.periodic_polling(), "Aquarite state poll"
-        )
         self.hass.async_create_background_task(
             self.auth.start_token_refresh_routine(self), "Aquarite token refresh"
         )
-
-    async def periodic_polling(self):
-        """Periodic poll to ensure data consistency."""
-        while not self.hass.is_stopping:
-            await asyncio.sleep(POLL_INTERVAL)
-            try:
-                data = await self.api.fetch_pool_data(self.pool_id)
-                if data != self.data:
-                    self.async_set_updated_data(data)
-            except Exception as e:
-                _LOGGER.error("Polling failed: %s", e)
 
     async def periodic_health_check(self):
         """Monitor connection and refresh tokens/subscriptions."""

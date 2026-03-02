@@ -61,7 +61,7 @@ class Aquarite:
             f"{HAYWARD_REST_API}/sendPoolCommand",
             json=data,
             headers=headers,
-            timeout=10
+            timeout=20
         ) as response:
             _LOGGER.debug("Command sent. Status: %s", response.status)
             response.raise_for_status()

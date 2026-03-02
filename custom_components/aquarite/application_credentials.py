@@ -159,6 +159,8 @@ class IdentityToolkitAuth:
 
     def _update_firestore_client(self):
         """Helper to sync credentials to the Firestore client."""
+        if self.client is not None:
+            self.client.close()
         self.credentials = Credentials(
             token=self.tokens['idToken'],
             refresh_token=self.tokens['refreshToken'],
