@@ -21,4 +21,3 @@ HAYWARD_REST_API = "https://europe-west1-hayward-europe.cloudfunctions.net/"
 
 # Time intervals (seconds)
 HEALTH_CHECK_INTERVAL = 300  # 5 minutes
-POLL_INTERVAL = 60           # 1 minute reconciliation poll
