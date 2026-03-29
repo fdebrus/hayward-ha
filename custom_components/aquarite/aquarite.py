@@ -72,6 +72,7 @@ class Aquarite:
             raise RuntimeError("Coordinator data not available")
 
         current_config = self.extract_complete_info(self.coordinator.data, value_path)
+        _LOGGER.debug("set_value BEFORE: path=%s current_data=%s", value_path, json.dumps(current_config, indent=2, default=str))
         self.set_in_dict(current_config, value_path, value)
 
         if value_path == "hidro.cloration_enabled":
@@ -89,6 +90,7 @@ class Aquarite:
             "changes": json.dumps(current_config),
             "source": "web"
         }
+        _LOGGER.debug("set_value path=%s value=%s changes=%s", value_path, value, json.dumps(current_config, indent=2))
         await self.send_command(payload)
 
     def set_in_dict(self, data_dict: MutableMapping[str, Any], path: str, value: Any) -> None:
