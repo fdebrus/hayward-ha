@@ -101,7 +101,16 @@ class Aquarite:
         data_dict[keys[-1]] = value
 
     def extract_complete_info(self, data: MutableMapping[str, Any], path: str) -> Dict[str, Any]:
-        """Deeply clones a branch of the data structure."""
+        """Deeply clones a branch of the data structure.
+
+        For deep paths (4+ segments, e.g. relays.relay1.info.onoff),
+        extract only 2 levels deep so we send just the target relay,
+        not all relays.
+        """
         keys = path.split(".")
         root_key = keys[0]
+        if len(keys) >= 4:
+            second_key = keys[1]
+            root_data = data.get(root_key, {})
+            return {root_key: {second_key: deepcopy(root_data.get(second_key, {}))}}
         return {root_key: deepcopy(data.get(root_key, {}))}
