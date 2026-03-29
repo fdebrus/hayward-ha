@@ -72,6 +72,7 @@ class Aquarite:
             raise RuntimeError("Coordinator data not available")
 
         current_config = self.extract_complete_info(self.coordinator.data, value_path)
+        _LOGGER.debug("set_value BEFORE: path=%s current_data=%s", value_path, json.dumps(current_config, indent=2, default=str))
         self.set_in_dict(current_config, value_path, value)
 
         if value_path == "hidro.cloration_enabled":
@@ -89,6 +90,7 @@ class Aquarite:
             "changes": json.dumps(current_config),
             "source": "web"
         }
+        _LOGGER.debug("set_value path=%s value=%s changes=%s", value_path, value, json.dumps(current_config, indent=2))
         await self.send_command(payload)
 
     def set_in_dict(self, data_dict: MutableMapping[str, Any], path: str, value: Any) -> None:
@@ -99,7 +101,16 @@ class Aquarite:
         data_dict[keys[-1]] = value
 
     def extract_complete_info(self, data: MutableMapping[str, Any], path: str) -> Dict[str, Any]:
-        """Deeply clones a branch of the data structure."""
+        """Deeply clones a branch of the data structure.
+
+        For deep paths (4+ segments, e.g. relays.relay1.info.onoff),
+        extract only 2 levels deep so we send just the target relay,
+        not all relays.
+        """
         keys = path.split(".")
         root_key = keys[0]
+        if len(keys) >= 4:
+            second_key = keys[1]
+            root_data = data.get(root_key, {})
+            return {root_key: {second_key: deepcopy(root_data.get(second_key, {}))}}
         return {root_key: deepcopy(data.get(root_key, {}))}
