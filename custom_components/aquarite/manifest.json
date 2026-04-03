@@ -5,10 +5,9 @@
     "config_flow": true,
     "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
     "iot_class": "cloud_push",
-    "loggers": ["custom_components.aquarite"],
+    "loggers": ["custom_components.aquarite", "aioaquarite"],
     "requirements": [
-        "google-auth>=2.29.0",
-        "google-cloud-firestore>=2.16.0"
+        "aioaquarite==0.1.0"
     ],
     "supported_platforms": [
         "binary_sensor",
@@ -19,5 +18,5 @@
         "sensor",
         "switch"
     ],
-    "version": "0.6.1"
+    "version": "0.7.0"
 }

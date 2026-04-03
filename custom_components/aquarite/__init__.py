@@ -1,6 +1,10 @@
 """The Aquarite integration."""
+
 from __future__ import annotations
+
 import logging
+
+from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
@@ -8,10 +12,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .application_credentials import IdentityToolkitAuth, UnauthorizedException
-from .aquarite import Aquarite
-from .coordinator import AquariteDataUpdateCoordinator
 from .const import DOMAIN
+from .coordinator import AquariteDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,27 +27,30 @@ PLATFORMS: list[Platform] = [
     Platform.SWITCH,
 ]
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Aquarite from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
     try:
         user_config = entry.data
-        auth = IdentityToolkitAuth(hass, user_config[CONF_USERNAME], user_config[CONF_PASSWORD])
+        session = async_get_clientsession(hass)
+
+        auth = AquariteAuth(
+            session, user_config[CONF_USERNAME], user_config[CONF_PASSWORD]
+        )
         await auth.authenticate()
 
-        api = Aquarite(auth, hass, async_get_clientsession(hass))
+        api = AquariteClient(auth)
+
         coordinator = AquariteDataUpdateCoordinator(hass, auth, api)
         coordinator.set_pool_id(user_config["pool_id"])
-        
-        auth.set_coordinator(coordinator)
-        api.set_coordinator(coordinator)
-        
+
         # Initial data fetch and subscription
         coordinator.data = await api.fetch_pool_data(user_config["pool_id"])
         await coordinator.subscribe()
 
-        # Start all background tasks (Refresh, Health, and Polling) via coordinator
+        # Start background tasks (token refresh and health check)
         await coordinator.setup_tasks()
 
         hass.data[DOMAIN][entry.entry_id] = {
@@ -64,11 +69,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         return True
 
-    except UnauthorizedException as exc:
+    except AuthenticationError as exc:
         raise ConfigEntryAuthFailed from exc
     except Exception as exc:
         _LOGGER.error("Error setting up entry %s: %s", entry.entry_id, exc)
         raise ConfigEntryNotReady from exc
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Aquarite config entry."""
@@ -77,12 +83,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return False
 
     coordinator = entry_data.get("coordinator")
-    
-    # Forward unloading to platforms first
+
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unloaded:
-        # Cancel all tasks (polling, health, and snapshots)
         await coordinator.async_shutdown()
         hass.data[DOMAIN].pop(entry.entry_id)
 

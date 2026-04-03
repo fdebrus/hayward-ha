@@ -4,14 +4,14 @@ from typing import Any
 
 import voluptuous as vol
 
+from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
+
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
-from .application_credentials import IdentityToolkitAuth, UnauthorizedException
-from .aquarite import Aquarite
 from .const import DOMAIN
 
 AUTH_SCHEMA = vol.Schema(
@@ -30,9 +30,10 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._reauth_entry: config_entries.ConfigEntry | None = None
         self._available_pools: dict[str, str] = {}
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Handle a flow initialized by the user."""
-
         errors: dict[str, str] = {}
         if user_input is not None:
             self.data = {
@@ -55,16 +56,17 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
-    async def async_step_pool(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_pool(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Handle the pool selection step."""
-
         errors: dict[str, str] = {}
         if user_input is not None:
             pool_id: str = user_input["pool_id"]
 
             await self.async_set_unique_id(pool_id)
             self._abort_if_unique_id_configured()
-            
+
             entry_data = {
                 CONF_USERNAME: self.data[CONF_USERNAME],
                 CONF_PASSWORD: self.data[CONF_PASSWORD],
@@ -85,16 +87,17 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         try:
-            auth = IdentityToolkitAuth(
-                self.hass,
+            session = async_get_clientsession(self.hass)
+            auth = AquariteAuth(
+                session,
                 self.data[CONF_USERNAME],
                 self.data[CONF_PASSWORD],
             )
             await auth.authenticate()
 
-            api = Aquarite(auth, self.hass, async_get_clientsession(self.hass))
+            api = AquariteClient(auth)
 
-        except UnauthorizedException:
+        except AuthenticationError:
             errors["base"] = "auth_error"
             return self.async_show_form(
                 step_id="user", data_schema=AUTH_SCHEMA, errors=errors
@@ -113,7 +116,6 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Reauthenticate the user."""
-
         self._reauth_entry = self.hass.config_entries.async_get_entry(
             self.context.get("entry_id")
         )
