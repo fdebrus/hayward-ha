@@ -1,70 +1,88 @@
+"""Data coordinator for the Aquarite integration."""
+
 import asyncio
-import logging
 import contextlib
-from zoneinfo import ZoneInfo
-from datetime import datetime, timezone
+import logging
+from datetime import datetime
 from typing import Any, Optional
+
+from aioaquarite import AquariteAuth, AquariteClient
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
 from .const import HEALTH_CHECK_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
-class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
-    """Aquarite custom coordinator using Firestore Real-time Snapshots."""
 
-    def __init__(self, hass: HomeAssistant, auth: Any, api: Any) -> None:
-        """Initialize the coordinator."""
+class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
+    """Aquarite coordinator using Firestore real-time snapshots."""
+
+    def __init__(
+        self, hass: HomeAssistant, auth: AquariteAuth, api: AquariteClient
+    ) -> None:
         self.auth = auth
         self.api = api
         self.pool_id: Optional[str] = None
         self.watch = None
         self._health_task: Optional[asyncio.Task] = None
-        self._poll_task: Optional[asyncio.Task] = None
 
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
 
-    def set_pool_id(self, pool_id: str):
+    def set_pool_id(self, pool_id: str) -> None:
         """Set the pool ID for queries."""
         self.pool_id = pool_id
 
-    async def subscribe(self):
-        """Initialize Firestore Snapshot listener."""
-        client = await self.auth.get_client()
-        doc_ref = client.collection("pools").document(self.pool_id)
-        
-        # Snapshot runs in a background thread; must use thread-safe calls for HA
-        self.watch = await asyncio.to_thread(doc_ref.on_snapshot, self._on_snapshot)
-        _LOGGER.debug("Firestore subscription active for %s", self.pool_id)
+    async def subscribe(self) -> None:
+        """Subscribe to Firestore real-time updates via the library."""
 
-    def _on_snapshot(self, doc_snapshot, changes, read_time):
-        """Callback from Firestore thread; push data to HA loop."""
-        for doc in doc_snapshot:
-            data = doc.to_dict()
-            # Schedule the update on the main HA event loop
+        def _on_data(data: dict) -> None:
+            """Callback from Firestore thread; push data to HA loop."""
             self.hass.loop.call_soon_threadsafe(self.async_set_updated_data, data)
 
-    async def setup_tasks(self):
-        """Start background polling and health monitoring."""
+        self.watch = await self.api.subscribe_pool(self.pool_id, _on_data)
+
+    async def setup_tasks(self) -> None:
+        """Start background health monitoring and token refresh."""
         self._health_task = self.hass.async_create_background_task(
             self.periodic_health_check(), "Aquarite health check"
         )
         self.hass.async_create_background_task(
-            self.auth.start_token_refresh_routine(self), "Aquarite token refresh"
+            self._token_refresh_loop(), "Aquarite token refresh"
         )
 
-    async def periodic_health_check(self):
-        """Monitor connection and refresh tokens/subscriptions."""
+    async def _token_refresh_loop(self) -> None:
+        """Maintain token validity with exponential backoff on error."""
+        retry_delay = 10
+        while not self.hass.is_stopping:
+            try:
+                if self.auth.is_token_expiring():
+                    _LOGGER.debug("Token expiring soon, refreshing...")
+                    _, refreshed = await self.auth.get_client()
+                    if refreshed:
+                        await self.refresh_subscription()
+                retry_delay = 10
+                sleep_time = self.auth.calculate_sleep_duration()
+                await asyncio.sleep(sleep_time)
+            except Exception as e:
+                _LOGGER.error(
+                    "Error maintaining token: %s. Retrying in %ss", e, retry_delay
+                )
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 600)
+
+    async def periodic_health_check(self) -> None:
+        """Monitor connection and resubscribe if needed."""
         while not self.hass.is_stopping:
             await asyncio.sleep(HEALTH_CHECK_INTERVAL)
             try:
-                await self.auth.get_client() 
+                await self.auth.get_client()
             except Exception as e:
                 _LOGGER.error("Health check failed, resubscribing: %s", e)
                 await self.subscribe()
 
-    async def refresh_subscription(self):
+    async def refresh_subscription(self) -> None:
         """Resubscribe to Firestore after a token refresh."""
         _LOGGER.debug("Refreshing Firestore subscription for %s", self.pool_id)
         if self.watch:
@@ -75,37 +93,23 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         """Cleanly unsubscribe and cancel tasks."""
         if self.watch:
             await asyncio.to_thread(self.watch.unsubscribe)
-        
-        for task in (self._health_task, self._poll_task):
-            if task:
-                task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await task
+        if self._health_task:
+            self._health_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._health_task
         await super().async_shutdown()
 
     def get_value(self, path: str, default: Any = None) -> Any:
-        """Get nested data using dot notation."""
-        if not self.data:
-            return default
-        keys = path.split(".")
-        val = self.data
-        try:
-            for key in keys:
-                val = val[key]
-            return val if val is not None else default
-        except (KeyError, TypeError):
-            return default
+        """Get nested data using dot-notation path."""
+        return AquariteClient.get_value(self.data, path, default)
 
-    async def set_pool_time_to_now(self):
-        """Service call to sync the pool's internal clock with the current time."""
+    async def set_pool_time_to_now(self) -> None:
+        """Sync the pool controller clock with the current time."""
         now = datetime.now()
-        # Format required by Hayward: Day of week (1-7), HH, MM
-        # ISO weekday is 1 (Mon) - 7 (Sun)
         payload = {
             "day": now.isoweekday(),
             "hour": now.hour,
-            "min": now.minute
+            "min": now.minute,
         }
         _LOGGER.info("Syncing pool time to: %s", payload)
-        # Re-uses the optimized set_value logic from your API class
         await self.api.set_value(self.pool_id, "main.time", payload)
