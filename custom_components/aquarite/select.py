@@ -27,11 +27,11 @@ async def async_setup_entry(
     async_add_entities([
         AquariteSelectEntity(
             dataservice, pool_id, pool_name,
-            "pump_mode", "filtration.mode", PUMP_MODE_OPTIONS,
+            "Pump Mode", "pump_mode", "filtration.mode", PUMP_MODE_OPTIONS,
         ),
         AquariteSelectEntity(
             dataservice, pool_id, pool_name,
-            "pump_speed", "filtration.manVel", PUMP_SPEED_OPTIONS,
+            "Pump Speed", "pump_speed", "filtration.manVel", PUMP_SPEED_OPTIONS,
         ),
     ])
 
@@ -44,6 +44,7 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         value_path: str,
         options: tuple[str, ...],
@@ -53,7 +54,7 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
         self._value_path = value_path
         self._options_map = options
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name, delimiter="")
         self._attr_options = list(options)
 
     @property

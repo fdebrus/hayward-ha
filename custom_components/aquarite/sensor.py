@@ -42,15 +42,15 @@ async def async_setup_entry(
     entities: list[AquariteEntity] = []
 
     # Temperature Sensors
-    for translation_key, path in (
-        ("temperature", "main.temperature"),
-        ("filtration_intel_temperature", "filtration.intel.temp"),
-        ("filtration_smart_min_temp", "filtration.smart.tempMin"),
-        ("filtration_smart_high_temp", "filtration.smart.tempHigh"),
+    for name, translation_key, path in (
+        ("Temperature", "temperature", "main.temperature"),
+        ("Filtration Intel Temperature", "filtration_intel_temperature", "filtration.intel.temp"),
+        ("Filtration Smart Min Temp", "filtration_smart_min_temp", "filtration.smart.tempMin"),
+        ("Filtration Smart High Temp", "filtration_smart_high_temp", "filtration.smart.tempHigh"),
     ):
         entities.append(
             AquariteTemperatureSensorEntity(
-                dataservice, pool_id, pool_name, translation_key, path
+                dataservice, pool_id, pool_name, name, translation_key, path
             )
         )
 
@@ -58,24 +58,21 @@ async def async_setup_entry(
     if dataservice.get_value(PATH_HASCD):
         entities.append(
             AquariteValueSensorEntity(
-                dataservice, pool_id, pool_name, "cd", "modules.cd.current"
+                dataservice, pool_id, pool_name, "CD", "cd", "modules.cd.current"
             )
         )
 
     if dataservice.get_value(PATH_HASCL):
         entities.append(
             AquariteValueSensorEntity(
-                dataservice, pool_id, pool_name, "cl", "modules.cl.current"
+                dataservice, pool_id, pool_name, "Cl", "cl", "modules.cl.current"
             )
         )
 
     if dataservice.get_value(PATH_HASPH):
         entities.append(
             AquariteValueSensorEntity(
-                dataservice,
-                pool_id,
-                pool_name,
-                "ph",
+                dataservice, pool_id, pool_name, "pH", "ph",
                 "modules.ph.current",
                 device_class=SensorDeviceClass.PH,
             )
@@ -84,52 +81,48 @@ async def async_setup_entry(
     if dataservice.get_value(PATH_HASRX):
         entities.append(
             AquariteRxValueSensorEntity(
-                dataservice, pool_id, pool_name, "rx", "modules.rx.current"
+                dataservice, pool_id, pool_name, "Rx", "rx", "modules.rx.current"
             )
         )
 
     if dataservice.get_value(PATH_HASUV):
         entities.append(
             AquariteValueSensorEntity(
-                dataservice, pool_id, pool_name, "uv", "modules.uv.current"
+                dataservice, pool_id, pool_name, "UV", "uv", "modules.uv.current"
             )
         )
 
     if dataservice.get_value(PATH_HASHIDRO):
-        key = (
-            "electrolysis"
-            if dataservice.get_value("hidro.is_electrolysis")
-            else "hydrolysis"
-        )
+        is_electrolysis = dataservice.get_value("hidro.is_electrolysis")
+        name = "Electrolysis" if is_electrolysis else "Hidrolysis"
+        key = "electrolysis" if is_electrolysis else "hydrolysis"
         entities.append(
             AquariteHydrolyserSensorEntity(
-                dataservice, pool_id, pool_name, key, "hidro.current"
+                dataservice, pool_id, pool_name, name, key, "hidro.current"
             )
         )
 
     # Time and Interval Sensors
     entities.append(
         AquariteTimeSensorEntity(
-            dataservice,
-            pool_id,
-            pool_name,
-            "filtration_intel_time",
+            dataservice, pool_id, pool_name,
+            "Filtration Intel Time", "filtration_intel_time",
             "filtration.intel.time",
             native_unit_of_measurement="h",
         )
     )
 
-    for translation_key, path in (
-        ("filtration_interval_1_from", "filtration.interval1.from"),
-        ("filtration_interval_1_to", "filtration.interval1.to"),
-        ("filtration_interval_2_from", "filtration.interval2.from"),
-        ("filtration_interval_2_to", "filtration.interval2.to"),
-        ("filtration_interval_3_from", "filtration.interval3.from"),
-        ("filtration_interval_3_to", "filtration.interval3.to"),
+    for name, translation_key, path in (
+        ("Filtration Interval 1 From", "filtration_interval_1_from", "filtration.interval1.from"),
+        ("Filtration Interval 1 To", "filtration_interval_1_to", "filtration.interval1.to"),
+        ("Filtration Interval 2 From", "filtration_interval_2_from", "filtration.interval2.from"),
+        ("Filtration Interval 2 To", "filtration_interval_2_to", "filtration.interval2.to"),
+        ("Filtration Interval 3 From", "filtration_interval_3_from", "filtration.interval3.from"),
+        ("Filtration Interval 3 To", "filtration_interval_3_to", "filtration.interval3.to"),
     ):
         entities.append(
             AquariteIntervalTimeSensorEntity(
-                dataservice, pool_id, pool_name, translation_key, path
+                dataservice, pool_id, pool_name, name, translation_key, path
             )
         )
 
@@ -137,26 +130,25 @@ async def async_setup_entry(
     for index in range(1, 4):
         entities.append(
             AquariteSpeedLabelSensorEntity(
-                dataservice,
-                pool_id,
-                pool_name,
+                dataservice, pool_id, pool_name,
+                f"Filtration Timer Speed {index}",
                 f"filtration_timer_speed_{index}",
                 f"filtration.timerVel{index}",
             )
         )
 
     # Location sensors (diagnostic)
-    for translation_key, key in (
-        ("city", "city"),
-        ("street", "street"),
-        ("zipcode", "zipcode"),
-        ("country", "country"),
-        ("latitude", "lat"),
-        ("longitude", "lng"),
+    for name, translation_key, key in (
+        ("City", "city", "city"),
+        ("Street", "street", "street"),
+        ("Zipcode", "zipcode", "zipcode"),
+        ("Country", "country", "country"),
+        ("Latitude", "latitude", "lat"),
+        ("Longitude", "longitude", "lng"),
     ):
         entities.append(
             AquariteLocationSensorEntity(
-                dataservice, pool_id, pool_name, translation_key, key
+                dataservice, pool_id, pool_name, name, translation_key, key
             )
         )
 
@@ -177,6 +169,7 @@ class AquariteSpeedLabelSensorEntity(AquariteEntity, SensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         value_path: str,
     ) -> None:
@@ -184,7 +177,7 @@ class AquariteSpeedLabelSensorEntity(AquariteEntity, SensorEntity):
         super().__init__(dataservice, pool_id, pool_name)
         self._value_path = value_path
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def native_value(self) -> str:
@@ -204,6 +197,7 @@ class AquariteIntervalTimeSensorEntity(AquariteEntity, SensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         value_path: str,
     ) -> None:
@@ -211,7 +205,7 @@ class AquariteIntervalTimeSensorEntity(AquariteEntity, SensorEntity):
         super().__init__(dataservice, pool_id, pool_name)
         self._value_path = value_path
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def native_value(self) -> str | None:
@@ -239,6 +233,7 @@ class AquariteTemperatureSensorEntity(AquariteEntity, SensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         value_path: str,
     ) -> None:
@@ -246,7 +241,7 @@ class AquariteTemperatureSensorEntity(AquariteEntity, SensorEntity):
         super().__init__(dataservice, pool_id, pool_name)
         self._value_path = value_path
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def native_value(self) -> float | None:
@@ -268,6 +263,7 @@ class AquariteValueSensorEntity(AquariteEntity, SensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         value_path: str,
         device_class: SensorDeviceClass | None = None,
@@ -279,7 +275,7 @@ class AquariteValueSensorEntity(AquariteEntity, SensorEntity):
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = native_unit_of_measurement
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def native_value(self) -> float | None:
@@ -299,6 +295,7 @@ class AquariteTimeSensorEntity(AquariteEntity, SensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         value_path: str,
         device_class: SensorDeviceClass | None = None,
@@ -310,7 +307,7 @@ class AquariteTimeSensorEntity(AquariteEntity, SensorEntity):
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = native_unit_of_measurement
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def native_value(self) -> float | None:
@@ -333,6 +330,7 @@ class AquariteHydrolyserSensorEntity(AquariteEntity, SensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         value_path: str,
     ) -> None:
@@ -340,7 +338,7 @@ class AquariteHydrolyserSensorEntity(AquariteEntity, SensorEntity):
         super().__init__(dataservice, pool_id, pool_name)
         self._value_path = value_path
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def native_value(self) -> float | None:
@@ -363,6 +361,7 @@ class AquariteRxValueSensorEntity(AquariteEntity, SensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         value_path: str,
     ) -> None:
@@ -370,7 +369,7 @@ class AquariteRxValueSensorEntity(AquariteEntity, SensorEntity):
         super().__init__(dataservice, pool_id, pool_name)
         self._value_path = value_path
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def native_value(self) -> int | None:
@@ -392,6 +391,7 @@ class AquariteLocationSensorEntity(AquariteEntity, SensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
+        name: str,
         translation_key: str,
         form_key: str,
     ) -> None:
@@ -399,7 +399,7 @@ class AquariteLocationSensorEntity(AquariteEntity, SensorEntity):
         super().__init__(dataservice, pool_id, pool_name)
         self._form_key = form_key
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def native_value(self) -> str | None:
