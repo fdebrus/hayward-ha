@@ -95,17 +95,16 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
     @property
     def native_value(self) -> float | None:
         """Return the current value."""
-        raw_value = self._dataservice.get_value(self._value_path)
+        raw_value = self.coordinator.get_value(self._value_path)
         if raw_value is None:
             return None
         scale = self.SCALE_MAP.get(self._value_path)
-        return int(raw_value) / scale if scale else raw_value
+        return int(raw_value) / scale if scale else float(raw_value)
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the value."""
         scale = self.SCALE_MAP.get(self._value_path)
         raw_value = int(value * scale) if scale else value
-        await self._dataservice.api.set_value(
+        await self.coordinator.api.set_value(
             self._pool_id, self._value_path, raw_value
         )
-        self.async_write_ha_state()

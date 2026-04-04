@@ -9,7 +9,8 @@ from homeassistant.core import HomeAssistant
 
 from . import AquariteConfigEntry
 
-TO_REDACT = {CONF_USERNAME, CONF_PASSWORD}
+TO_REDACT_CONFIG = {CONF_USERNAME, CONF_PASSWORD}
+TO_REDACT_COORDINATOR = {"city", "street", "zipcode", "lat", "lng", "email"}
 
 
 async def async_get_config_entry_diagnostics(
@@ -21,7 +22,9 @@ async def async_get_config_entry_diagnostics(
     return {
         "entry": {
             "title": entry.title,
-            "data": async_redact_data(dict(entry.data), TO_REDACT),
+            "data": async_redact_data(dict(entry.data), TO_REDACT_CONFIG),
         },
-        "coordinator_data": coordinator.data,
+        "coordinator_data": async_redact_data(
+            coordinator.data or {}, TO_REDACT_COORDINATOR
+        ),
     }

@@ -189,7 +189,7 @@ class AquariteSpeedLabelSensorEntity(AquariteEntity, SensorEntity):
     @property
     def native_value(self) -> str:
         """Return the speed label."""
-        value = self._dataservice.get_value(self._value_path)
+        value = self.coordinator.get_value(self._value_path)
         try:
             return self.SPEED_LABELS.get(int(value), "Unknown")
         except (ValueError, TypeError):
@@ -216,7 +216,7 @@ class AquariteIntervalTimeSensorEntity(AquariteEntity, SensorEntity):
     @property
     def native_value(self) -> str | None:
         """Return the time interval as HH:MM."""
-        raw_value = self._dataservice.get_value(self._value_path)
+        raw_value = self.coordinator.get_value(self._value_path)
         try:
             seconds = int(raw_value)
             hours, minutes = seconds // 3600, (seconds % 3600) // 60
@@ -251,7 +251,7 @@ class AquariteTemperatureSensorEntity(AquariteEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the temperature value."""
-        value = self._dataservice.get_value(self._value_path)
+        value = self.coordinator.get_value(self._value_path)
         try:
             return float(value)
         except (TypeError, ValueError):
@@ -284,7 +284,7 @@ class AquariteValueSensorEntity(AquariteEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the sensor value."""
-        value = self._dataservice.get_value(self._value_path)
+        value = self.coordinator.get_value(self._value_path)
         try:
             return float(value) / 100
         except (TypeError, ValueError):
@@ -315,7 +315,7 @@ class AquariteTimeSensorEntity(AquariteEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the time value in hours."""
-        value = self._dataservice.get_value(self._value_path)
+        value = self.coordinator.get_value(self._value_path)
         try:
             return float(value) / 60
         except (TypeError, ValueError):
@@ -345,7 +345,7 @@ class AquariteHydrolyserSensorEntity(AquariteEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the hydrolyser value."""
-        value = self._dataservice.get_value(self._value_path)
+        value = self.coordinator.get_value(self._value_path)
         try:
             return float(value) / 10
         except (TypeError, ValueError):
@@ -375,7 +375,7 @@ class AquariteRxValueSensorEntity(AquariteEntity, SensorEntity):
     @property
     def native_value(self) -> int | None:
         """Return the Rx value."""
-        value = self._dataservice.get_value(self._value_path)
+        value = self.coordinator.get_value(self._value_path)
         try:
             return int(value)
         except (TypeError, ValueError):
@@ -404,7 +404,7 @@ class AquariteLocationSensorEntity(AquariteEntity, SensorEntity):
     @property
     def native_value(self) -> str | None:
         """Return the location value."""
-        form = self._dataservice.get_value("form")
+        form = self.coordinator.get_value("form")
         return form.get(self._form_key) if form else None
 
 

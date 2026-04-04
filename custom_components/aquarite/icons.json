@@ -4,6 +4,15 @@
       "temperature": {
         "default": "mdi:thermometer"
       },
+      "filtration_intel_temperature": {
+        "default": "mdi:thermometer"
+      },
+      "filtration_smart_min_temp": {
+        "default": "mdi:thermometer"
+      },
+      "filtration_smart_high_temp": {
+        "default": "mdi:thermometer"
+      },
       "ph": {
         "default": "mdi:ph"
       },
@@ -28,13 +37,31 @@
       "filtration_intel_time": {
         "default": "mdi:timer-outline"
       },
-      "filtration_interval_from": {
+      "filtration_interval_1_from": {
         "default": "mdi:clock-start"
       },
-      "filtration_interval_to": {
+      "filtration_interval_1_to": {
         "default": "mdi:clock-end"
       },
-      "speed": {
+      "filtration_interval_2_from": {
+        "default": "mdi:clock-start"
+      },
+      "filtration_interval_2_to": {
+        "default": "mdi:clock-end"
+      },
+      "filtration_interval_3_from": {
+        "default": "mdi:clock-start"
+      },
+      "filtration_interval_3_to": {
+        "default": "mdi:clock-end"
+      },
+      "filtration_timer_speed_1": {
+        "default": "mdi:speedometer"
+      },
+      "filtration_timer_speed_2": {
+        "default": "mdi:speedometer"
+      },
+      "filtration_timer_speed_3": {
         "default": "mdi:speedometer"
       },
       "pool_name": {
@@ -66,11 +93,56 @@
       "filtration_status": {
         "default": "mdi:pump"
       },
+      "backwash_status": {
+        "default": "mdi:pump"
+      },
+      "hidro_cover_reduction": {
+        "default": "mdi:shield-sun"
+      },
+      "ph_pump_alarm": {
+        "default": "mdi:alert"
+      },
+      "cd_module_installed": {
+        "default": "mdi:chip"
+      },
+      "cl_module_installed": {
+        "default": "mdi:chip"
+      },
+      "rx_module_installed": {
+        "default": "mdi:chip"
+      },
+      "ph_module_installed": {
+        "default": "mdi:chip"
+      },
+      "io_module_installed": {
+        "default": "mdi:chip"
+      },
+      "hidro_module_installed": {
+        "default": "mdi:chip"
+      },
+      "ph_acid_pump": {
+        "default": "mdi:pump"
+      },
+      "heating_status": {
+        "default": "mdi:radiator"
+      },
+      "filtration_smart_freeze": {
+        "default": "mdi:snowflake-alert"
+      },
       "connected": {
         "default": "mdi:cloud-check"
       },
+      "hidro_fl2_status": {
+        "default": "mdi:water-alert"
+      },
       "acid_tank": {
         "default": "mdi:bottle-tonic"
+      },
+      "electrolysis_low": {
+        "default": "mdi:flash-alert"
+      },
+      "hydrolysis_low": {
+        "default": "mdi:flash-alert"
       }
     },
     "switch": {
@@ -80,7 +152,16 @@
       "electrolysis_boost": {
         "default": "mdi:flash-alert"
       },
-      "relay": {
+      "relay_1": {
+        "default": "mdi:electric-switch"
+      },
+      "relay_2": {
+        "default": "mdi:electric-switch"
+      },
+      "relay_3": {
+        "default": "mdi:electric-switch"
+      },
+      "relay_4": {
         "default": "mdi:electric-switch"
       },
       "filtration": {
@@ -91,7 +172,10 @@
       "redox_setpoint": {
         "default": "mdi:gauge"
       },
-      "ph_setpoint": {
+      "ph_low": {
+        "default": "mdi:ph"
+      },
+      "ph_max": {
         "default": "mdi:ph"
       },
       "electrolysis_setpoint": {

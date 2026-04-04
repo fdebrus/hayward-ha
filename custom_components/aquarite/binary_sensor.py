@@ -192,7 +192,7 @@ class AquariteBinarySensorEntity(AquariteEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true if the binary sensor is on."""
-        value = self._dataservice.get_value(self._value_path)
+        value = self.coordinator.get_value(self._value_path)
         if value is None:
             return None
         return bool(value)
@@ -219,5 +219,5 @@ class AquariteBinarySensorTankEntity(AquariteEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         """Return true if any tank is low."""
         return any(
-            self._dataservice.get_value(module) for module in TANK_MODULE_PATHS
+            self.coordinator.get_value(module) for module in TANK_MODULE_PATHS
         )

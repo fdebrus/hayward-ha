@@ -4,13 +4,14 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-from datetime import datetime
 from typing import Any
 
 from aioaquarite import AquariteAuth, AquariteClient
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import dt as dt_util
 
 from .const import HEALTH_CHECK_INTERVAL
 
@@ -21,21 +22,28 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Aquarite coordinator using Firestore real-time snapshots."""
 
     def __init__(
-        self, hass: HomeAssistant, auth: AquariteAuth, api: AquariteClient
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        auth: AquariteAuth,
+        api: AquariteClient,
+        pool_id: str,
     ) -> None:
         """Initialize the coordinator."""
         self.auth = auth
         self.api = api
-        self.pool_id: str | None = None
+        self.pool_id: str = pool_id
         self.watch: Any | None = None
         self._health_task: asyncio.Task[None] | None = None
         self._token_task: asyncio.Task[None] | None = None
 
-        super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
-
-    def set_pool_id(self, pool_id: str) -> None:
-        """Set the pool ID for queries."""
-        self.pool_id = pool_id
+        super().__init__(
+            hass,
+            logger=_LOGGER,
+            name="Aquarite",
+            update_interval=None,
+            config_entry=entry,
+        )
 
     async def subscribe(self) -> None:
         """Subscribe to Firestore real-time updates via the library."""
@@ -109,7 +117,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def set_pool_time_to_now(self) -> None:
         """Sync the pool controller clock with the current time."""
-        now = datetime.now()
+        now = dt_util.now()
         payload = {
             "day": now.isoweekday(),
             "hour": now.hour,
