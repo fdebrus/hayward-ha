@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 
 from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -28,10 +29,19 @@ PLATFORMS: list[Platform] = [
 ]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Aquarite from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
+@dataclass
+class AquariteRuntimeData:
+    """Runtime data for the Aquarite integration."""
 
+    coordinator: AquariteDataUpdateCoordinator
+    auth: AquariteAuth
+
+
+AquariteConfigEntry = ConfigEntry[AquariteRuntimeData]
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> bool:
+    """Set up Aquarite from a config entry."""
     try:
         user_config = entry.data
         session = async_get_clientsession(hass)
@@ -53,14 +63,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Start background tasks (token refresh and health check)
         await coordinator.setup_tasks()
 
-        hass.data[DOMAIN][entry.entry_id] = {
-            "coordinator": coordinator,
-            "auth": auth,
-        }
+        entry.runtime_data = AquariteRuntimeData(
+            coordinator=coordinator,
+            auth=auth,
+        )
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-        async def handle_sync_time(call):
+        async def handle_sync_time(call: ServiceCall) -> None:
             """Service call to sync pool time."""
             await coordinator.set_pool_time_to_now()
 
@@ -76,18 +86,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from exc
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(
+    hass: HomeAssistant, entry: AquariteConfigEntry
+) -> bool:
     """Unload Aquarite config entry."""
-    entry_data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
-    if not entry_data:
-        return False
-
-    coordinator = entry_data.get("coordinator")
-
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unloaded:
-        await coordinator.async_shutdown()
-        hass.data[DOMAIN].pop(entry.entry_id)
+        await entry.runtime_data.coordinator.async_shutdown()
 
     return unloaded

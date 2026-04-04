@@ -1,0 +1,123 @@
+{
+  "entity": {
+    "sensor": {
+      "temperature": {
+        "default": "mdi:thermometer"
+      },
+      "ph": {
+        "default": "mdi:ph"
+      },
+      "rx": {
+        "default": "mdi:gauge"
+      },
+      "cd": {
+        "default": "mdi:gauge"
+      },
+      "cl": {
+        "default": "mdi:gauge"
+      },
+      "uv": {
+        "default": "mdi:weather-sunny-alert"
+      },
+      "electrolysis": {
+        "default": "mdi:flash"
+      },
+      "hydrolysis": {
+        "default": "mdi:flash"
+      },
+      "filtration_intel_time": {
+        "default": "mdi:timer-outline"
+      },
+      "filtration_interval_from": {
+        "default": "mdi:clock-start"
+      },
+      "filtration_interval_to": {
+        "default": "mdi:clock-end"
+      },
+      "speed": {
+        "default": "mdi:speedometer"
+      },
+      "pool_name": {
+        "default": "mdi:pool"
+      },
+      "city": {
+        "default": "mdi:city"
+      },
+      "street": {
+        "default": "mdi:road"
+      },
+      "zipcode": {
+        "default": "mdi:numeric"
+      },
+      "country": {
+        "default": "mdi:earth"
+      },
+      "latitude": {
+        "default": "mdi:latitude"
+      },
+      "longitude": {
+        "default": "mdi:longitude"
+      }
+    },
+    "binary_sensor": {
+      "hidro_flow_status": {
+        "default": "mdi:water-alert"
+      },
+      "filtration_status": {
+        "default": "mdi:pump"
+      },
+      "connected": {
+        "default": "mdi:cloud-check"
+      },
+      "acid_tank": {
+        "default": "mdi:bottle-tonic"
+      }
+    },
+    "switch": {
+      "electrolysis_cover": {
+        "default": "mdi:shield-sun"
+      },
+      "electrolysis_boost": {
+        "default": "mdi:flash-alert"
+      },
+      "relay": {
+        "default": "mdi:electric-switch"
+      },
+      "filtration": {
+        "default": "mdi:pump"
+      }
+    },
+    "number": {
+      "redox_setpoint": {
+        "default": "mdi:gauge"
+      },
+      "ph_setpoint": {
+        "default": "mdi:ph"
+      },
+      "electrolysis_setpoint": {
+        "default": "mdi:flash"
+      }
+    },
+    "select": {
+      "pump_mode": {
+        "default": "mdi:pump"
+      },
+      "pump_speed": {
+        "default": "mdi:speedometer"
+      }
+    },
+    "light": {
+      "pool_light": {
+        "default": "mdi:pool"
+      }
+    },
+    "device_tracker": {
+      "location": {
+        "default": "mdi:pool"
+      }
+    }
+  },
+  "services": {
+    "sync_pool_time": "mdi:clock-sync"
+  }
+}

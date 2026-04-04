@@ -1,10 +1,11 @@
 """Data coordinator for the Aquarite integration."""
+from __future__ import annotations
 
 import asyncio
 import contextlib
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from aioaquarite import AquariteAuth, AquariteClient
 
@@ -16,17 +17,19 @@ from .const import HEALTH_CHECK_INTERVAL
 _LOGGER = logging.getLogger(__name__)
 
 
-class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
+class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Aquarite coordinator using Firestore real-time snapshots."""
 
     def __init__(
         self, hass: HomeAssistant, auth: AquariteAuth, api: AquariteClient
     ) -> None:
+        """Initialize the coordinator."""
         self.auth = auth
         self.api = api
-        self.pool_id: Optional[str] = None
-        self.watch = None
-        self._health_task: Optional[asyncio.Task] = None
+        self.pool_id: str | None = None
+        self.watch: Any | None = None
+        self._health_task: asyncio.Task[None] | None = None
+        self._token_task: asyncio.Task[None] | None = None
 
         super().__init__(hass, logger=_LOGGER, name="Aquarite", update_interval=None)
 
@@ -37,7 +40,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
     async def subscribe(self) -> None:
         """Subscribe to Firestore real-time updates via the library."""
 
-        def _on_data(data: dict) -> None:
+        def _on_data(data: dict[str, Any]) -> None:
             """Callback from Firestore thread; push data to HA loop."""
             self.hass.loop.call_soon_threadsafe(self.async_set_updated_data, data)
 
@@ -48,7 +51,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         self._health_task = self.hass.async_create_background_task(
             self.periodic_health_check(), "Aquarite health check"
         )
-        self.hass.async_create_background_task(
+        self._token_task = self.hass.async_create_background_task(
             self._token_refresh_loop(), "Aquarite token refresh"
         )
 
@@ -65,9 +68,9 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
                 retry_delay = 10
                 sleep_time = self.auth.calculate_sleep_duration()
                 await asyncio.sleep(sleep_time)
-            except Exception as e:
+            except Exception as err:
                 _LOGGER.error(
-                    "Error maintaining token: %s. Retrying in %ss", e, retry_delay
+                    "Error maintaining token: %s. Retrying in %ss", err, retry_delay
                 )
                 await asyncio.sleep(retry_delay)
                 retry_delay = min(retry_delay * 2, 600)
@@ -78,8 +81,8 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
             await asyncio.sleep(HEALTH_CHECK_INTERVAL)
             try:
                 await self.auth.get_client()
-            except Exception as e:
-                _LOGGER.error("Health check failed, resubscribing: %s", e)
+            except Exception as err:
+                _LOGGER.error("Health check failed, resubscribing: %s", err)
                 await self.subscribe()
 
     async def refresh_subscription(self) -> None:
@@ -93,10 +96,11 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator):
         """Cleanly unsubscribe and cancel tasks."""
         if self.watch:
             await asyncio.to_thread(self.watch.unsubscribe)
-        if self._health_task:
-            self._health_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await self._health_task
+        for task in (self._health_task, self._token_task):
+            if task:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
         await super().async_shutdown()
 
     def get_value(self, path: str, default: Any = None) -> Any:

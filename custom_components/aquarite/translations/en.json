@@ -10,15 +10,23 @@
         "title": "Authentication"
       },
       "reauth_confirm": {
-        "title": "[%key:common::config_flow::title::reauth%]",
+        "title": "Reauthenticate",
         "description": "Re-authenticate your Hayward account to continue."
       },
       "pool": {
         "data": {
-          "pool_id": "Pools:"
+          "pool_id": "Pool"
         },
         "description": "Please choose the pool for this integration.",
         "title": "Select Pool"
+      },
+      "reconfigure": {
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        },
+        "description": "Update your Hayward credentials.",
+        "title": "Reconfigure"
       }
     },
     "error": {
@@ -27,7 +35,236 @@
       "unknown_error": "Unexpected error. Please try again."
     },
     "abort": {
-      "reauth_successful": "New login info has been saved"
+      "reauth_successful": "Re-authentication was successful.",
+      "reconfigure_successful": "Reconfiguration was successful."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature": {
+        "name": "Temperature"
+      },
+      "filtration_intel_temperature": {
+        "name": "Filtration intel temperature"
+      },
+      "filtration_smart_min_temp": {
+        "name": "Filtration smart min temperature"
+      },
+      "filtration_smart_high_temp": {
+        "name": "Filtration smart high temperature"
+      },
+      "cd": {
+        "name": "CD"
+      },
+      "cl": {
+        "name": "CL"
+      },
+      "ph": {
+        "name": "pH"
+      },
+      "rx": {
+        "name": "Rx"
+      },
+      "uv": {
+        "name": "UV"
+      },
+      "electrolysis": {
+        "name": "Electrolysis"
+      },
+      "hydrolysis": {
+        "name": "Hydrolysis"
+      },
+      "filtration_intel_time": {
+        "name": "Filtration intel time"
+      },
+      "filtration_interval_1_from": {
+        "name": "Filtration interval 1 from"
+      },
+      "filtration_interval_1_to": {
+        "name": "Filtration interval 1 to"
+      },
+      "filtration_interval_2_from": {
+        "name": "Filtration interval 2 from"
+      },
+      "filtration_interval_2_to": {
+        "name": "Filtration interval 2 to"
+      },
+      "filtration_interval_3_from": {
+        "name": "Filtration interval 3 from"
+      },
+      "filtration_interval_3_to": {
+        "name": "Filtration interval 3 to"
+      },
+      "filtration_timer_speed_1": {
+        "name": "Filtration timer speed 1"
+      },
+      "filtration_timer_speed_2": {
+        "name": "Filtration timer speed 2"
+      },
+      "filtration_timer_speed_3": {
+        "name": "Filtration timer speed 3"
+      },
+      "city": {
+        "name": "City"
+      },
+      "street": {
+        "name": "Street"
+      },
+      "zipcode": {
+        "name": "Zipcode"
+      },
+      "country": {
+        "name": "Country"
+      },
+      "latitude": {
+        "name": "Latitude"
+      },
+      "longitude": {
+        "name": "Longitude"
+      },
+      "pool_name": {
+        "name": "Pool name"
+      }
+    },
+    "binary_sensor": {
+      "hidro_flow_status": {
+        "name": "Hydrolysis flow status"
+      },
+      "filtration_status": {
+        "name": "Filtration status"
+      },
+      "backwash_status": {
+        "name": "Backwash status"
+      },
+      "hidro_cover_reduction": {
+        "name": "Hydrolysis cover reduction"
+      },
+      "ph_pump_alarm": {
+        "name": "pH pump alarm"
+      },
+      "cd_module_installed": {
+        "name": "CD module installed"
+      },
+      "cl_module_installed": {
+        "name": "CL module installed"
+      },
+      "rx_module_installed": {
+        "name": "RX module installed"
+      },
+      "ph_module_installed": {
+        "name": "pH module installed"
+      },
+      "io_module_installed": {
+        "name": "IO module installed"
+      },
+      "hidro_module_installed": {
+        "name": "Hydrolysis module installed"
+      },
+      "ph_acid_pump": {
+        "name": "pH acid pump"
+      },
+      "heating_status": {
+        "name": "Heating status"
+      },
+      "filtration_smart_freeze": {
+        "name": "Filtration smart freeze"
+      },
+      "connected": {
+        "name": "Connected"
+      },
+      "hidro_fl2_status": {
+        "name": "Hydrolysis FL2 status"
+      },
+      "acid_tank": {
+        "name": "Acid tank"
+      },
+      "electrolysis_low": {
+        "name": "Electrolysis low"
+      },
+      "hydrolysis_low": {
+        "name": "Hydrolysis low"
+      }
+    },
+    "switch": {
+      "electrolysis_cover": {
+        "name": "Electrolysis cover"
+      },
+      "electrolysis_boost": {
+        "name": "Electrolysis boost"
+      },
+      "relay_1": {
+        "name": "Relay 1"
+      },
+      "relay_2": {
+        "name": "Relay 2"
+      },
+      "relay_3": {
+        "name": "Relay 3"
+      },
+      "relay_4": {
+        "name": "Relay 4"
+      },
+      "filtration": {
+        "name": "Filtration"
+      }
+    },
+    "number": {
+      "redox_setpoint": {
+        "name": "Redox setpoint"
+      },
+      "ph_low": {
+        "name": "pH low"
+      },
+      "ph_max": {
+        "name": "pH max"
+      },
+      "electrolysis_setpoint": {
+        "name": "Electrolysis setpoint"
+      }
+    },
+    "select": {
+      "pump_mode": {
+        "name": "Pump mode",
+        "state": {
+          "manual": "Manual",
+          "auto": "Auto",
+          "heat": "Heat",
+          "smart": "Smart",
+          "intel": "Intel"
+        }
+      },
+      "pump_speed": {
+        "name": "Pump speed",
+        "state": {
+          "slow": "Slow",
+          "medium": "Medium",
+          "high": "High"
+        }
+      }
+    },
+    "light": {
+      "pool_light": {
+        "name": "Light"
+      }
+    },
+    "device_tracker": {
+      "location": {
+        "name": "Location"
+      }
+    }
+  },
+  "exceptions": {
+    "communication_error": {
+      "message": "An error occurred while communicating with the Aquarite device: {error}"
+    },
+    "authentication_error": {
+      "message": "Authentication failed. Please check your credentials."
+    }
+  },
+  "services": {
+    "sync_pool_time": {
+      "name": "Sync pool time",
+      "description": "Sync the Home Assistant date and time to the pool controller."
     }
   }
 }
