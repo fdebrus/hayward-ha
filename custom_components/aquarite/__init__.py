@@ -45,6 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
     try:
         user_config = entry.data
         session = async_get_clientsession(hass)
+        pool_id: str = user_config["pool_id"]
 
         auth = AquariteAuth(
             session, user_config[CONF_USERNAME], user_config[CONF_PASSWORD]
@@ -53,11 +54,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
 
         api = AquariteClient(auth)
 
-        coordinator = AquariteDataUpdateCoordinator(hass, auth, api)
-        coordinator.set_pool_id(user_config["pool_id"])
+        coordinator = AquariteDataUpdateCoordinator(hass, entry, auth, api, pool_id)
 
         # Initial data fetch and subscription
-        coordinator.data = await api.fetch_pool_data(user_config["pool_id"])
+        coordinator.data = await api.fetch_pool_data(pool_id)
         await coordinator.subscribe()
 
         # Start background tasks (token refresh and health check)
@@ -74,8 +74,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
             """Service call to sync pool time."""
             await coordinator.set_pool_time_to_now()
 
-        if not hass.services.has_service(DOMAIN, "sync_pool_time"):
+        entry.async_on_unload(
             hass.services.async_register(DOMAIN, "sync_pool_time", handle_sync_time)
+        )
 
         return True
 

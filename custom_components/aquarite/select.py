@@ -59,7 +59,7 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
     @property
     def current_option(self) -> str | None:
         """Return the current selected option."""
-        raw_value = self._dataservice.get_value(self._value_path)
+        raw_value = self.coordinator.get_value(self._value_path)
         try:
             return self._options_map[int(raw_value)]
         except (TypeError, ValueError, IndexError):
@@ -67,6 +67,6 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Select an option."""
-        await self._dataservice.api.set_value(
+        await self.coordinator.api.set_value(
             self._pool_id, self._value_path, self._options_map.index(option)
         )

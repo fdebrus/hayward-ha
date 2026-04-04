@@ -59,7 +59,7 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
     @property
     def is_on(self) -> bool:
         """Return true if light is on."""
-        actual_state = bool(self._dataservice.get_value(self._value_path))
+        actual_state = bool(self.coordinator.get_value(self._value_path))
 
         # If we aren't waiting for a change, show actual state
         if self._target_state is None:
@@ -85,7 +85,7 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
         self.async_write_ha_state()
 
         try:
-            await self._dataservice.api.set_value(
+            await self.coordinator.api.set_value(
                 self._pool_id, self._value_path, 1 if state else 0
             )
         except Exception:

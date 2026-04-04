@@ -15,13 +15,12 @@ class AquariteEntity(CoordinatorEntity[AquariteDataUpdateCoordinator]):
 
     def __init__(
         self,
-        dataservice: AquariteDataUpdateCoordinator,
+        coordinator: AquariteDataUpdateCoordinator,
         pool_id: str,
         pool_name: str,
     ) -> None:
         """Initialize the base entity."""
-        super().__init__(dataservice)
-        self._dataservice = dataservice
+        super().__init__(coordinator)
         self._pool_id = pool_id
         self._pool_name = pool_name
         self._attr_device_info = DeviceInfo(

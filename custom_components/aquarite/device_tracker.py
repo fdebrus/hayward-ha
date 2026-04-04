@@ -50,7 +50,7 @@ class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):
     def latitude(self) -> float | None:
         """Return latitude directly from coordinator data."""
         try:
-            val = self._dataservice.get_value("form.lat")
+            val = self.coordinator.get_value("form.lat")
             return float(val) if val is not None else None
         except (TypeError, ValueError):
             return None
@@ -59,7 +59,7 @@ class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):
     def longitude(self) -> float | None:
         """Return longitude directly from coordinator data."""
         try:
-            val = self._dataservice.get_value("form.lng")
+            val = self.coordinator.get_value("form.lng")
             return float(val) if val is not None else None
         except (TypeError, ValueError):
             return None
