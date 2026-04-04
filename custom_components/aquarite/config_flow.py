@@ -71,15 +71,20 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._user_data[CONF_PASSWORD],
             )
             await auth.authenticate()
-            AquariteClient(auth)
+            api = AquariteClient(auth)
+            self._available_pools = await api.get_pools()
         except AuthenticationError:
             return self.async_show_form(
                 step_id="user",
                 data_schema=AUTH_SCHEMA,
                 errors={"base": "auth_error"},
             )
-
-        self._available_pools = await AquariteClient(auth).get_pools()
+        except Exception:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=AUTH_SCHEMA,
+                errors={"base": "unknown_error"},
+            )
 
         if not self._available_pools:
             return self.async_show_form(
