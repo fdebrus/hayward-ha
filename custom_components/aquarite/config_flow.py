@@ -106,6 +106,13 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         self._available_pools = await api.get_pools()
+
+        if not self._available_pools:
+            errors["base"] = "no_pools_found"
+            return self.async_show_form(
+                step_id="user", data_schema=AUTH_SCHEMA, errors=errors
+            )
+
         pool_schema = vol.Schema(
             {vol.Required("pool_id"): vol.In(self._available_pools)}
         )

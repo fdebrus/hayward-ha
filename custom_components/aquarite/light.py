@@ -71,7 +71,7 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
             return actual_state
 
         # Check if we've waited too long (Timeout)
-        if (time.time() - self._target_set_at) > RECONCILIATION_TIMEOUT:
+        if (time.monotonic() - self._target_set_at) > RECONCILIATION_TIMEOUT:
             self._target_state = None
             return actual_state
 
@@ -81,7 +81,7 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
     async def _send_command(self, state: bool) -> None:
         """Set target state and trigger API."""
         self._target_state = state
-        self._target_set_at = time.time()
+        self._target_set_at = time.monotonic()
         self.async_write_ha_state()
 
         try:

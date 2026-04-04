@@ -26,7 +26,10 @@ async def async_setup_entry(
 
     # Safely determine max electrolysis
     raw_max = dataservice.get_value("hidro.maxAllowedValue", 0)
-    max_electrolysis = int(raw_max) / 10 if raw_max else 50.0
+    try:
+        max_electrolysis = int(raw_max) / 10 if raw_max else 50.0
+    except (ValueError, TypeError):
+        max_electrolysis = 50.0
 
     entities = [
         AquariteNumberEntity(
