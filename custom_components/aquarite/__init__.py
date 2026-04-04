@@ -74,8 +74,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
             """Service call to sync pool time."""
             await coordinator.set_pool_time_to_now()
 
+        hass.services.async_register(DOMAIN, "sync_pool_time", handle_sync_time)
         entry.async_on_unload(
-            hass.services.async_register(DOMAIN, "sync_pool_time", handle_sync_time)
+            lambda: hass.services.async_remove(DOMAIN, "sync_pool_time")
         )
 
         return True

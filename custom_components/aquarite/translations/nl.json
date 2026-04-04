@@ -1,34 +1,146 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "data": {
-            "username": "Hayward-gebruikersnaam",
-            "password": "Wachtwoord"
-          },
-          "description": "Vul je Hayward-inloggegevens in.",
-          "title": "Authenticatie"
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Hayward-gebruikersnaam",
+          "password": "Wachtwoord"
         },
-        "reauth_confirm": {
-          "title": "[%key:common::config_flow::title::reauth%]",
-          "description": "Authenticeer je Hayward-account opnieuw om verder te gaan."
+        "description": "Vul je Hayward-inloggegevens in.",
+        "title": "Authenticatie"
+      },
+      "pool": {
+        "data": {
+          "pool_id": "Zwembad"
         },
-        "pool": {
-          "data": {
-            "pool_id": "Zwembaden:"
-          },
-          "description": "Selecteer het zwembad voor deze integratie.",
-          "title": "Selecteer Zwembad"
+        "description": "Selecteer het zwembad voor deze integratie.",
+        "title": "Selecteer Zwembad"
+      },
+      "reconfigure": {
+        "data": {
+          "username": "Gebruikersnaam",
+          "password": "Wachtwoord"
+        },
+        "description": "Werk je Hayward-inloggegevens bij.",
+        "title": "Herconfigureren"
+      }
+    },
+    "error": {
+      "auth_error": "Autorisatie mislukt, controleer gebruikersnaam en wachtwoord.",
+      "no_pools_found": "Geen zwembaden gevonden voor je account.",
+      "unknown_error": "Onverwachte fout. Probeer het opnieuw."
+    },
+    "abort": {
+      "reauth_successful": "Herauthenticatie is geslaagd.",
+      "reconfigure_successful": "Herconfiguratie is geslaagd."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature": { "name": "Temperatuur" },
+      "filtration_intel_temperature": { "name": "Filtratie intel temperatuur" },
+      "filtration_smart_min_temp": { "name": "Filtratie smart min temperatuur" },
+      "filtration_smart_high_temp": { "name": "Filtratie smart hoge temperatuur" },
+      "cd": { "name": "CD" },
+      "cl": { "name": "CL" },
+      "ph": { "name": "pH" },
+      "rx": { "name": "Rx" },
+      "uv": { "name": "UV" },
+      "electrolysis": { "name": "Elektrolyse" },
+      "hydrolysis": { "name": "Hydrolyse" },
+      "filtration_intel_time": { "name": "Filtratie intel tijd" },
+      "filtration_interval_1_from": { "name": "Filtratie interval 1 van" },
+      "filtration_interval_1_to": { "name": "Filtratie interval 1 tot" },
+      "filtration_interval_2_from": { "name": "Filtratie interval 2 van" },
+      "filtration_interval_2_to": { "name": "Filtratie interval 2 tot" },
+      "filtration_interval_3_from": { "name": "Filtratie interval 3 van" },
+      "filtration_interval_3_to": { "name": "Filtratie interval 3 tot" },
+      "filtration_timer_speed_1": { "name": "Filtratie timer snelheid 1" },
+      "filtration_timer_speed_2": { "name": "Filtratie timer snelheid 2" },
+      "filtration_timer_speed_3": { "name": "Filtratie timer snelheid 3" },
+      "city": { "name": "Stad" },
+      "street": { "name": "Straat" },
+      "zipcode": { "name": "Postcode" },
+      "country": { "name": "Land" },
+      "latitude": { "name": "Breedtegraad" },
+      "longitude": { "name": "Lengtegraad" },
+      "pool_name": { "name": "Zwembadnaam" }
+    },
+    "binary_sensor": {
+      "hidro_flow_status": { "name": "Hydrolyse stroomstatus" },
+      "filtration_status": { "name": "Filtratiestatus" },
+      "backwash_status": { "name": "Terugspoelstatus" },
+      "hidro_cover_reduction": { "name": "Hydrolyse afdekking reductie" },
+      "ph_pump_alarm": { "name": "pH pomp alarm" },
+      "cd_module_installed": { "name": "CD module geïnstalleerd" },
+      "cl_module_installed": { "name": "CL module geïnstalleerd" },
+      "rx_module_installed": { "name": "RX module geïnstalleerd" },
+      "ph_module_installed": { "name": "pH module geïnstalleerd" },
+      "io_module_installed": { "name": "IO module geïnstalleerd" },
+      "hidro_module_installed": { "name": "Hydrolyse module geïnstalleerd" },
+      "ph_acid_pump": { "name": "pH zuurpomp" },
+      "heating_status": { "name": "Verwarmingsstatus" },
+      "filtration_smart_freeze": { "name": "Filtratie smart bevriezing" },
+      "connected": { "name": "Verbonden" },
+      "hidro_fl2_status": { "name": "Hydrolyse FL2 status" },
+      "acid_tank": { "name": "Zuurtank" },
+      "electrolysis_low": { "name": "Elektrolyse laag" },
+      "hydrolysis_low": { "name": "Hydrolyse laag" }
+    },
+    "switch": {
+      "electrolysis_cover": { "name": "Elektrolyse afdekking" },
+      "electrolysis_boost": { "name": "Elektrolyse boost" },
+      "relay_1": { "name": "Relais 1" },
+      "relay_2": { "name": "Relais 2" },
+      "relay_3": { "name": "Relais 3" },
+      "relay_4": { "name": "Relais 4" },
+      "filtration": { "name": "Filtratie" }
+    },
+    "number": {
+      "redox_setpoint": { "name": "Redox instelpunt" },
+      "ph_low": { "name": "pH laag" },
+      "ph_max": { "name": "pH max" },
+      "electrolysis_setpoint": { "name": "Elektrolyse instelpunt" }
+    },
+    "select": {
+      "pump_mode": {
+        "name": "Pompmodus",
+        "state": {
+          "manual": "Handmatig",
+          "auto": "Automatisch",
+          "heat": "Verwarming",
+          "smart": "Smart",
+          "intel": "Intel"
         }
       },
-      "error": {
-        "auth_error": "Autorisatie mislukt, controleer gebruikersnaam en wachtwoord.",
-        "no_pools_found": "Geen zwembaden gevonden voor je account.",
-        "unknown_error": "Onverwachte fout. Probeer het opnieuw."
-      },
-      "abort": {
-        "reauth_successful": "Nieuwe inloggegevens zijn opgeslagen."
+      "pump_speed": {
+        "name": "Pompsnelheid",
+        "state": {
+          "slow": "Langzaam",
+          "medium": "Gemiddeld",
+          "high": "Hoog"
+        }
       }
+    },
+    "light": {
+      "pool_light": { "name": "Licht" }
+    },
+    "device_tracker": {
+      "location": { "name": "Locatie" }
+    }
+  },
+  "exceptions": {
+    "communication_error": {
+      "message": "Er is een fout opgetreden bij de communicatie met het Aquarite-apparaat: {error}"
+    },
+    "authentication_error": {
+      "message": "Authenticatie mislukt. Controleer je inloggegevens."
+    }
+  },
+  "services": {
+    "sync_pool_time": {
+      "name": "Zwembadtijd synchroniseren",
+      "description": "Synchroniseer de Home Assistant datum en tijd naar de zwembadcontroller."
     }
   }
-  
+}
