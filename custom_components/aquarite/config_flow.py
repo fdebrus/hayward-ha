@@ -1,4 +1,5 @@
-"""Config Flow."""
+"""Config Flow for the Aquarite integration."""
+from __future__ import annotations
 
 from typing import Any
 
@@ -26,6 +27,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Aquarite config flow."""
 
     def __init__(self) -> None:
+        """Initialize the config flow."""
         self.data: dict[str, Any] = {}
         self._reauth_entry: config_entries.ConfigEntry | None = None
         self._available_pools: dict[str, str] = {}
@@ -120,3 +122,56 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.context.get("entry_id")
         )
         return await self.async_step_user(user_input)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle reconfiguration of credentials."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            session = async_get_clientsession(self.hass)
+            try:
+                auth = AquariteAuth(
+                    session,
+                    user_input[CONF_USERNAME],
+                    user_input[CONF_PASSWORD],
+                )
+                await auth.authenticate()
+            except AuthenticationError:
+                errors["base"] = "auth_error"
+            else:
+                reconfigure_entry = self.hass.config_entries.async_get_entry(
+                    self.context.get("entry_id")
+                )
+                if reconfigure_entry:
+                    new_data = {
+                        **reconfigure_entry.data,
+                        CONF_USERNAME: user_input[CONF_USERNAME],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    }
+                    self.hass.config_entries.async_update_entry(
+                        reconfigure_entry, data=new_data
+                    )
+                    await self.hass.config_entries.async_reload(
+                        reconfigure_entry.entry_id
+                    )
+                    return self.async_abort(reason="reconfigure_successful")
+
+        reconfigure_entry = self.hass.config_entries.async_get_entry(
+            self.context.get("entry_id")
+        )
+        default_username = ""
+        if reconfigure_entry:
+            default_username = reconfigure_entry.data.get(CONF_USERNAME, "")
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_USERNAME, default=default_username): cv.string,
+                vol.Required(CONF_PASSWORD): cv.string,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="reconfigure", data_schema=schema, errors=errors
+        )
