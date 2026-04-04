@@ -114,19 +114,19 @@
       "pump_mode": {
         "name": "Pompmodus",
         "state": {
-          "manual": "Handmatig",
-          "auto": "Automatisch",
-          "heat": "Verwarming",
-          "smart": "Smart",
-          "intel": "Intel"
+          "Manual": "Handmatig",
+          "Auto": "Automatisch",
+          "Heat": "Verwarming",
+          "Smart": "Smart",
+          "Intel": "Intel"
         }
       },
       "pump_speed": {
         "name": "Pompsnelheid",
         "state": {
-          "slow": "Langzaam",
-          "medium": "Gemiddeld",
-          "high": "Hoog"
+          "Slow": "Langzaam",
+          "Medium": "Gemiddeld",
+          "High": "Hoog"
         }
       }
     },

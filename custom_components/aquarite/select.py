@@ -9,8 +9,8 @@ from . import AquariteConfigEntry
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
-PUMP_MODE_OPTIONS: tuple[str, ...] = ("manual", "auto", "heat", "smart", "intel")
-PUMP_SPEED_OPTIONS: tuple[str, ...] = ("slow", "medium", "high")
+PUMP_MODE_OPTIONS: tuple[str, ...] = ("Manual", "Auto", "Heat", "Smart", "Intel")
+PUMP_SPEED_OPTIONS: tuple[str, ...] = ("Slow", "Medium", "High")
 
 PARALLEL_UPDATES = 1
 

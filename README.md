@@ -26,10 +26,37 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 
 - Secure cloud authentication using your existing Hayward account  
 - Automatic discovery of linked pool controllers  
-- Sensors for key pool data (water temperature, ORP, pH, filtration status, etc.)  
-- Support for multiple filtration modes (Intel / Smart)  
+- Real-time data updates via cloud push (no polling)  
 - Background token refresh and health monitoring  
-- Service to synchronize the pool controller clock with Home Assistant  
+- Reconfigure credentials without removing the integration  
+- Downloadable diagnostics for troubleshooting  
+- Multi-language support (English, Dutch, Danish)  
+
+### Sensors
+
+- Water temperature, filtration temperatures  
+- pH, ORP (Rx), chlorine (Cl), CD, UV module readings  
+- Electrolysis / hydrolysis production level  
+- Filtration intervals and timer speeds  
+- Pool location and name  
+
+### Controls
+
+- **Switches**: filtration on/off, electrolysis cover/boost, 4 relays  
+- **Number setpoints**: pH low/max, Rx setpoint, electrolysis level  
+- **Select**: pump mode (Manual / Auto / Heat / Smart / Intel), pump speed (Slow / Medium / High)  
+- **Light**: pool light on/off  
+
+### Binary sensors
+
+- Filtration, backwash, and heating status  
+- pH pump alarm, acid tank level, flow status  
+- Module presence (CD, CL, RX, pH, IO, hydrolysis)  
+- Freeze protection and connectivity  
+
+### Services
+
+- **Sync pool time**: synchronize the pool controller's internal clock with Home Assistant's timezone  
 
 ## Requirements
 
@@ -44,14 +71,15 @@ You can install the integration using **HACS** (recommended) or manually.
 ### Option 1: Install via HACS (recommended)
 
 1. Open **Home Assistant → HACS → Integrations**
-2. Search for **Aquarite**
-3. Install the integration
-4. Restart Home Assistant when prompted
+2. Click the **three dots menu** (top right) → **Custom repositories**
+3. Add `https://github.com/fdebrus/hayward-ha` with category **Integration**
+4. Search for **Aquarite** and install
+5. Restart Home Assistant when prompted
 
 ### Option 2: Manual installation
 
 1. Download or clone this repository
-2. Copy the `custom_components/hayward_aquarite` directory into your Home Assistant `custom_components` folder
+2. Copy the `custom_components/aquarite` directory into your Home Assistant `custom_components` folder
 3. Restart Home Assistant
 
 ## Configuration
@@ -62,7 +90,24 @@ You can install the integration using **HACS** (recommended) or manually.
 4. Enter your Hayward cloud **username and password**
 5. Select the pool controller you want to add
 
-All supported entities and sensors are created automatically once the integration is set up.
+All supported entities are created automatically once the integration is set up.
+
+### Reconfiguring credentials
+
+If you need to update your Hayward credentials:
+
+1. Go to **Settings → Devices & Services**
+2. Find the **Aquarite** integration
+3. Click the **three dots menu** → **Reconfigure**
+4. Enter your new credentials
+
+### Downloading diagnostics
+
+For troubleshooting, you can download diagnostics data (credentials and personal info are automatically redacted):
+
+1. Go to **Settings → Devices & Services**
+2. Click on the **Aquarite** device
+3. Click **Download diagnostics**
 
 ## Dashboard examples
 
@@ -81,25 +126,34 @@ https://github.com/alexdelprete/HA-NeoPool-MQTT
 
 ## Time synchronization service
 
-The integration exposes a service allowing you to **synchronize the pool controller’s internal clock** with Home Assistant’s timezone.
+The integration exposes a service allowing you to **synchronize the pool controller's internal clock** with Home Assistant's timezone.
 
 This is useful to ensure correct scheduling and reporting, especially after power outages or controller restarts.
 
 ![Time sync service](https://github.com/user-attachments/assets/5b9896b1-b5b8-481f-933e-4e7482072fab)
 
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Entities show "Unavailable" | Check your internet connection and verify the controller is online in the Hayward app. The integration will automatically reconnect. |
+| Reauth notification appears | Your credentials may have changed or expired. Click the notification to re-enter your username and password. |
+| Entities not updating | The integration uses real-time cloud push. If updates stop, try reloading the integration from Settings → Devices & Services. |
+| HACS can't find the integration | Make sure you added the custom repository URL first (see installation steps above). |
+
 ## Credits
 
 Special thanks to:
 
-- **@djerik** – original work and early foundation of this integration  
-- **@alexdelprete** – NeoPool MQTT integration, design ideas, and inspiration https://github.com/alexdelprete/HA-NeoPool-MQTT  
-- **@curzon01** – dashboard design and UX inspiration  
+- **@djerik** -- original work and early foundation of this integration  
+- **@alexdelprete** -- NeoPool MQTT integration, design ideas, and inspiration https://github.com/alexdelprete/HA-NeoPool-MQTT  
+- **@curzon01** -- dashboard design and UX inspiration  
 
 ## Issues & Discussion
 
 For support, feature requests, and discussions, please use the Home Assistant community thread:
 
-👉 https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136
+https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136
 
 ## Trademark Notice
 

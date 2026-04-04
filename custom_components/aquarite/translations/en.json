@@ -230,19 +230,19 @@
       "pump_mode": {
         "name": "Pump mode",
         "state": {
-          "manual": "Manual",
-          "auto": "Auto",
-          "heat": "Heat",
-          "smart": "Smart",
-          "intel": "Intel"
+          "Manual": "Manual",
+          "Auto": "Auto",
+          "Heat": "Heat",
+          "Smart": "Smart",
+          "Intel": "Intel"
         }
       },
       "pump_speed": {
         "name": "Pump speed",
         "state": {
-          "slow": "Slow",
-          "medium": "Medium",
-          "high": "High"
+          "Slow": "Slow",
+          "Medium": "Medium",
+          "High": "High"
         }
       }
     },

@@ -114,19 +114,19 @@
       "pump_mode": {
         "name": "Pumpetilstand",
         "state": {
-          "manual": "Manuel",
-          "auto": "Automatisk",
-          "heat": "Opvarmning",
-          "smart": "Smart",
-          "intel": "Intel"
+          "Manual": "Manuel",
+          "Auto": "Automatisk",
+          "Heat": "Opvarmning",
+          "Smart": "Smart",
+          "Intel": "Intel"
         }
       },
       "pump_speed": {
         "name": "Pumpehastighed",
         "state": {
-          "slow": "Langsom",
-          "medium": "Middel",
-          "high": "Høj"
+          "Slow": "Langsom",
+          "Medium": "Middel",
+          "High": "Høj"
         }
       }
     },
