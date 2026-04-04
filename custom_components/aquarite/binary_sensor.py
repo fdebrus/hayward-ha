@@ -30,6 +30,7 @@ PARALLEL_UPDATES = 0
 class AquariteBinarySensorConfig:
     """Configuration for an Aquarite binary sensor."""
 
+    name: str
     translation_key: str
     value_path: str
     device_class: BinarySensorDeviceClass | None = None
@@ -39,77 +40,77 @@ class AquariteBinarySensorConfig:
 
 BASE_SENSORS: tuple[AquariteBinarySensorConfig, ...] = (
     AquariteBinarySensorConfig(
-        "hidro_flow_status", "hidro.fl1", BinarySensorDeviceClass.PROBLEM
+        "Hidro Flow Status", "hidro_flow_status", "hidro.fl1", BinarySensorDeviceClass.PROBLEM
     ),
     AquariteBinarySensorConfig(
-        "filtration_status", "filtration.status", BinarySensorDeviceClass.RUNNING
+        "Filtration Status", "filtration_status", "filtration.status", BinarySensorDeviceClass.RUNNING
     ),
     AquariteBinarySensorConfig(
-        "backwash_status", "backwash.status", BinarySensorDeviceClass.RUNNING
+        "Backwash Status", "backwash_status", "backwash.status", BinarySensorDeviceClass.RUNNING
     ),
     AquariteBinarySensorConfig(
-        "hidro_cover_reduction", "hidro.cover", BinarySensorDeviceClass.RUNNING
+        "Hidro Cover Reduction", "hidro_cover_reduction", "hidro.cover", BinarySensorDeviceClass.RUNNING
     ),
     AquariteBinarySensorConfig(
-        "ph_pump_alarm", "modules.ph.al3", BinarySensorDeviceClass.PROBLEM
+        "pH Pump Alarm", "ph_pump_alarm", "modules.ph.al3", BinarySensorDeviceClass.PROBLEM
     ),
     AquariteBinarySensorConfig(
-        "cd_module_installed",
+        "CD Module Installed", "cd_module_installed",
         "main.hasCD",
         BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     AquariteBinarySensorConfig(
-        "cl_module_installed",
+        "CL Module Installed", "cl_module_installed",
         "main.hasCL",
         BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     AquariteBinarySensorConfig(
-        "rx_module_installed",
+        "RX Module Installed", "rx_module_installed",
         "main.hasRX",
         BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     AquariteBinarySensorConfig(
-        "ph_module_installed",
+        "pH Module Installed", "ph_module_installed",
         "main.hasPH",
         BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     AquariteBinarySensorConfig(
-        "io_module_installed",
+        "IO Module Installed", "io_module_installed",
         "main.hasIO",
         BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     AquariteBinarySensorConfig(
-        "hidro_module_installed",
+        "Hidro Module Installed", "hidro_module_installed",
         "main.hasHidro",
         BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     AquariteBinarySensorConfig(
-        "ph_acid_pump", "modules.ph.pump_high_on", BinarySensorDeviceClass.RUNNING
+        "pH Acid Pump", "ph_acid_pump", "modules.ph.pump_high_on", BinarySensorDeviceClass.RUNNING
     ),
     AquariteBinarySensorConfig(
-        "heating_status",
+        "Heating Status", "heating_status",
         "relays.filtration.heating.status",
         BinarySensorDeviceClass.RUNNING,
     ),
     AquariteBinarySensorConfig(
-        "filtration_smart_freeze",
+        "Filtration Smart Freeze", "filtration_smart_freeze",
         "filtration.smart.freeze",
         BinarySensorDeviceClass.RUNNING,
     ),
     AquariteBinarySensorConfig(
-        "connected", "present", BinarySensorDeviceClass.CONNECTIVITY
+        "Connected", "connected", "present", BinarySensorDeviceClass.CONNECTIVITY
     ),
 )
 
@@ -134,7 +135,8 @@ async def async_setup_entry(
             AquariteBinarySensorEntity(
                 dataservice,
                 AquariteBinarySensorConfig(
-                    "hidro_fl2_status", "hidro.fl2", BinarySensorDeviceClass.PROBLEM
+                    "Hidro FL2 Status", "hidro_fl2_status",
+                    "hidro.fl2", BinarySensorDeviceClass.PROBLEM,
                 ),
                 pool_id,
                 pool_name,
@@ -146,19 +148,19 @@ async def async_setup_entry(
         for path in (PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX)
     ):
         entities.append(
-            AquariteBinarySensorTankEntity(dataservice, "acid_tank", pool_id, pool_name)
+            AquariteBinarySensorTankEntity(
+                dataservice, "Acid Tank", "acid_tank", pool_id, pool_name
+            )
         )
 
-    low_key = (
-        "electrolysis_low"
-        if dataservice.get_value("hidro.is_electrolysis")
-        else "hydrolysis_low"
-    )
+    is_electrolysis = dataservice.get_value("hidro.is_electrolysis")
+    low_name = "Electrolysis Low" if is_electrolysis else "Hidrolysis Low"
+    low_key = "electrolysis_low" if is_electrolysis else "hydrolysis_low"
     entities.append(
         AquariteBinarySensorEntity(
             dataservice,
             AquariteBinarySensorConfig(
-                low_key, "hidro.low", BinarySensorDeviceClass.PROBLEM
+                low_name, low_key, "hidro.low", BinarySensorDeviceClass.PROBLEM
             ),
             pool_id,
             pool_name,
@@ -183,7 +185,7 @@ class AquariteBinarySensorEntity(AquariteEntity, BinarySensorEntity):
         self._value_path = config.value_path
         self._attr_device_class = config.device_class
         self._attr_translation_key = config.translation_key
-        self._attr_unique_id = self.build_unique_id(config.translation_key)
+        self._attr_unique_id = self.build_unique_id(config.name)
         if config.entity_category is not None:
             self._attr_entity_category = config.entity_category
         if not config.entity_registry_enabled_default:
@@ -206,6 +208,7 @@ class AquariteBinarySensorTankEntity(AquariteEntity, BinarySensorEntity):
     def __init__(
         self,
         dataservice: AquariteDataUpdateCoordinator,
+        name: str,
         translation_key: str,
         pool_id: str,
         pool_name: str,
@@ -213,7 +216,7 @@ class AquariteBinarySensorTankEntity(AquariteEntity, BinarySensorEntity):
         """Initialize the tank sensor."""
         super().__init__(dataservice, pool_id, pool_name)
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
 
     @property
     def is_on(self) -> bool:

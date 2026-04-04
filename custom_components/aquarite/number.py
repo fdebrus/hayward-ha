@@ -34,19 +34,19 @@ async def async_setup_entry(
     entities = [
         AquariteNumberEntity(
             dataservice, pool_id, pool_name,
-            500, 800, "redox_setpoint", "modules.rx.status.value",
+            500, 800, "Redox Setpoint", "redox_setpoint", "modules.rx.status.value",
         ),
         AquariteNumberEntity(
             dataservice, pool_id, pool_name,
-            6, 8, "ph_low", "modules.ph.status.low_value",
+            6, 8, "pH Low", "ph_low", "modules.ph.status.low_value",
         ),
         AquariteNumberEntity(
             dataservice, pool_id, pool_name,
-            6, 8, "ph_max", "modules.ph.status.high_value",
+            6, 8, "pH Max", "ph_max", "modules.ph.status.high_value",
         ),
         AquariteNumberEntity(
             dataservice, pool_id, pool_name,
-            0, max_electrolysis, "electrolysis_setpoint", "hidro.level",
+            0, max_electrolysis, "Electrolysis Setpoint", "electrolysis_setpoint", "hidro.level",
         ),
     ]
 
@@ -77,6 +77,7 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         pool_name: str,
         value_min: float,
         value_max: float,
+        name: str,
         translation_key: str,
         value_path: str,
     ) -> None:
@@ -86,7 +87,7 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         self._attr_native_max_value = value_max
         self._value_path = value_path
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        self._attr_unique_id = self.build_unique_id(name)
         self._attr_native_unit_of_measurement = self.UNIT_MAP.get(value_path)
         self._attr_native_step = self._get_scaled_step()
 
