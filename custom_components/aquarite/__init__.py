@@ -71,13 +71,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         async def handle_sync_time(call: ServiceCall) -> None:
-            """Service call to sync pool time."""
-            await coordinator.set_pool_time_to_now()
+            """Service call to sync pool time for all loaded entries."""
+            for config_entry in hass.config_entries.async_entries(DOMAIN):
+                if hasattr(config_entry, "runtime_data") and config_entry.runtime_data:
+                    await config_entry.runtime_data.coordinator.set_pool_time_to_now()
 
-        hass.services.async_register(DOMAIN, "sync_pool_time", handle_sync_time)
-        entry.async_on_unload(
-            lambda: hass.services.async_remove(DOMAIN, "sync_pool_time")
-        )
+        if not hass.services.has_service(DOMAIN, "sync_pool_time"):
+            hass.services.async_register(DOMAIN, "sync_pool_time", handle_sync_time)
+
+        def _maybe_remove_service() -> None:
+            """Remove service if this is the last loaded entry."""
+            remaining = [
+                e
+                for e in hass.config_entries.async_entries(DOMAIN)
+                if e.entry_id != entry.entry_id
+                and hasattr(e, "runtime_data")
+                and e.runtime_data
+            ]
+            if not remaining:
+                hass.services.async_remove(DOMAIN, "sync_pool_time")
+
+        entry.async_on_unload(_maybe_remove_service)
 
         return True
 

@@ -9,6 +9,14 @@
         "description": "Enter your Hayward credentials.",
         "title": "Authentication"
       },
+      "reauth_confirm": {
+        "data": {
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
+        },
+        "description": "Re-authenticate your Hayward account to continue.",
+        "title": "[%key:common::config_flow::title::reauth%]"
+      },
       "pool": {
         "data": {
           "pool_id": "Pool"

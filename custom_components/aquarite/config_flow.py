@@ -29,14 +29,12 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the config flow."""
         self._user_data: dict[str, Any] = {}
-        self._reauth_entry: config_entries.ConfigEntry | None = None
         self._available_pools: dict[str, str] = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle a flow initialized by the user."""
-        errors: dict[str, str] = {}
         if user_input is not None:
             self._user_data = {
                 CONF_USERNAME: user_input[CONF_USERNAME],
@@ -44,48 +42,25 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }
             return await self.async_step_pool()
 
-        schema = AUTH_SCHEMA
-        if self._reauth_entry:
-            schema = vol.Schema(
-                {
-                    vol.Required(
-                        CONF_USERNAME,
-                        default=self._reauth_entry.data.get(CONF_USERNAME, ""),
-                    ): cv.string,
-                    vol.Required(CONF_PASSWORD): cv.string,
-                }
-            )
-
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+        return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA)
 
     async def async_step_pool(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the pool selection step."""
-        errors: dict[str, str] = {}
         if user_input is not None:
             pool_id: str = user_input["pool_id"]
 
             await self.async_set_unique_id(pool_id)
             self._abort_if_unique_id_configured()
 
-            entry_data = {
-                CONF_USERNAME: self._user_data[CONF_USERNAME],
-                CONF_PASSWORD: self._user_data[CONF_PASSWORD],
-                "pool_id": pool_id,
-            }
-            if self._reauth_entry:
-                self.hass.config_entries.async_update_entry(
-                    self._reauth_entry, data=entry_data
-                )
-                await self.hass.config_entries.async_reload(
-                    self._reauth_entry.entry_id
-                )
-                return self.async_abort(reason="reauth_successful")
-
             return self.async_create_entry(
                 title=self._available_pools.get(pool_id, pool_id),
-                data=entry_data,
+                data={
+                    CONF_USERNAME: self._user_data[CONF_USERNAME],
+                    CONF_PASSWORD: self._user_data[CONF_PASSWORD],
+                    "pool_id": pool_id,
+                },
             )
 
         try:
@@ -96,37 +71,76 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._user_data[CONF_PASSWORD],
             )
             await auth.authenticate()
-
-            api = AquariteClient(auth)
-
+            AquariteClient(auth)
         except AuthenticationError:
-            errors["base"] = "auth_error"
             return self.async_show_form(
-                step_id="user", data_schema=AUTH_SCHEMA, errors=errors
+                step_id="user",
+                data_schema=AUTH_SCHEMA,
+                errors={"base": "auth_error"},
             )
 
-        self._available_pools = await api.get_pools()
+        self._available_pools = await AquariteClient(auth).get_pools()
 
         if not self._available_pools:
-            errors["base"] = "no_pools_found"
             return self.async_show_form(
-                step_id="user", data_schema=AUTH_SCHEMA, errors=errors
+                step_id="user",
+                data_schema=AUTH_SCHEMA,
+                errors={"base": "no_pools_found"},
             )
 
         pool_schema = vol.Schema(
             {vol.Required("pool_id"): vol.In(self._available_pools)}
         )
-
-        return self.async_show_form(
-            step_id="pool", data_schema=pool_schema, errors=errors
-        )
+        return self.async_show_form(step_id="pool", data_schema=pool_schema)
 
     async def async_step_reauth(
         self, entry_data: dict[str, Any]
     ) -> FlowResult:
-        """Reauthenticate the user."""
-        self._reauth_entry = self._get_reauth_entry()
-        return await self.async_step_user()
+        """Start reauth flow."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle reauth credential input."""
+        errors: dict[str, str] = {}
+        reauth_entry = self._get_reauth_entry()
+
+        if user_input is not None:
+            session = async_get_clientsession(self.hass)
+            try:
+                auth = AquariteAuth(
+                    session,
+                    user_input[CONF_USERNAME],
+                    user_input[CONF_PASSWORD],
+                )
+                await auth.authenticate()
+            except AuthenticationError:
+                errors["base"] = "auth_error"
+            else:
+                self.hass.config_entries.async_update_entry(
+                    reauth_entry,
+                    data={
+                        **reauth_entry.data,
+                        CONF_USERNAME: user_input[CONF_USERNAME],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    },
+                )
+                await self.hass.config_entries.async_reload(reauth_entry.entry_id)
+                return self.async_abort(reason="reauth_successful")
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_USERNAME,
+                    default=reauth_entry.data.get(CONF_USERNAME, ""),
+                ): cv.string,
+                vol.Required(CONF_PASSWORD): cv.string,
+            }
+        )
+        return self.async_show_form(
+            step_id="reauth_confirm", data_schema=schema, errors=errors
+        )
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
@@ -147,13 +161,13 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except AuthenticationError:
                 errors["base"] = "auth_error"
             else:
-                new_data = {
-                    **reconfigure_entry.data,
-                    CONF_USERNAME: user_input[CONF_USERNAME],
-                    CONF_PASSWORD: user_input[CONF_PASSWORD],
-                }
                 self.hass.config_entries.async_update_entry(
-                    reconfigure_entry, data=new_data
+                    reconfigure_entry,
+                    data={
+                        **reconfigure_entry.data,
+                        CONF_USERNAME: user_input[CONF_USERNAME],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    },
                 )
                 await self.hass.config_entries.async_reload(
                     reconfigure_entry.entry_id
@@ -169,7 +183,6 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_PASSWORD): cv.string,
             }
         )
-
         return self.async_show_form(
             step_id="reconfigure", data_schema=schema, errors=errors
         )

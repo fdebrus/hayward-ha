@@ -9,6 +9,14 @@
         "description": "Enter your Hayward credentials.",
         "title": "Authentication"
       },
+      "reauth_confirm": {
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        },
+        "description": "Re-authenticate your Hayward account to continue.",
+        "title": "Reauthenticate"
+      },
       "pool": {
         "data": {
           "pool_id": "Pool"

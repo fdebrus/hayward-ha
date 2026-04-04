@@ -9,6 +9,14 @@
         "description": "Vul je Hayward-inloggegevens in.",
         "title": "Authenticatie"
       },
+      "reauth_confirm": {
+        "data": {
+          "username": "Gebruikersnaam",
+          "password": "Wachtwoord"
+        },
+        "description": "Authenticeer je Hayward-account opnieuw om verder te gaan.",
+        "title": "Herauthenticatie"
+      },
       "pool": {
         "data": {
           "pool_id": "Zwembad"

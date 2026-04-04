@@ -91,7 +91,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 await self.auth.get_client()
             except Exception as err:
                 _LOGGER.error("Health check failed, resubscribing: %s", err)
-                await self.subscribe()
+                await self.refresh_subscription()
 
     async def refresh_subscription(self) -> None:
         """Resubscribe to Firestore after a token refresh."""

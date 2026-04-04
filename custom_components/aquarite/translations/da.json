@@ -9,6 +9,14 @@
         "description": "Udfyld dine Hayward loginoplysninger.",
         "title": "Login"
       },
+      "reauth_confirm": {
+        "data": {
+          "username": "Brugernavn",
+          "password": "Kodeord"
+        },
+        "description": "Genautentificer din Hayward-konto for at fortsætte.",
+        "title": "Genautentificer"
+      },
       "pool": {
         "data": {
           "pool_id": "Pool"
