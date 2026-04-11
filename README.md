@@ -46,6 +46,7 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 - **Number setpoints**: pH low/max, Rx setpoint, electrolysis level  
 - **Select**: pump mode (Manual / Auto / Heat / Smart / Intel), pump speed (Slow / Medium / High)  
 - **Light**: pool light on/off  
+- **Button**: _LED pulse_ — advances the pool LED to its next color (only created when `main.hasLED` is set on the controller). **Work in progress / experimental** — needs validation on real color-LED hardware; feedback welcome.  
 
 ### Binary sensors
 
