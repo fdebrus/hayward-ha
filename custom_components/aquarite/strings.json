@@ -48,15 +48,6 @@
       "temperature": {
         "name": "Temperature"
       },
-      "filtration_intel_temperature": {
-        "name": "Filtration intel temperature"
-      },
-      "filtration_smart_min_temp": {
-        "name": "Filtration smart min temperature"
-      },
-      "filtration_smart_high_temp": {
-        "name": "Filtration smart high temperature"
-      },
       "cd": {
         "name": "CD"
       },
@@ -169,9 +160,6 @@
       },
       "heating_status": {
         "name": "Heating status"
-      },
-      "filtration_smart_freeze": {
-        "name": "Filtration smart freeze"
       },
       "connected": {
         "name": "Connected"

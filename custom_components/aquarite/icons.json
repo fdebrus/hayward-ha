@@ -4,15 +4,6 @@
       "temperature": {
         "default": "mdi:thermometer"
       },
-      "filtration_intel_temperature": {
-        "default": "mdi:thermometer"
-      },
-      "filtration_smart_min_temp": {
-        "default": "mdi:thermometer"
-      },
-      "filtration_smart_high_temp": {
-        "default": "mdi:thermometer"
-      },
       "ph": {
         "default": "mdi:ph"
       },
@@ -126,9 +117,6 @@
       "heating_status": {
         "default": "mdi:radiator"
       },
-      "filtration_smart_freeze": {
-        "default": "mdi:snowflake-alert"
-      },
       "connected": {
         "default": "mdi:cloud-check"
       },
@@ -166,6 +154,12 @@
       },
       "filtration": {
         "default": "mdi:pump"
+      },
+      "heating_climate": {
+        "default": "mdi:weather-partly-cloudy"
+      },
+      "smart_mode_freeze": {
+        "default": "mdi:snowflake-alert"
       }
     },
     "number": {
@@ -180,6 +174,21 @@
       },
       "electrolysis_setpoint": {
         "default": "mdi:flash"
+      },
+      "intel_mode_temperature": {
+        "default": "mdi:thermometer"
+      },
+      "heating_mode_min_temperature": {
+        "default": "mdi:thermometer-low"
+      },
+      "heating_mode_max_temperature": {
+        "default": "mdi:thermometer-high"
+      },
+      "smart_mode_min_temperature": {
+        "default": "mdi:thermometer-low"
+      },
+      "smart_mode_max_temperature": {
+        "default": "mdi:thermometer-high"
       }
     },
     "select": {

@@ -46,9 +46,6 @@
   "entity": {
     "sensor": {
       "temperature": { "name": "Temperatur" },
-      "filtration_intel_temperature": { "name": "Filtrering intel temperatur" },
-      "filtration_smart_min_temp": { "name": "Filtrering smart min temperatur" },
-      "filtration_smart_high_temp": { "name": "Filtrering smart høj temperatur" },
       "cd": { "name": "CD" },
       "cl": { "name": "CL" },
       "ph": { "name": "pH" },
@@ -73,8 +70,6 @@
       "latitude": { "name": "Breddegrad" },
       "longitude": { "name": "Længdegrad" },
       "pool_name": { "name": "Poolnavn" },
-      "cell_total_time": { "name": "Celle total tid" },
-      "cell_partial_time": { "name": "Celle delvis tid" },
       "rssi": { "name": "Wi-Fi signalstyrke" }
     },
     "binary_sensor": {
@@ -94,7 +89,6 @@
       "cl_pump_status": { "name": "Klorpumpestatus" },
       "rx_pump_status": { "name": "Rx pumpestatus" },
       "heating_status": { "name": "Opvarmningsstatus" },
-      "filtration_smart_freeze": { "name": "Filtrering smart frost" },
       "connected": { "name": "Forbundet" },
       "hidro_fl2_status": { "name": "Hydrolyse FL2 status" },
       "acid_tank": { "name": "Syretank" },
@@ -108,15 +102,20 @@
       "relay_2": { "name": "Relæ 2" },
       "relay_3": { "name": "Relæ 3" },
       "relay_4": { "name": "Relæ 4" },
-      "filtration": { "name": "Filtrering" }
+      "filtration": { "name": "Filtrering" },
+      "heating_climate": { "name": "Opvarmning klima" },
+      "smart_mode_freeze": { "name": "Smart frostbeskyttelse" }
     },
     "number": {
       "redox_setpoint": { "name": "Redox sætpunkt" },
       "ph_low": { "name": "pH lav" },
       "ph_max": { "name": "pH maks" },
       "electrolysis_setpoint": { "name": "Elektrolyse sætpunkt" },
-      "heating_setpoint": { "name": "Opvarmning sætpunkt" },
-      "heating_high_setpoint": { "name": "Opvarmning højt sætpunkt" }
+      "intel_mode_temperature": { "name": "Intel tilstand temperatur" },
+      "heating_mode_min_temperature": { "name": "Opvarmning min temperatur" },
+      "heating_mode_max_temperature": { "name": "Opvarmning maks temperatur" },
+      "smart_mode_min_temperature": { "name": "Smart min temperatur" },
+      "smart_mode_max_temperature": { "name": "Smart maks temperatur" }
     },
     "select": {
       "pump_mode": {

@@ -46,9 +46,6 @@
   "entity": {
     "sensor": {
       "temperature": { "name": "Temperatuur" },
-      "filtration_intel_temperature": { "name": "Filtratie intel temperatuur" },
-      "filtration_smart_min_temp": { "name": "Filtratie smart min temperatuur" },
-      "filtration_smart_high_temp": { "name": "Filtratie smart hoge temperatuur" },
       "cd": { "name": "CD" },
       "cl": { "name": "CL" },
       "ph": { "name": "pH" },
@@ -73,8 +70,6 @@
       "latitude": { "name": "Breedtegraad" },
       "longitude": { "name": "Lengtegraad" },
       "pool_name": { "name": "Zwembadnaam" },
-      "cell_total_time": { "name": "Cel totale tijd" },
-      "cell_partial_time": { "name": "Cel deeltijd" },
       "rssi": { "name": "Wi-Fi signaalsterkte" }
     },
     "binary_sensor": {
@@ -94,7 +89,6 @@
       "cl_pump_status": { "name": "Chloorpomp status" },
       "rx_pump_status": { "name": "Rx pomp status" },
       "heating_status": { "name": "Verwarmingsstatus" },
-      "filtration_smart_freeze": { "name": "Filtratie smart bevriezing" },
       "connected": { "name": "Verbonden" },
       "hidro_fl2_status": { "name": "Hydrolyse FL2 status" },
       "acid_tank": { "name": "Zuurtank" },
@@ -108,15 +102,20 @@
       "relay_2": { "name": "Relais 2" },
       "relay_3": { "name": "Relais 3" },
       "relay_4": { "name": "Relais 4" },
-      "filtration": { "name": "Filtratie" }
+      "filtration": { "name": "Filtratie" },
+      "heating_climate": { "name": "Verwarming klimaat" },
+      "smart_mode_freeze": { "name": "Smart vorstbescherming" }
     },
     "number": {
       "redox_setpoint": { "name": "Redox instelpunt" },
       "ph_low": { "name": "pH laag" },
       "ph_max": { "name": "pH max" },
       "electrolysis_setpoint": { "name": "Elektrolyse instelpunt" },
-      "heating_setpoint": { "name": "Verwarming instelpunt" },
-      "heating_high_setpoint": { "name": "Verwarming hoog instelpunt" }
+      "intel_mode_temperature": { "name": "Intel modus temperatuur" },
+      "heating_mode_min_temperature": { "name": "Verwarming min temperatuur" },
+      "heating_mode_max_temperature": { "name": "Verwarming max temperatuur" },
+      "smart_mode_min_temperature": { "name": "Smart min temperatuur" },
+      "smart_mode_max_temperature": { "name": "Smart max temperatuur" }
     },
     "select": {
       "pump_mode": {
