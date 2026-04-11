@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
-from .const import PATH_HASLED, PATH_LED_PULSE
+from .const import PATH_HASLED
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -48,4 +48,4 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         """Send a pulse to the pool LED."""
-        await self.coordinator.api.set_value(self._pool_id, PATH_LED_PULSE, 1)
+        await self.coordinator.api.set_value(self._pool_id, "main.LEDPulse", 1)
