@@ -23,11 +23,13 @@ class AquariteEntity(CoordinatorEntity[AquariteDataUpdateCoordinator]):
         super().__init__(coordinator)
         self._pool_id = pool_id
         self._pool_name = pool_name
+        sw_version = coordinator.get_value("main.version")
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, pool_id)},
             name=pool_name,
             manufacturer=BRAND,
             model=MODEL,
+            sw_version=str(sw_version) if sw_version else None,
         )
 
     @property

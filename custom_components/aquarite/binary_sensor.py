@@ -100,6 +100,9 @@ BASE_SENSORS: tuple[AquariteBinarySensorConfig, ...] = (
         "pH Acid Pump", "ph_acid_pump", "modules.ph.pump_high_on", BinarySensorDeviceClass.RUNNING
     ),
     AquariteBinarySensorConfig(
+        "pH Base Pump", "ph_base_pump", "modules.ph.pump_low_on", BinarySensorDeviceClass.RUNNING
+    ),
+    AquariteBinarySensorConfig(
         "Heating Status", "heating_status",
         "relays.filtration.heating.status",
         BinarySensorDeviceClass.RUNNING,
@@ -137,6 +140,30 @@ async def async_setup_entry(
                 AquariteBinarySensorConfig(
                     "Hidro FL2 Status", "hidro_fl2_status",
                     "hidro.fl2", BinarySensorDeviceClass.PROBLEM,
+                ),
+                pool_id,
+                pool_name,
+            )
+        )
+        entities.append(
+            AquariteBinarySensorEntity(
+                dataservice,
+                AquariteBinarySensorConfig(
+                    "Cl Pump Status", "cl_pump_status",
+                    "modules.cl.pump_status", BinarySensorDeviceClass.RUNNING,
+                ),
+                pool_id,
+                pool_name,
+            )
+        )
+
+    if dataservice.get_value(PATH_HASRX):
+        entities.append(
+            AquariteBinarySensorEntity(
+                dataservice,
+                AquariteBinarySensorConfig(
+                    "Rx Pump Status", "rx_pump_status",
+                    "modules.rx.pump_status", BinarySensorDeviceClass.RUNNING,
                 ),
                 pool_id,
                 pool_name,

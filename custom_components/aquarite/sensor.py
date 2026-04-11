@@ -7,9 +7,11 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     UnitOfElectricPotential,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -101,6 +103,21 @@ async def async_setup_entry(
                 dataservice, pool_id, pool_name, name, key, "hidro.current"
             )
         )
+        entities.extend([
+            AquariteCellRuntimeSensorEntity(
+                dataservice, pool_id, pool_name,
+                "Cell Total Time", "cell_total_time", "hidro.cellTotalTime",
+            ),
+            AquariteCellRuntimeSensorEntity(
+                dataservice, pool_id, pool_name,
+                "Cell Partial Time", "cell_partial_time", "hidro.cellPartialTime",
+            ),
+        ])
+
+    # Wi-Fi signal strength (diagnostic, off by default — only useful on Wi-Fi controllers)
+    entities.append(
+        AquariteRssiSensorEntity(dataservice, pool_id, pool_name)
+    )
 
     # Time and Interval Sensors
     entities.append(
@@ -428,3 +445,66 @@ class AquaritePoolNameSensorEntity(AquariteEntity, SensorEntity):
     def native_value(self) -> str:
         """Return the pool name."""
         return self._pool_name
+
+
+class AquariteCellRuntimeSensorEntity(AquariteEntity, SensorEntity):
+    """Electrolysis cell runtime sensor (raw seconds reported as hours)."""
+
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.HOURS
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        dataservice: AquariteDataUpdateCoordinator,
+        pool_id: str,
+        pool_name: str,
+        name: str,
+        translation_key: str,
+        value_path: str,
+    ) -> None:
+        """Initialize the cell runtime sensor."""
+        super().__init__(dataservice, pool_id, pool_name)
+        self._value_path = value_path
+        self._attr_translation_key = translation_key
+        self._attr_unique_id = self.build_unique_id(name)
+
+    @property
+    def native_value(self) -> float | None:
+        """Return runtime in hours, rounded to one decimal."""
+        value = self.coordinator.get_value(self._value_path)
+        try:
+            return round(int(value) / 3600, 1)
+        except (TypeError, ValueError):
+            return None
+
+
+class AquariteRssiSensorEntity(AquariteEntity, SensorEntity):
+    """Controller Wi-Fi signal strength sensor."""
+
+    _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
+    _attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(
+        self,
+        dataservice: AquariteDataUpdateCoordinator,
+        pool_id: str,
+        pool_name: str,
+    ) -> None:
+        """Initialize the RSSI sensor."""
+        super().__init__(dataservice, pool_id, pool_name)
+        self._attr_translation_key = "rssi"
+        self._attr_unique_id = self.build_unique_id("RSSI")
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the RSSI value."""
+        value = self.coordinator.get_value("main.RSSI")
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None

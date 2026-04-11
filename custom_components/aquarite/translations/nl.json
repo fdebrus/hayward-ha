@@ -72,7 +72,10 @@
       "country": { "name": "Land" },
       "latitude": { "name": "Breedtegraad" },
       "longitude": { "name": "Lengtegraad" },
-      "pool_name": { "name": "Zwembadnaam" }
+      "pool_name": { "name": "Zwembadnaam" },
+      "cell_total_time": { "name": "Cel totale tijd" },
+      "cell_partial_time": { "name": "Cel deeltijd" },
+      "rssi": { "name": "Wi-Fi signaalsterkte" }
     },
     "binary_sensor": {
       "hidro_flow_status": { "name": "Hydrolyse stroomstatus" },
@@ -87,6 +90,9 @@
       "io_module_installed": { "name": "IO module geïnstalleerd" },
       "hidro_module_installed": { "name": "Hydrolyse module geïnstalleerd" },
       "ph_acid_pump": { "name": "pH zuurpomp" },
+      "ph_base_pump": { "name": "pH basepomp" },
+      "cl_pump_status": { "name": "Chloorpomp status" },
+      "rx_pump_status": { "name": "Rx pomp status" },
       "heating_status": { "name": "Verwarmingsstatus" },
       "filtration_smart_freeze": { "name": "Filtratie smart bevriezing" },
       "connected": { "name": "Verbonden" },
@@ -108,7 +114,9 @@
       "redox_setpoint": { "name": "Redox instelpunt" },
       "ph_low": { "name": "pH laag" },
       "ph_max": { "name": "pH max" },
-      "electrolysis_setpoint": { "name": "Elektrolyse instelpunt" }
+      "electrolysis_setpoint": { "name": "Elektrolyse instelpunt" },
+      "heating_setpoint": { "name": "Verwarming instelpunt" },
+      "heating_high_setpoint": { "name": "Verwarming hoog instelpunt" }
     },
     "select": {
       "pump_mode": {
