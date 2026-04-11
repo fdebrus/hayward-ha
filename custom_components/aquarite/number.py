@@ -48,17 +48,43 @@ async def async_setup_entry(
             dataservice, pool_id, pool_name,
             0, max_electrolysis, "Electrolysis Setpoint", "electrolysis_setpoint", "hidro.level",
         ),
+        # INTEL mode target temperature (matches the "Température" field shown
+        # under the INTEL slider position in the Hayward app).
+        AquariteNumberEntity(
+            dataservice, pool_id, pool_name,
+            5, 40, "Intel Mode Temperature", "intel_mode_temperature", "filtration.intel.temp",
+        ),
     ]
 
+    # HEAT mode min/max range (the two arrows under "Température minimale" /
+    # "Température maximale" when the HEAT slider position is selected).
+    # Translation keys are intentionally renamed from PR #62 to clarify they
+    # are bounds, not single setpoints. The Python `name` arguments are kept
+    # unchanged so existing unique_ids are preserved.
     if dataservice.get_value("filtration.hasHeat"):
         entities.extend([
             AquariteNumberEntity(
                 dataservice, pool_id, pool_name,
-                5, 40, "Heating Setpoint", "heating_setpoint", "filtration.heating.temp",
+                5, 40, "Heating Setpoint", "heating_mode_min_temperature", "filtration.heating.temp",
             ),
             AquariteNumberEntity(
                 dataservice, pool_id, pool_name,
-                5, 40, "Heating High Setpoint", "heating_high_setpoint", "filtration.heating.tempHi",
+                5, 40, "Heating High Setpoint", "heating_mode_max_temperature", "filtration.heating.tempHi",
+            ),
+        ])
+
+    # SMART mode min/max range (replaces the read-only sensors that previously
+    # exposed `filtration.smart.tempMin` / `tempHigh` — see PR description for
+    # the breaking-change note).
+    if dataservice.get_value("filtration.hasSmart"):
+        entities.extend([
+            AquariteNumberEntity(
+                dataservice, pool_id, pool_name,
+                5, 40, "Smart Mode Min Temperature", "smart_mode_min_temperature", "filtration.smart.tempMin",
+            ),
+            AquariteNumberEntity(
+                dataservice, pool_id, pool_name,
+                5, 40, "Smart Mode Max Temperature", "smart_mode_max_temperature", "filtration.smart.tempHigh",
             ),
         ])
 
@@ -82,10 +108,16 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         "hidro.level": "gr/h",
         "filtration.heating.temp": UnitOfTemperature.CELSIUS,
         "filtration.heating.tempHi": UnitOfTemperature.CELSIUS,
+        "filtration.intel.temp": UnitOfTemperature.CELSIUS,
+        "filtration.smart.tempMin": UnitOfTemperature.CELSIUS,
+        "filtration.smart.tempHigh": UnitOfTemperature.CELSIUS,
     }
     DEVICE_CLASS_MAP: Final[dict[str, NumberDeviceClass]] = {
         "filtration.heating.temp": NumberDeviceClass.TEMPERATURE,
         "filtration.heating.tempHi": NumberDeviceClass.TEMPERATURE,
+        "filtration.intel.temp": NumberDeviceClass.TEMPERATURE,
+        "filtration.smart.tempMin": NumberDeviceClass.TEMPERATURE,
+        "filtration.smart.tempHigh": NumberDeviceClass.TEMPERATURE,
     }
 
     def __init__(

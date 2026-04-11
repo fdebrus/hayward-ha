@@ -48,15 +48,6 @@
       "temperature": {
         "name": "Temperature"
       },
-      "filtration_intel_temperature": {
-        "name": "Filtration intel temperature"
-      },
-      "filtration_smart_min_temp": {
-        "name": "Filtration smart min temperature"
-      },
-      "filtration_smart_high_temp": {
-        "name": "Filtration smart high temperature"
-      },
       "cd": {
         "name": "CD"
       },
@@ -129,12 +120,6 @@
       "pool_name": {
         "name": "Pool name"
       },
-      "cell_total_time": {
-        "name": "Cell total time"
-      },
-      "cell_partial_time": {
-        "name": "Cell partial time"
-      },
       "rssi": {
         "name": "Wi-Fi signal strength"
       }
@@ -188,9 +173,6 @@
       "heating_status": {
         "name": "Heating status"
       },
-      "filtration_smart_freeze": {
-        "name": "Filtration smart freeze"
-      },
       "connected": {
         "name": "Connected"
       },
@@ -228,6 +210,12 @@
       },
       "filtration": {
         "name": "Filtration"
+      },
+      "heating_climate": {
+        "name": "Heating climate"
+      },
+      "smart_mode_freeze": {
+        "name": "Smart mode freeze protection"
       }
     },
     "number": {
@@ -243,11 +231,20 @@
       "electrolysis_setpoint": {
         "name": "Electrolysis setpoint"
       },
-      "heating_setpoint": {
-        "name": "Heating setpoint"
+      "intel_mode_temperature": {
+        "name": "Intel mode temperature"
       },
-      "heating_high_setpoint": {
-        "name": "Heating high setpoint"
+      "heating_mode_min_temperature": {
+        "name": "Heating mode min temperature"
+      },
+      "heating_mode_max_temperature": {
+        "name": "Heating mode max temperature"
+      },
+      "smart_mode_min_temperature": {
+        "name": "Smart mode min temperature"
+      },
+      "smart_mode_max_temperature": {
+        "name": "Smart mode max temperature"
       }
     },
     "select": {

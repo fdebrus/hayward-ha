@@ -108,11 +108,6 @@ BASE_SENSORS: tuple[AquariteBinarySensorConfig, ...] = (
         BinarySensorDeviceClass.RUNNING,
     ),
     AquariteBinarySensorConfig(
-        "Filtration Smart Freeze", "filtration_smart_freeze",
-        "filtration.smart.freeze",
-        BinarySensorDeviceClass.RUNNING,
-    ),
-    AquariteBinarySensorConfig(
         "Connected", "connected", "present", BinarySensorDeviceClass.CONNECTIVITY
     ),
 )

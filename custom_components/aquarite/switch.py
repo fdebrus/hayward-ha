@@ -44,10 +44,37 @@ async def async_setup_entry(
     dataservice = entry.runtime_data.coordinator
     pool_id, pool_name = dataservice.pool_id, entry.title
 
-    async_add_entities([
+    entities = [
         AquariteSwitchEntity(dataservice, pool_id, pool_name, config)
         for config in SWITCH_DEFINITIONS
-    ])
+    ]
+
+    # HEAT mode "Climat" toggle (visible under the HEAT slider position in
+    # the Hayward app).
+    if dataservice.get_value("filtration.hasHeat"):
+        entities.append(
+            AquariteSwitchEntity(
+                dataservice, pool_id, pool_name,
+                AquariteSwitchConfig(
+                    "Heating Climate", "heating_climate", "filtration.heating.clima",
+                ),
+            )
+        )
+
+    # SMART mode "Antigel" (freeze protection) toggle. Replaces the read-only
+    # binary sensor that previously exposed `filtration.smart.freeze` —
+    # see PR description for the breaking-change note.
+    if dataservice.get_value("filtration.hasSmart"):
+        entities.append(
+            AquariteSwitchEntity(
+                dataservice, pool_id, pool_name,
+                AquariteSwitchConfig(
+                    "Smart Mode Freeze", "smart_mode_freeze", "filtration.smart.freeze",
+                ),
+            )
+        )
+
+    async_add_entities(entities)
 
 
 class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
