@@ -133,6 +133,9 @@
     "light": {
       "pool_light": { "name": "Lys" }
     },
+    "button": {
+      "led_pulse": { "name": "LED puls" }
+    },
     "device_tracker": {
       "location": { "name": "Placering" }
     }

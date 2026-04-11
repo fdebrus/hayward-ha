@@ -251,6 +251,11 @@
         "name": "Light"
       }
     },
+    "button": {
+      "led_pulse": {
+        "name": "LED pulse"
+      }
+    },
     "device_tracker": {
       "location": {
         "name": "Location"
