@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Final
 
-from homeassistant.components.number import NumberEntity
-from homeassistant.const import EntityCategory
+from homeassistant.components.number import NumberDeviceClass, NumberEntity
+from homeassistant.const import EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -50,6 +50,18 @@ async def async_setup_entry(
         ),
     ]
 
+    if dataservice.get_value("filtration.hasHeat"):
+        entities.extend([
+            AquariteNumberEntity(
+                dataservice, pool_id, pool_name,
+                5, 40, "Heating Setpoint", "heating_setpoint", "filtration.heating.temp",
+            ),
+            AquariteNumberEntity(
+                dataservice, pool_id, pool_name,
+                5, 40, "Heating High Setpoint", "heating_high_setpoint", "filtration.heating.tempHi",
+            ),
+        ])
+
     async_add_entities(entities)
 
 
@@ -68,6 +80,12 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         "modules.ph.status.low_value": "pH",
         "modules.ph.status.high_value": "pH",
         "hidro.level": "gr/h",
+        "filtration.heating.temp": UnitOfTemperature.CELSIUS,
+        "filtration.heating.tempHi": UnitOfTemperature.CELSIUS,
+    }
+    DEVICE_CLASS_MAP: Final[dict[str, NumberDeviceClass]] = {
+        "filtration.heating.temp": NumberDeviceClass.TEMPERATURE,
+        "filtration.heating.tempHi": NumberDeviceClass.TEMPERATURE,
     }
 
     def __init__(
@@ -89,6 +107,7 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         self._attr_translation_key = translation_key
         self._attr_unique_id = self.build_unique_id(name)
         self._attr_native_unit_of_measurement = self.UNIT_MAP.get(value_path)
+        self._attr_device_class = self.DEVICE_CLASS_MAP.get(value_path)
         self._attr_native_step = self._get_scaled_step()
 
     def _get_scaled_step(self) -> float:

@@ -72,7 +72,10 @@
       "country": { "name": "Land" },
       "latitude": { "name": "Breddegrad" },
       "longitude": { "name": "Længdegrad" },
-      "pool_name": { "name": "Poolnavn" }
+      "pool_name": { "name": "Poolnavn" },
+      "cell_total_time": { "name": "Celle total tid" },
+      "cell_partial_time": { "name": "Celle delvis tid" },
+      "rssi": { "name": "Wi-Fi signalstyrke" }
     },
     "binary_sensor": {
       "hidro_flow_status": { "name": "Hydrolyse flow status" },
@@ -87,6 +90,9 @@
       "io_module_installed": { "name": "IO modul installeret" },
       "hidro_module_installed": { "name": "Hydrolyse modul installeret" },
       "ph_acid_pump": { "name": "pH syrepumpe" },
+      "ph_base_pump": { "name": "pH basepumpe" },
+      "cl_pump_status": { "name": "Klorpumpestatus" },
+      "rx_pump_status": { "name": "Rx pumpestatus" },
       "heating_status": { "name": "Opvarmningsstatus" },
       "filtration_smart_freeze": { "name": "Filtrering smart frost" },
       "connected": { "name": "Forbundet" },
@@ -108,7 +114,9 @@
       "redox_setpoint": { "name": "Redox sætpunkt" },
       "ph_low": { "name": "pH lav" },
       "ph_max": { "name": "pH maks" },
-      "electrolysis_setpoint": { "name": "Elektrolyse sætpunkt" }
+      "electrolysis_setpoint": { "name": "Elektrolyse sætpunkt" },
+      "heating_setpoint": { "name": "Opvarmning sætpunkt" },
+      "heating_high_setpoint": { "name": "Opvarmning højt sætpunkt" }
     },
     "select": {
       "pump_mode": {

@@ -128,6 +128,15 @@
       },
       "pool_name": {
         "name": "Pool name"
+      },
+      "cell_total_time": {
+        "name": "Cell total time"
+      },
+      "cell_partial_time": {
+        "name": "Cell partial time"
+      },
+      "rssi": {
+        "name": "Wi-Fi signal strength"
       }
     },
     "binary_sensor": {
@@ -166,6 +175,15 @@
       },
       "ph_acid_pump": {
         "name": "pH acid pump"
+      },
+      "ph_base_pump": {
+        "name": "pH base pump"
+      },
+      "cl_pump_status": {
+        "name": "Chlorine pump status"
+      },
+      "rx_pump_status": {
+        "name": "Rx pump status"
       },
       "heating_status": {
         "name": "Heating status"
@@ -224,6 +242,12 @@
       },
       "electrolysis_setpoint": {
         "name": "Electrolysis setpoint"
+      },
+      "heating_setpoint": {
+        "name": "Heating setpoint"
+      },
+      "heating_high_setpoint": {
+        "name": "Heating high setpoint"
       }
     },
     "select": {
