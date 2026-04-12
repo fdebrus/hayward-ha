@@ -114,31 +114,6 @@ async def async_setup_entry(
         )
     )
 
-    for name, translation_key, path in (
-        ("Filtration Interval 1 From", "filtration_interval_1_from", "filtration.interval1.from"),
-        ("Filtration Interval 1 To", "filtration_interval_1_to", "filtration.interval1.to"),
-        ("Filtration Interval 2 From", "filtration_interval_2_from", "filtration.interval2.from"),
-        ("Filtration Interval 2 To", "filtration_interval_2_to", "filtration.interval2.to"),
-        ("Filtration Interval 3 From", "filtration_interval_3_from", "filtration.interval3.from"),
-        ("Filtration Interval 3 To", "filtration_interval_3_to", "filtration.interval3.to"),
-    ):
-        entities.append(
-            AquariteIntervalTimeSensorEntity(
-                dataservice, pool_id, pool_name, name, translation_key, path
-            )
-        )
-
-    # Speed sensors
-    for index in range(1, 4):
-        entities.append(
-            AquariteSpeedLabelSensorEntity(
-                dataservice, pool_id, pool_name,
-                f"Filtration Timer Speed {index}",
-                f"filtration_timer_speed_{index}",
-                f"filtration.timerVel{index}",
-            )
-        )
-
     # Location sensors (diagnostic)
     for name, translation_key, key in (
         ("City", "city", "city"),
@@ -159,68 +134,6 @@ async def async_setup_entry(
     )
 
     async_add_entities(entities)
-
-
-class AquariteSpeedLabelSensorEntity(AquariteEntity, SensorEntity):
-    """Speed label sensor entity."""
-
-    SPEED_LABELS: dict[int, str] = {0: "Slow", 1: "Medium", 2: "High"}
-
-    def __init__(
-        self,
-        dataservice: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
-        name: str,
-        translation_key: str,
-        value_path: str,
-    ) -> None:
-        """Initialize the speed label sensor."""
-        super().__init__(dataservice, pool_id, pool_name)
-        self._value_path = value_path
-        self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(name)
-
-    @property
-    def native_value(self) -> str:
-        """Return the speed label."""
-        value = self.coordinator.get_value(self._value_path)
-        try:
-            return self.SPEED_LABELS.get(int(value), "Unknown")
-        except (ValueError, TypeError):
-            return "Unknown"
-
-
-class AquariteIntervalTimeSensorEntity(AquariteEntity, SensorEntity):
-    """Interval time sensor entity."""
-
-    def __init__(
-        self,
-        dataservice: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
-        name: str,
-        translation_key: str,
-        value_path: str,
-    ) -> None:
-        """Initialize the interval time sensor."""
-        super().__init__(dataservice, pool_id, pool_name)
-        self._value_path = value_path
-        self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(name)
-
-    @property
-    def native_value(self) -> str | None:
-        """Return the time interval as HH:MM."""
-        raw_value = self.coordinator.get_value(self._value_path)
-        try:
-            seconds = int(raw_value)
-            hours, minutes = seconds // 3600, (seconds % 3600) // 60
-            if hours < 24:
-                return f"{hours:02d}:{minutes:02d}"
-            return f"{hours % 24:02d}:{minutes:02d} (+{hours // 24}d)"
-        except (TypeError, ValueError):
-            return None
 
 
 class AquariteTemperatureSensorEntity(AquariteEntity, SensorEntity):
