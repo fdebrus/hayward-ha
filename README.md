@@ -34,36 +34,56 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 
 ### Sensors
 
-- Water temperature, filtration temperatures  
+- Water temperature  
 - pH, ORP (Rx), chlorine (Cl), CD, UV module readings  
 - Electrolysis / hydrolysis production level  
-- Filtration intervals and timer speeds  
+- Filtration intel time  
+- Wi-Fi signal strength (diagnostic, disabled by default)  
 - Pool location and name  
 
 ### Controls
 
-- **Switches**: filtration on/off, electrolysis cover/boost, 4 relays  
-- **Number setpoints**: pH low/max, Rx setpoint, electrolysis level  
-- **Select**: pump mode (Manual / Auto / Heat / Smart / Intel), pump speed (Slow / Medium / High)  
+- **Switches**: filtration on/off, electrolysis cover/boost, 4 auxiliary relays, heating climate toggle, smart mode freeze protection  
+- **Number setpoints**: pH low/max, Rx setpoint, electrolysis level, Intel/Heat/Smart mode temperatures  
+- **Select**: pump mode (Manual / Auto / Heat / Smart / Intel), pump speed, filtration timer speeds 1-3 (Slow / Medium / High)  
+- **Time**: filtration interval 1-3 start/end times — set your filtration schedule directly from Home Assistant  
 - **Light**: pool light on/off  
 - **Button**: _LED pulse_ — advances the pool LED to its next color (mirrors the "Next" button in the Hayward app's Illumination screen)  
 
 ### Binary sensors
 
 - Filtration, backwash, and heating status  
-- pH pump alarm, acid tank level, flow status  
+- pH acid/base pump status, chlorine pump, Rx pump  
+- pH pump alarm, acid tank level, hydrolysis flow status  
 - Module presence (CD, CL, RX, pH, IO, hydrolysis)  
-- Freeze protection and connectivity  
+- Electrolysis/hydrolysis low, connectivity  
 
 ### Services
 
 - **Sync pool time**: synchronize the pool controller's internal clock with Home Assistant's timezone  
+
+### Platforms overview
+
+| Platform | Count | Description |
+|----------|-------|-------------|
+| `sensor` | 7+ | Temperature, pH, Rx, Cl, CD, UV, electrolysis, intel time, RSSI, location |
+| `binary_sensor` | 13+ | Filtration/heating/backwash status, pump states, module presence, tank levels |
+| `switch` | 7+ | Filtration, electrolysis cover/boost, relays, heating climate, freeze protection |
+| `number` | 5+ | pH, Rx, electrolysis setpoints, mode temperatures |
+| `select` | 5 | Pump mode, pump speed, filtration timer speeds 1-3 |
+| `time` | 6 | Filtration interval 1-3 start/end times |
+| `light` | 1 | Pool light on/off |
+| `button` | 1 | LED color advance |
+| `device_tracker` | 1 | Pool GPS location |
+
+Entity counts vary based on installed modules (CD, CL, pH, RX, UV, hydrolysis) and enabled features (Heat, Smart mode).
 
 ## Requirements
 
 - A supported Hayward-compatible pool controller  
 - A Wi-Fi module connected to the internet  
 - The controller must already be linked to your Hayward cloud account  
+- Home Assistant 2024.1.0 or later  
 
 ## Installation
 

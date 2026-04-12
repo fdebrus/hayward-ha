@@ -92,6 +92,9 @@
       },
       "pool_name": {
         "name": "Pool name"
+      },
+      "rssi": {
+        "name": "Wi-Fi signal strength"
       }
     },
     "binary_sensor": {
@@ -130,6 +133,15 @@
       },
       "ph_acid_pump": {
         "name": "pH acid pump"
+      },
+      "ph_base_pump": {
+        "name": "pH base pump"
+      },
+      "cl_pump_status": {
+        "name": "Chlorine pump status"
+      },
+      "rx_pump_status": {
+        "name": "Rx pump status"
       },
       "heating_status": {
         "name": "Heating status"
@@ -171,6 +183,12 @@
       },
       "filtration": {
         "name": "Filtration"
+      },
+      "heating_climate": {
+        "name": "Heating climate"
+      },
+      "smart_mode_freeze": {
+        "name": "Smart mode freeze protection"
       }
     },
     "number": {
@@ -185,6 +203,21 @@
       },
       "electrolysis_setpoint": {
         "name": "Electrolysis setpoint"
+      },
+      "intel_mode_temperature": {
+        "name": "Intel mode temperature"
+      },
+      "heating_mode_min_temperature": {
+        "name": "Heating mode min temperature"
+      },
+      "heating_mode_max_temperature": {
+        "name": "Heating mode max temperature"
+      },
+      "smart_mode_min_temperature": {
+        "name": "Smart mode min temperature"
+      },
+      "smart_mode_max_temperature": {
+        "name": "Smart mode max temperature"
       }
     },
     "select": {
@@ -254,6 +287,11 @@
     "light": {
       "pool_light": {
         "name": "Light"
+      }
+    },
+    "button": {
+      "led_pulse": {
+        "name": "LED pulse"
       }
     },
     "device_tracker": {
