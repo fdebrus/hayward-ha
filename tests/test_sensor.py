@@ -86,15 +86,15 @@ def test_number_electrolysis_scaling() -> None:
 
 def test_speed_label_mapping() -> None:
     """Test speed label select mapping."""
-    options = ("Slow", "Medium", "High")
-    assert options[0] == "Slow"
-    assert options[1] == "Medium"
-    assert options[2] == "High"
+    options = ("slow", "medium", "high")
+    assert options[0] == "slow"
+    assert options[1] == "medium"
+    assert options[2] == "high"
 
 
 def test_pump_mode_mapping() -> None:
     """Test pump mode select mapping."""
-    options = ("Manual", "Auto", "Heat", "Smart", "Intel")
-    assert options[0] == "Manual"
-    assert options[3] == "Smart"
-    assert options.index("Intel") == 4
+    options = ("manual", "auto", "heat", "smart", "intel")
+    assert options[0] == "manual"
+    assert options[3] == "smart"
+    assert options.index("intel") == 4

@@ -5,6 +5,7 @@ import datetime
 
 from homeassistant.components.time import TimeEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
@@ -75,6 +76,9 @@ class AquariteTimeEntity(AquariteEntity, TimeEntity):
     async def async_set_value(self, value: datetime.time) -> None:
         """Set the interval time."""
         seconds = value.hour * 3600 + value.minute * 60
-        await self.coordinator.api.set_value(
-            self._pool_id, self._value_path, seconds,
-        )
+        try:
+            await self.coordinator.api.set_value(
+                self._pool_id, self._value_path, seconds,
+            )
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to set time: {err}") from err

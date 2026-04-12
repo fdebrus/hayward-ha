@@ -7,7 +7,7 @@ import logging
 
 from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
@@ -75,7 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
         async def handle_sync_time(call: ServiceCall) -> None:
             """Service call to sync pool time for all loaded entries."""
             for config_entry in hass.config_entries.async_entries(DOMAIN):
-                if hasattr(config_entry, "runtime_data") and config_entry.runtime_data:
+                if config_entry.state is ConfigEntryState.LOADED:
                     await config_entry.runtime_data.coordinator.set_pool_time_to_now()
 
         if not hass.services.has_service(DOMAIN, "sync_pool_time"):
@@ -87,8 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
                 e
                 for e in hass.config_entries.async_entries(DOMAIN)
                 if e.entry_id != entry.entry_id
-                and hasattr(e, "runtime_data")
-                and e.runtime_data
+                and e.state is ConfigEntryState.LOADED
             ]
             if not remaining:
                 hass.services.async_remove(DOMAIN, "sync_pool_time")

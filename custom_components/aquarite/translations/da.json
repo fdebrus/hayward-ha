@@ -56,129 +56,259 @@
   },
   "entity": {
     "sensor": {
-      "temperature": { "name": "Temperatur" },
-      "cd": { "name": "CD" },
-      "cl": { "name": "CL" },
-      "ph": { "name": "pH" },
-      "rx": { "name": "Rx" },
-      "uv": { "name": "UV" },
-      "electrolysis": { "name": "Elektrolyse" },
-      "hydrolysis": { "name": "Hydrolyse" },
-      "filtration_intel_time": { "name": "Filtrering intel tid" },
-      "city": { "name": "By" },
-      "street": { "name": "Gade" },
-      "zipcode": { "name": "Postnummer" },
-      "country": { "name": "Land" },
-      "latitude": { "name": "Breddegrad" },
-      "longitude": { "name": "Længdegrad" },
-      "pool_name": { "name": "Poolnavn" },
-      "rssi": { "name": "Wi-Fi signalstyrke" }
+      "temperature": {
+        "name": "Temperatur"
+      },
+      "cd": {
+        "name": "CD"
+      },
+      "cl": {
+        "name": "CL"
+      },
+      "ph": {
+        "name": "pH"
+      },
+      "rx": {
+        "name": "Rx"
+      },
+      "uv": {
+        "name": "UV"
+      },
+      "electrolysis": {
+        "name": "Elektrolyse"
+      },
+      "hydrolysis": {
+        "name": "Hydrolyse"
+      },
+      "filtration_intel_time": {
+        "name": "Filtrering intel tid"
+      },
+      "city": {
+        "name": "By"
+      },
+      "street": {
+        "name": "Gade"
+      },
+      "zipcode": {
+        "name": "Postnummer"
+      },
+      "country": {
+        "name": "Land"
+      },
+      "latitude": {
+        "name": "Breddegrad"
+      },
+      "longitude": {
+        "name": "Længdegrad"
+      },
+      "pool_name": {
+        "name": "Poolnavn"
+      },
+      "rssi": {
+        "name": "Wi-Fi signalstyrke"
+      }
     },
     "binary_sensor": {
-      "hidro_flow_status": { "name": "Hydrolyse flow status" },
-      "filtration_status": { "name": "Filtreringsstatus" },
-      "backwash_status": { "name": "Tilbageskylningsstatus" },
-      "hidro_cover_reduction": { "name": "Hydrolyse overdækning reduktion" },
-      "ph_pump_alarm": { "name": "pH pumpe alarm" },
-      "cd_module_installed": { "name": "CD modul installeret" },
-      "cl_module_installed": { "name": "CL modul installeret" },
-      "rx_module_installed": { "name": "RX modul installeret" },
-      "ph_module_installed": { "name": "pH modul installeret" },
-      "io_module_installed": { "name": "IO modul installeret" },
-      "hidro_module_installed": { "name": "Hydrolyse modul installeret" },
-      "ph_acid_pump": { "name": "pH syrepumpe" },
-      "ph_base_pump": { "name": "pH basepumpe" },
-      "cl_pump_status": { "name": "Klorpumpestatus" },
-      "rx_pump_status": { "name": "Rx pumpestatus" },
-      "heating_status": { "name": "Opvarmningsstatus" },
-      "connected": { "name": "Forbundet" },
-      "hidro_fl2_status": { "name": "Hydrolyse FL2 status" },
-      "acid_tank": { "name": "Syretank" },
-      "electrolysis_low": { "name": "Elektrolyse lav" },
-      "hydrolysis_low": { "name": "Hydrolyse lav" }
+      "hidro_flow_status": {
+        "name": "Hydrolyse flow status"
+      },
+      "filtration_status": {
+        "name": "Filtreringsstatus"
+      },
+      "backwash_status": {
+        "name": "Tilbageskylningsstatus"
+      },
+      "hidro_cover_reduction": {
+        "name": "Hydrolyse overdækning reduktion"
+      },
+      "ph_pump_alarm": {
+        "name": "pH pumpe alarm"
+      },
+      "cd_module_installed": {
+        "name": "CD modul installeret"
+      },
+      "cl_module_installed": {
+        "name": "CL modul installeret"
+      },
+      "rx_module_installed": {
+        "name": "RX modul installeret"
+      },
+      "ph_module_installed": {
+        "name": "pH modul installeret"
+      },
+      "io_module_installed": {
+        "name": "IO modul installeret"
+      },
+      "hidro_module_installed": {
+        "name": "Hydrolyse modul installeret"
+      },
+      "ph_acid_pump": {
+        "name": "pH syrepumpe"
+      },
+      "ph_base_pump": {
+        "name": "pH basepumpe"
+      },
+      "cl_pump_status": {
+        "name": "Klorpumpestatus"
+      },
+      "rx_pump_status": {
+        "name": "Rx pumpestatus"
+      },
+      "heating_status": {
+        "name": "Opvarmningsstatus"
+      },
+      "connected": {
+        "name": "Forbundet"
+      },
+      "hidro_fl2_status": {
+        "name": "Hydrolyse FL2 status"
+      },
+      "acid_tank": {
+        "name": "Syretank"
+      },
+      "electrolysis_low": {
+        "name": "Elektrolyse lav"
+      },
+      "hydrolysis_low": {
+        "name": "Hydrolyse lav"
+      }
     },
     "switch": {
-      "electrolysis_cover": { "name": "Elektrolyse overdækning" },
-      "electrolysis_boost": { "name": "Elektrolyse boost" },
-      "relay_1": { "name": "Relæ 1" },
-      "relay_2": { "name": "Relæ 2" },
-      "relay_3": { "name": "Relæ 3" },
-      "relay_4": { "name": "Relæ 4" },
-      "filtration": { "name": "Filtrering" },
-      "heating_climate": { "name": "Opvarmning klima" },
-      "smart_mode_freeze": { "name": "Smart frostbeskyttelse" }
+      "electrolysis_cover": {
+        "name": "Elektrolyse overdækning"
+      },
+      "electrolysis_boost": {
+        "name": "Elektrolyse boost"
+      },
+      "relay_1": {
+        "name": "Relæ 1"
+      },
+      "relay_2": {
+        "name": "Relæ 2"
+      },
+      "relay_3": {
+        "name": "Relæ 3"
+      },
+      "relay_4": {
+        "name": "Relæ 4"
+      },
+      "filtration": {
+        "name": "Filtrering"
+      },
+      "heating_climate": {
+        "name": "Opvarmning klima"
+      },
+      "smart_mode_freeze": {
+        "name": "Smart frostbeskyttelse"
+      }
     },
     "number": {
-      "redox_setpoint": { "name": "Redox sætpunkt" },
-      "ph_low": { "name": "pH lav" },
-      "ph_max": { "name": "pH maks" },
-      "electrolysis_setpoint": { "name": "Elektrolyse sætpunkt" },
-      "intel_mode_temperature": { "name": "Intel tilstand temperatur" },
-      "heating_mode_min_temperature": { "name": "Opvarmning min temperatur" },
-      "heating_mode_max_temperature": { "name": "Opvarmning maks temperatur" },
-      "smart_mode_min_temperature": { "name": "Smart min temperatur" },
-      "smart_mode_max_temperature": { "name": "Smart maks temperatur" }
+      "redox_setpoint": {
+        "name": "Redox sætpunkt"
+      },
+      "ph_low": {
+        "name": "pH lav"
+      },
+      "ph_max": {
+        "name": "pH maks"
+      },
+      "electrolysis_setpoint": {
+        "name": "Elektrolyse sætpunkt"
+      },
+      "intel_mode_temperature": {
+        "name": "Intel tilstand temperatur"
+      },
+      "heating_mode_min_temperature": {
+        "name": "Opvarmning min temperatur"
+      },
+      "heating_mode_max_temperature": {
+        "name": "Opvarmning maks temperatur"
+      },
+      "smart_mode_min_temperature": {
+        "name": "Smart min temperatur"
+      },
+      "smart_mode_max_temperature": {
+        "name": "Smart maks temperatur"
+      }
     },
     "select": {
       "pump_mode": {
         "name": "Pumpetilstand",
         "state": {
-          "Manual": "Manuel",
-          "Auto": "Automatisk",
-          "Heat": "Opvarmning",
-          "Smart": "Smart",
-          "Intel": "Intel"
+          "manual": "Manuel",
+          "auto": "Automatisk",
+          "heat": "Opvarmning",
+          "smart": "Smart",
+          "intel": "Intel"
         }
       },
       "pump_speed": {
         "name": "Pumpehastighed",
         "state": {
-          "Slow": "Langsom",
-          "Medium": "Middel",
-          "High": "Høj"
+          "slow": "Langsom",
+          "medium": "Middel",
+          "high": "Høj"
         }
       },
       "filtration_timer_speed_1": {
         "name": "Filtrering timer hastighed 1",
         "state": {
-          "Slow": "Langsom",
-          "Medium": "Middel",
-          "High": "Høj"
+          "slow": "Langsom",
+          "medium": "Middel",
+          "high": "Høj"
         }
       },
       "filtration_timer_speed_2": {
         "name": "Filtrering timer hastighed 2",
         "state": {
-          "Slow": "Langsom",
-          "Medium": "Middel",
-          "High": "Høj"
+          "slow": "Langsom",
+          "medium": "Middel",
+          "high": "Høj"
         }
       },
       "filtration_timer_speed_3": {
         "name": "Filtrering timer hastighed 3",
         "state": {
-          "Slow": "Langsom",
-          "Medium": "Middel",
-          "High": "Høj"
+          "slow": "Langsom",
+          "medium": "Middel",
+          "high": "Høj"
         }
       }
     },
     "time": {
-      "filtration_interval_1_from": { "name": "Filtrering interval 1 fra" },
-      "filtration_interval_1_to": { "name": "Filtrering interval 1 til" },
-      "filtration_interval_2_from": { "name": "Filtrering interval 2 fra" },
-      "filtration_interval_2_to": { "name": "Filtrering interval 2 til" },
-      "filtration_interval_3_from": { "name": "Filtrering interval 3 fra" },
-      "filtration_interval_3_to": { "name": "Filtrering interval 3 til" }
+      "filtration_interval_1_from": {
+        "name": "Filtrering interval 1 fra"
+      },
+      "filtration_interval_1_to": {
+        "name": "Filtrering interval 1 til"
+      },
+      "filtration_interval_2_from": {
+        "name": "Filtrering interval 2 fra"
+      },
+      "filtration_interval_2_to": {
+        "name": "Filtrering interval 2 til"
+      },
+      "filtration_interval_3_from": {
+        "name": "Filtrering interval 3 fra"
+      },
+      "filtration_interval_3_to": {
+        "name": "Filtrering interval 3 til"
+      }
     },
     "light": {
-      "pool_light": { "name": "Lys" }
+      "pool_light": {
+        "name": "Lys"
+      }
     },
     "button": {
-      "led_pulse": { "name": "LED puls" }
+      "led_pulse": {
+        "name": "LED puls"
+      }
     },
     "device_tracker": {
-      "location": { "name": "Placering" }
+      "location": {
+        "name": "Placering"
+      }
     }
   },
   "exceptions": {
