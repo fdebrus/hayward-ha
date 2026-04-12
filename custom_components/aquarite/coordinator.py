@@ -120,6 +120,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def set_pool_time_to_now(self) -> None:
         """Sync the pool controller clock with the current time."""
         now = dt_util.now()
-        timestamp = int(now.timestamp())
-        _LOGGER.info("Syncing pool localTime to: %s (%s)", timestamp, now.isoformat())
+        utc_offset = int(now.utcoffset().total_seconds())
+        timestamp = int(now.timestamp()) + utc_offset
+        _LOGGER.info("Syncing pool localTime to: %s (%s, UTC offset %+ds)", timestamp, now.isoformat(), utc_offset)
         await self.api.set_value(self.pool_id, "main.localTime", timestamp)
