@@ -66,9 +66,12 @@ views:
               type: horizontal-stack
               cards:
                 - type: tile
-                  entity: sensor.pool_filtration_intel_temperature
+                  entity: number.pool_intel_mode_temperature
                   name: Reference Temp
                   icon: mdi:thermometer
+                  features:
+                    - type: numeric-input
+                      style: slider
                   features_position: bottom
                   vertical: false
                 - type: tile
@@ -86,15 +89,21 @@ views:
               type: horizontal-stack
               cards:
                 - type: tile
-                  entity: sensor.pool_filtration_smart_min_temp
+                  entity: number.pool_smart_mode_min_temperature
                   name: Min Temp (Smart)
                   icon: mdi:thermometer-low
+                  features:
+                    - type: numeric-input
+                      style: slider
                 - type: tile
-                  entity: sensor.pool_filtration_smart_high_temp
+                  entity: number.pool_smart_mode_max_temperature
                   name: High Temp (Smart)
                   icon: mdi:thermometer-high
+                  features:
+                    - type: numeric-input
+                      style: slider
                 - type: tile
-                  entity: binary_sensor.pool_filtration_smart_freeze
+                  entity: switch.pool_smart_mode_freeze_protection
                   name: Freeze Protection
                   icon: mdi:snowflake
           - type: conditional
@@ -116,41 +125,47 @@ views:
               square: false
               cards:
                 - type: tile
-                  entity: sensor.pool_filtration_interval_1_from
+                  entity: time.pool_filtration_interval_1_from
                   name: Start 1
                   icon: mdi:clock-start
                 - type: tile
-                  entity: sensor.pool_filtration_interval_1_to
+                  entity: time.pool_filtration_interval_1_to
                   name: End 1
                   icon: mdi:clock-end
                 - type: tile
-                  entity: sensor.pool_filtration_timer_speed_1
+                  entity: select.pool_filtration_timer_speed_1
                   name: Speed 1
                   icon: mdi:speedometer
+                  features:
+                    - type: select-options
                 - type: tile
-                  entity: sensor.pool_filtration_interval_2_from
+                  entity: time.pool_filtration_interval_2_from
                   name: Start 2
                   icon: mdi:clock-start
                 - type: tile
-                  entity: sensor.pool_filtration_interval_2_to
+                  entity: time.pool_filtration_interval_2_to
                   name: End 2
                   icon: mdi:clock-end
                 - type: tile
-                  entity: sensor.pool_filtration_timer_speed_2
+                  entity: select.pool_filtration_timer_speed_2
                   name: Speed 2
                   icon: mdi:speedometer
+                  features:
+                    - type: select-options
                 - type: tile
-                  entity: sensor.pool_filtration_interval_3_from
+                  entity: time.pool_filtration_interval_3_from
                   name: Start 3
                   icon: mdi:clock-start
                 - type: tile
-                  entity: sensor.pool_filtration_interval_3_to
+                  entity: time.pool_filtration_interval_3_to
                   name: End 3
                   icon: mdi:clock-end
                 - type: tile
-                  entity: sensor.pool_filtration_timer_speed_3
+                  entity: select.pool_filtration_timer_speed_3
                   name: Speed 3
                   icon: mdi:speedometer
+                  features:
+                    - type: select-options
           - type: vertical-stack
             title: Main Controls
             cards:
