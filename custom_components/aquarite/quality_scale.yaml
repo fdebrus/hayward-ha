@@ -7,8 +7,8 @@ rules:
     status: done
     comment: Cloud push via Firestore, no polling (update_interval=None)
   brands:
-    status: todo
-    comment: Need to submit logo/icon to home-assistant/brands
+    status: done
+    comment: Accepted in home-assistant/brands
   common-modules:
     status: done
     comment: Uses async_get_clientsession for HTTP sessions
