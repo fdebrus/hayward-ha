@@ -1,11 +1,14 @@
 """Aquarite Button entities."""
 from __future__ import annotations
 
+import asyncio
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
+from .const import LED_PULSE_DELAY
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -48,5 +51,14 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
         self._attr_unique_id = self.build_unique_id("LEDPulse", delimiter="")
 
     async def async_press(self) -> None:
-        """Send a pulse to the pool LED."""
+        """Send a pulse to the pool LED.
+
+        If the light is already on, turn it off, wait LED_PULSE_DELAY
+        seconds, then turn it back on — the physical LED fixture
+        advances to the next colour on power-on.  If the light is off,
+        simply turn it on.
+        """
+        if self.coordinator.get_value("light.status"):
+            await self.coordinator.api.set_value(self._pool_id, "light.status", 0)
+            await asyncio.sleep(LED_PULSE_DELAY)
         await self.coordinator.api.set_value(self._pool_id, "light.status", 1)
