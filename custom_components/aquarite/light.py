@@ -9,7 +9,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
-from .const import PATH_HASLED
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -27,9 +26,6 @@ async def async_setup_entry(
     """Set up the Aquarite light platform."""
     dataservice = entry.runtime_data.coordinator
     pool_id, pool_name = dataservice.pool_id, entry.title
-
-    if not dataservice.get_value(PATH_HASLED):
-        return
 
     async_add_entities([
         AquariteLightEntity(dataservice, pool_id, pool_name, "Light", "pool_light", "light.status")
