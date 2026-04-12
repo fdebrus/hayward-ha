@@ -42,6 +42,6 @@ class AquariteEntity(CoordinatorEntity[AquariteDataUpdateCoordinator]):
         """Return the friendly pool name for the entity."""
         return self._pool_name
 
-    def build_unique_id(self, suffix: str, *, delimiter: str = "-") -> str:
+    def build_unique_id(self, suffix: str) -> str:
         """Return a consistent unique ID for the entity."""
-        return f"{self._pool_id}{delimiter}{suffix}"
+        return f"{self._pool_id}-{suffix}"

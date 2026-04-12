@@ -337,7 +337,7 @@ class AquaritePoolNameSensorEntity(AquariteEntity, SensorEntity):
         """Initialize the pool name sensor."""
         super().__init__(dataservice, pool_id, pool_name)
         self._attr_translation_key = "pool_name"
-        self._attr_unique_id = f"{pool_id}-name"
+        self._attr_unique_id = self.build_unique_id("name")
 
     @property
     def native_value(self) -> str:

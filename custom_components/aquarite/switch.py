@@ -92,7 +92,7 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
         self._value_path = config.value_path
         self._is_relay = config.is_relay
         self._attr_translation_key = config.translation_key
-        self._attr_unique_id = self.build_unique_id(config.name, delimiter="")
+        self._attr_unique_id = self.build_unique_id(config.name)
 
     @property
     def is_on(self) -> bool:

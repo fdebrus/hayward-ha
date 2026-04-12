@@ -68,7 +68,7 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
         self._value_path = value_path
         self._options_map = options
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(name, delimiter="")
+        self._attr_unique_id = self.build_unique_id(name)
         self._attr_options = list(options)
 
     @property

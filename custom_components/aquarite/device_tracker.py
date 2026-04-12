@@ -44,7 +44,7 @@ class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):
     ) -> None:
         """Initialize the tracker."""
         super().__init__(coordinator, pool_id, pool_name)
-        self._attr_unique_id = f"{pool_id}-location-tracker"
+        self._attr_unique_id = self.build_unique_id("location-tracker")
 
     @property
     def latitude(self) -> float | None:

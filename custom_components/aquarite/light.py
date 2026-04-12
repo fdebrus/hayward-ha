@@ -51,7 +51,7 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
         super().__init__(dataservice, pool_id, pool_name)
         self._value_path = value_path
         self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(name, delimiter="")
+        self._attr_unique_id = self.build_unique_id(name)
 
         # Reconciliation logic
         self._target_state: bool | None = None
