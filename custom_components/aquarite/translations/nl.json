@@ -43,6 +43,17 @@
       "reconfigure_successful": "Herconfiguratie is geslaagd."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "health_check_interval": "Gezondheidscontrole-interval (seconden)"
+        },
+        "description": "Configureer de Aquarite integratie.",
+        "title": "Opties"
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "temperature": { "name": "Temperatuur" },

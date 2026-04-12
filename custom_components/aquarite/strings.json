@@ -43,6 +43,17 @@
       "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "health_check_interval": "Health check interval (seconds)"
+        },
+        "description": "Configure the Aquarite integration.",
+        "title": "Options"
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "temperature": {

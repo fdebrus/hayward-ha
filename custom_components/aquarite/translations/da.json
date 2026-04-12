@@ -43,6 +43,17 @@
       "reconfigure_successful": "Genkonfigurering lykkedes."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "health_check_interval": "Sundhedstjek interval (sekunder)"
+        },
+        "description": "Konfigurer Aquarite integrationen.",
+        "title": "Indstillinger"
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "temperature": { "name": "Temperatur" },
