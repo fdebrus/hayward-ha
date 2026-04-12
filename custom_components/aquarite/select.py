@@ -11,6 +11,7 @@ from .entity import AquariteEntity
 
 PUMP_MODE_OPTIONS: tuple[str, ...] = ("Manual", "Auto", "Heat", "Smart", "Intel")
 PUMP_SPEED_OPTIONS: tuple[str, ...] = ("Slow", "Medium", "High")
+TIMER_SPEED_OPTIONS: tuple[str, ...] = ("Slow", "Medium", "High")
 
 PARALLEL_UPDATES = 1
 
@@ -24,7 +25,7 @@ async def async_setup_entry(
     dataservice = entry.runtime_data.coordinator
     pool_id, pool_name = dataservice.pool_id, entry.title
 
-    async_add_entities([
+    entities = [
         AquariteSelectEntity(
             dataservice, pool_id, pool_name,
             "Pump Mode", "pump_mode", "filtration.mode", PUMP_MODE_OPTIONS,
@@ -33,7 +34,20 @@ async def async_setup_entry(
             dataservice, pool_id, pool_name,
             "Pump Speed", "pump_speed", "filtration.manVel", PUMP_SPEED_OPTIONS,
         ),
-    ])
+    ]
+
+    for index in range(1, 4):
+        entities.append(
+            AquariteSelectEntity(
+                dataservice, pool_id, pool_name,
+                f"Filtration Timer Speed {index}",
+                f"filtration_timer_speed_{index}",
+                f"filtration.timerVel{index}",
+                TIMER_SPEED_OPTIONS,
+            )
+        )
+
+    async_add_entities(entities)
 
 
 class AquariteSelectEntity(AquariteEntity, SelectEntity):
