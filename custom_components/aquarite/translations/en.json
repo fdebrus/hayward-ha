@@ -235,43 +235,43 @@
       "pump_mode": {
         "name": "Pump mode",
         "state": {
-          "Manual": "Manual",
-          "Auto": "Auto",
-          "Heat": "Heat",
-          "Smart": "Smart",
-          "Intel": "Intel"
+          "manual": "Manual",
+          "auto": "Auto",
+          "heat": "Heat",
+          "smart": "Smart",
+          "intel": "Intel"
         }
       },
       "pump_speed": {
         "name": "Pump speed",
         "state": {
-          "Slow": "Slow",
-          "Medium": "Medium",
-          "High": "High"
+          "slow": "Slow",
+          "medium": "Medium",
+          "high": "High"
         }
       },
       "filtration_timer_speed_1": {
         "name": "Filtration timer speed 1",
         "state": {
-          "Slow": "Slow",
-          "Medium": "Medium",
-          "High": "High"
+          "slow": "Slow",
+          "medium": "Medium",
+          "high": "High"
         }
       },
       "filtration_timer_speed_2": {
         "name": "Filtration timer speed 2",
         "state": {
-          "Slow": "Slow",
-          "Medium": "Medium",
-          "High": "High"
+          "slow": "Slow",
+          "medium": "Medium",
+          "high": "High"
         }
       },
       "filtration_timer_speed_3": {
         "name": "Filtration timer speed 3",
         "state": {
-          "Slow": "Slow",
-          "Medium": "Medium",
-          "High": "High"
+          "slow": "Slow",
+          "medium": "Medium",
+          "high": "High"
         }
       }
     },

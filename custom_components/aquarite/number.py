@@ -6,6 +6,7 @@ from typing import Final
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.const import EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
@@ -160,6 +161,9 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         """Set the value."""
         scale = self.SCALE_MAP.get(self._value_path)
         raw_value = int(value * scale) if scale else value
-        await self.coordinator.api.set_value(
-            self._pool_id, self._value_path, raw_value
-        )
+        try:
+            await self.coordinator.api.set_value(
+                self._pool_id, self._value_path, raw_value
+            )
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to set value: {err}") from err

@@ -3,15 +3,16 @@ from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
-PUMP_MODE_OPTIONS: tuple[str, ...] = ("Manual", "Auto", "Heat", "Smart", "Intel")
-PUMP_SPEED_OPTIONS: tuple[str, ...] = ("Slow", "Medium", "High")
-TIMER_SPEED_OPTIONS: tuple[str, ...] = ("Slow", "Medium", "High")
+PUMP_MODE_OPTIONS: tuple[str, ...] = ("manual", "auto", "heat", "smart", "intel")
+PUMP_SPEED_OPTIONS: tuple[str, ...] = ("slow", "medium", "high")
+TIMER_SPEED_OPTIONS: tuple[str, ...] = ("slow", "medium", "high")
 
 PARALLEL_UPDATES = 1
 
@@ -82,6 +83,9 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Select an option."""
-        await self.coordinator.api.set_value(
-            self._pool_id, self._value_path, self._options_map.index(option)
-        )
+        try:
+            await self.coordinator.api.set_value(
+                self._pool_id, self._value_path, self._options_map.index(option)
+            )
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to select option: {err}") from err

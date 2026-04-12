@@ -1,15 +1,20 @@
 """Config Flow for the Aquarite integration."""
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import voluptuous as vol
 
 from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
 
-from homeassistant import config_entries
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
@@ -23,12 +28,12 @@ AUTH_SCHEMA = vol.Schema(
 )
 
 
-class AquariteOptionsFlow(config_entries.OptionsFlow):
+class AquariteOptionsFlow(OptionsFlow):
     """Options flow for Aquarite."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the options form."""
         if user_input is not None:
             return self.async_create_entry(data=user_input)
@@ -46,12 +51,12 @@ class AquariteOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(step_id="init", data_schema=schema)
 
 
-class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
     """Aquarite config flow."""
 
     @staticmethod
     def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
+        config_entry: ConfigEntry,
     ) -> AquariteOptionsFlow:
         """Return the options flow handler."""
         return AquariteOptionsFlow()
@@ -63,7 +68,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
         if user_input is not None:
             self._user_data = {
@@ -76,7 +81,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_pool(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the pool selection step."""
         if user_input is not None:
             pool_id: str = user_input["pool_id"]
@@ -129,14 +134,14 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="pool", data_schema=pool_schema)
 
     async def async_step_reauth(
-        self, entry_data: dict[str, Any]
-    ) -> FlowResult:
+        self, entry_data: Mapping[str, Any]
+    ) -> ConfigFlowResult:
         """Start reauth flow."""
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle reauth credential input."""
         errors: dict[str, str] = {}
         reauth_entry = self._get_reauth_entry()
@@ -153,7 +158,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except AuthenticationError:
                 errors["base"] = "auth_error"
             else:
-                self.hass.config_entries.async_update_entry(
+                return self.async_update_reload_and_abort(
                     reauth_entry,
                     data={
                         **reauth_entry.data,
@@ -161,8 +166,6 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
                     },
                 )
-                await self.hass.config_entries.async_reload(reauth_entry.entry_id)
-                return self.async_abort(reason="reauth_successful")
 
         schema = vol.Schema(
             {
@@ -179,7 +182,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle reconfiguration of credentials."""
         errors: dict[str, str] = {}
         reconfigure_entry = self._get_reconfigure_entry()
@@ -196,7 +199,7 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except AuthenticationError:
                 errors["base"] = "auth_error"
             else:
-                self.hass.config_entries.async_update_entry(
+                return self.async_update_reload_and_abort(
                     reconfigure_entry,
                     data={
                         **reconfigure_entry.data,
@@ -204,10 +207,6 @@ class AquariteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
                     },
                 )
-                await self.hass.config_entries.async_reload(
-                    reconfigure_entry.entry_id
-                )
-                return self.async_abort(reason="reconfigure_successful")
 
         schema = vol.Schema(
             {

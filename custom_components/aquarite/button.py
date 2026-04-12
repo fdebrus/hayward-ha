@@ -5,6 +5,7 @@ import asyncio
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
@@ -61,7 +62,10 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
         advances to the next colour on power-on.  If the light is off,
         simply turn it on.
         """
-        if self.coordinator.get_value("light.status"):
-            await self.coordinator.api.set_value(self._pool_id, "light.status", 0)
-            await asyncio.sleep(LED_PULSE_DELAY)
-        await self.coordinator.api.set_value(self._pool_id, "light.status", 1)
+        try:
+            if self.coordinator.get_value("light.status"):
+                await self.coordinator.api.set_value(self._pool_id, "light.status", 0)
+                await asyncio.sleep(LED_PULSE_DELAY)
+            await self.coordinator.api.set_value(self._pool_id, "light.status", 1)
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to pulse LED: {err}") from err

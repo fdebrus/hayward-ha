@@ -3,8 +3,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from typing import Any
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
@@ -104,10 +107,16 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
             return onoff or status
         return onoff
 
-    async def async_turn_on(self, **kwargs: object) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.coordinator.api.set_value(self._pool_id, self._value_path, 1)
+        try:
+            await self.coordinator.api.set_value(self._pool_id, self._value_path, 1)
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to turn on: {err}") from err
 
-    async def async_turn_off(self, **kwargs: object) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.coordinator.api.set_value(self._pool_id, self._value_path, 0)
+        try:
+            await self.coordinator.api.set_value(self._pool_id, self._value_path, 0)
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to turn off: {err}") from err
