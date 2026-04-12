@@ -8,6 +8,7 @@
   <a href="https://github.com/fdebrus/hayward-ha/releases"><img src="https://img.shields.io/github/v/release/fdebrus/hayward-ha?style=flat&label=release" alt="Release"></a>
   <a href="https://github.com/fdebrus/hayward-ha/issues"><img src="https://img.shields.io/github/issues/fdebrus/hayward-ha?style=flat" alt="Issues"></a>
   <a href="https://github.com/fdebrus/hayward-ha/stargazers"><img src="https://img.shields.io/github/stars/fdebrus/hayward-ha?style=flat" alt="Stars"></a>
+  <a href="https://github.com/fdebrus/hayward-ha/actions/workflows/tests.yml"><img src="https://github.com/fdebrus/hayward-ha/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
 </p>
 
 
@@ -30,6 +31,7 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 - Background token refresh and health monitoring  
 - Reconfigure credentials without removing the integration  
 - Downloadable diagnostics for troubleshooting  
+- Configurable options (health check interval) via the integration's Configure menu  
 - Multi-language support (English, Dutch, Danish)  
 
 ### Sensors
@@ -48,7 +50,7 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 - **Select**: pump mode (Manual / Auto / Heat / Smart / Intel), pump speed, filtration timer speeds 1-3 (Slow / Medium / High)  
 - **Time**: filtration interval 1-3 start/end times — set your filtration schedule directly from Home Assistant  
 - **Light**: pool light on/off  
-- **Button**: _LED pulse_ — advances the pool LED to its next color (mirrors the "Next" button in the Hayward app's Illumination screen)  
+- **Button**: _LED pulse_ — advances the pool LED to its next color (requires LED hardware; mirrors the "Next" button in the Hayward app)  
 
 ### Binary sensors
 
@@ -73,7 +75,7 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 | `select` | 5 | Pump mode, pump speed, filtration timer speeds 1-3 |
 | `time` | 6 | Filtration interval 1-3 start/end times |
 | `light` | 1 | Pool light on/off |
-| `button` | 1 | LED color advance |
+| `button` | 0-1 | LED color advance (only with LED hardware) |
 | `device_tracker` | 1 | Pool GPS location |
 
 Entity counts vary based on installed modules (CD, CL, pH, RX, UV, hydrolysis) and enabled features (Heat, Smart mode).
@@ -122,6 +124,15 @@ If you need to update your Hayward credentials:
 3. Click the **three dots menu** → **Reconfigure**
 4. Enter your new credentials
 
+### Configuring options
+
+After setup, you can adjust integration settings:
+
+1. Go to **Settings → Devices & Services**
+2. Find the **Aquarite** integration
+3. Click the **three dots menu** → **Configure**
+4. Adjust the **health check interval** (60–3600 seconds, default 300)
+
 ### Downloading diagnostics
 
 For troubleshooting, you can download diagnostics data (credentials and personal info are automatically redacted):
@@ -161,6 +172,19 @@ This is useful to ensure correct scheduling and reporting, especially after powe
 | Reauth notification appears | Your credentials may have changed or expired. Click the notification to re-enter your username and password. |
 | Entities not updating | The integration uses real-time cloud push. If updates stop, try reloading the integration from Settings → Devices & Services. |
 | HACS can't find the integration | Make sure you added the custom repository URL first (see installation steps above). |
+
+## Development
+
+The integration includes a test suite that runs automatically via GitHub Actions on every push and pull request.
+
+To run tests locally:
+
+```bash
+pip install pytest pytest-asyncio pytest-homeassistant-custom-component aioaquarite==0.1.0
+python -m pytest tests/ -v
+```
+
+Requires Python 3.12 or later.
 
 ## Credits
 
