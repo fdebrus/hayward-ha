@@ -31,6 +31,9 @@
       "pool_name": {
         "default": "mdi:pool"
       },
+      "rssi": {
+        "default": "mdi:wifi"
+      },
       "city": {
         "default": "mdi:city"
       },
@@ -85,6 +88,15 @@
         "default": "mdi:chip"
       },
       "ph_acid_pump": {
+        "default": "mdi:pump"
+      },
+      "ph_base_pump": {
+        "default": "mdi:pump"
+      },
+      "cl_pump_status": {
+        "default": "mdi:pump"
+      },
+      "rx_pump_status": {
         "default": "mdi:pump"
       },
       "heating_status": {
@@ -204,6 +216,11 @@
     "light": {
       "pool_light": {
         "default": "mdi:pool"
+      }
+    },
+    "button": {
+      "led_pulse": {
+        "default": "mdi:palette"
       }
     },
     "device_tracker": {
