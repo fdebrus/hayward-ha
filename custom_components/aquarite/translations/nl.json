@@ -54,15 +54,6 @@
       "electrolysis": { "name": "Elektrolyse" },
       "hydrolysis": { "name": "Hydrolyse" },
       "filtration_intel_time": { "name": "Filtratie intel tijd" },
-      "filtration_interval_1_from": { "name": "Filtratie interval 1 van" },
-      "filtration_interval_1_to": { "name": "Filtratie interval 1 tot" },
-      "filtration_interval_2_from": { "name": "Filtratie interval 2 van" },
-      "filtration_interval_2_to": { "name": "Filtratie interval 2 tot" },
-      "filtration_interval_3_from": { "name": "Filtratie interval 3 van" },
-      "filtration_interval_3_to": { "name": "Filtratie interval 3 tot" },
-      "filtration_timer_speed_1": { "name": "Filtratie timer snelheid 1" },
-      "filtration_timer_speed_2": { "name": "Filtratie timer snelheid 2" },
-      "filtration_timer_speed_3": { "name": "Filtratie timer snelheid 3" },
       "city": { "name": "Stad" },
       "street": { "name": "Straat" },
       "zipcode": { "name": "Postcode" },
@@ -135,7 +126,39 @@
           "Medium": "Gemiddeld",
           "High": "Hoog"
         }
+      },
+      "filtration_timer_speed_1": {
+        "name": "Filtratie timer snelheid 1",
+        "state": {
+          "Slow": "Langzaam",
+          "Medium": "Gemiddeld",
+          "High": "Hoog"
+        }
+      },
+      "filtration_timer_speed_2": {
+        "name": "Filtratie timer snelheid 2",
+        "state": {
+          "Slow": "Langzaam",
+          "Medium": "Gemiddeld",
+          "High": "Hoog"
+        }
+      },
+      "filtration_timer_speed_3": {
+        "name": "Filtratie timer snelheid 3",
+        "state": {
+          "Slow": "Langzaam",
+          "Medium": "Gemiddeld",
+          "High": "Hoog"
+        }
       }
+    },
+    "time": {
+      "filtration_interval_1_from": { "name": "Filtratie interval 1 van" },
+      "filtration_interval_1_to": { "name": "Filtratie interval 1 tot" },
+      "filtration_interval_2_from": { "name": "Filtratie interval 2 van" },
+      "filtration_interval_2_to": { "name": "Filtratie interval 2 tot" },
+      "filtration_interval_3_from": { "name": "Filtratie interval 3 van" },
+      "filtration_interval_3_to": { "name": "Filtratie interval 3 tot" }
     },
     "light": {
       "pool_light": { "name": "Licht" }

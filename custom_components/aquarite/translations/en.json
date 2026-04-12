@@ -72,33 +72,6 @@
       "filtration_intel_time": {
         "name": "Filtration intel time"
       },
-      "filtration_interval_1_from": {
-        "name": "Filtration interval 1 from"
-      },
-      "filtration_interval_1_to": {
-        "name": "Filtration interval 1 to"
-      },
-      "filtration_interval_2_from": {
-        "name": "Filtration interval 2 from"
-      },
-      "filtration_interval_2_to": {
-        "name": "Filtration interval 2 to"
-      },
-      "filtration_interval_3_from": {
-        "name": "Filtration interval 3 from"
-      },
-      "filtration_interval_3_to": {
-        "name": "Filtration interval 3 to"
-      },
-      "filtration_timer_speed_1": {
-        "name": "Filtration timer speed 1"
-      },
-      "filtration_timer_speed_2": {
-        "name": "Filtration timer speed 2"
-      },
-      "filtration_timer_speed_3": {
-        "name": "Filtration timer speed 3"
-      },
       "city": {
         "name": "City"
       },
@@ -265,6 +238,50 @@
           "Medium": "Medium",
           "High": "High"
         }
+      },
+      "filtration_timer_speed_1": {
+        "name": "Filtration timer speed 1",
+        "state": {
+          "Slow": "Slow",
+          "Medium": "Medium",
+          "High": "High"
+        }
+      },
+      "filtration_timer_speed_2": {
+        "name": "Filtration timer speed 2",
+        "state": {
+          "Slow": "Slow",
+          "Medium": "Medium",
+          "High": "High"
+        }
+      },
+      "filtration_timer_speed_3": {
+        "name": "Filtration timer speed 3",
+        "state": {
+          "Slow": "Slow",
+          "Medium": "Medium",
+          "High": "High"
+        }
+      }
+    },
+    "time": {
+      "filtration_interval_1_from": {
+        "name": "Filtration interval 1 from"
+      },
+      "filtration_interval_1_to": {
+        "name": "Filtration interval 1 to"
+      },
+      "filtration_interval_2_from": {
+        "name": "Filtration interval 2 from"
+      },
+      "filtration_interval_2_to": {
+        "name": "Filtration interval 2 to"
+      },
+      "filtration_interval_3_from": {
+        "name": "Filtration interval 3 from"
+      },
+      "filtration_interval_3_to": {
+        "name": "Filtration interval 3 to"
       }
     },
     "light": {
