@@ -9,7 +9,7 @@
     "issue_tracker": "https://github.com/fdebrus/hayward-ha/issues",
     "loggers": ["custom_components.aquarite", "aioaquarite"],
     "requirements": [
-        "aioaquarite==0.1.0"
+        "aioaquarite==0.2.0"
     ],
     "supported_platforms": [
         "binary_sensor",

@@ -136,5 +136,5 @@ rules:
     status: done
     comment: Uses async_get_clientsession(hass) for HTTP sessions
   strict-typing:
-    status: todo
-    comment: Need py.typed marker on aioaquarite library and mypy strict pass
+    status: done
+    comment: aioaquarite 0.2.0 ships py.typed with full type annotations
