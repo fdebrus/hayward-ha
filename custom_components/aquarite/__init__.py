@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
 
 from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
@@ -31,15 +30,7 @@ PLATFORMS: list[Platform] = [
 ]
 
 
-@dataclass
-class AquariteRuntimeData:
-    """Runtime data for the Aquarite integration."""
-
-    coordinator: AquariteDataUpdateCoordinator
-    auth: AquariteAuth
-
-
-AquariteConfigEntry = ConfigEntry[AquariteRuntimeData]
+type AquariteConfigEntry = ConfigEntry[AquariteDataUpdateCoordinator]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> bool:
@@ -58,17 +49,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
 
         coordinator = AquariteDataUpdateCoordinator(hass, entry, auth, api, pool_id)
 
-        # Initial data fetch and subscription
-        coordinator.data = await api.fetch_pool_data(pool_id)
+        # Initial coordinator refresh and subscription
+        await coordinator.async_config_entry_first_refresh()
         await coordinator.subscribe()
 
         # Start background tasks (token refresh and health check)
         await coordinator.setup_tasks()
 
-        entry.runtime_data = AquariteRuntimeData(
-            coordinator=coordinator,
-            auth=auth,
-        )
+        entry.runtime_data = coordinator
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -76,7 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
             """Service call to sync pool time for all loaded entries."""
             for config_entry in hass.config_entries.async_entries(DOMAIN):
                 if config_entry.state is ConfigEntryState.LOADED:
-                    await config_entry.runtime_data.coordinator.set_pool_time_to_now()
+                    await config_entry.runtime_data.set_pool_time_to_now()
 
         if not hass.services.has_service(DOMAIN, "sync_pool_time"):
             hass.services.async_register(DOMAIN, "sync_pool_time", handle_sync_time)
@@ -99,7 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
     except AuthenticationError as exc:
         raise ConfigEntryAuthFailed from exc
     except Exception as exc:
-        _LOGGER.error("Error setting up entry %s: %s", entry.entry_id, exc)
+        _LOGGER.exception("Error setting up entry %s", entry.entry_id)
         raise ConfigEntryNotReady from exc
 
 
@@ -110,6 +98,6 @@ async def async_unload_entry(
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unloaded:
-        await entry.runtime_data.coordinator.async_shutdown()
+        await entry.runtime_data.async_shutdown()
 
     return unloaded

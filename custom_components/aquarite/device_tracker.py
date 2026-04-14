@@ -11,16 +11,13 @@ from . import AquariteConfigEntry
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
-PARALLEL_UPDATES = 0
-
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the pool location tracker."""
-    coordinator = entry.runtime_data.coordinator
+    coordinator = entry.runtime_data
     pool_id = coordinator.pool_id
     pool_name = entry.title
 
@@ -44,7 +41,7 @@ class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):
     ) -> None:
         """Initialize the tracker."""
         super().__init__(coordinator, pool_id, pool_name)
-        self._attr_unique_id = self.build_unique_id("location-tracker")
+        self._attr_unique_id = self.build_unique_id("location")
 
     @property
     def latitude(self) -> float | None:

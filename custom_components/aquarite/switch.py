@@ -11,6 +11,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
+from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -19,20 +20,19 @@ from .entity import AquariteEntity
 class AquariteSwitchConfig:
     """Configuration for an Aquarite switch."""
 
-    name: str
     translation_key: str
     value_path: str
     is_relay: bool = False
 
 
 SWITCH_DEFINITIONS: tuple[AquariteSwitchConfig, ...] = (
-    AquariteSwitchConfig("Electrolysis Cover", "electrolysis_cover", "hidro.cover_enabled"),
-    AquariteSwitchConfig("Electrolysis Boost", "electrolysis_boost", "hidro.cloration_enabled"),
-    AquariteSwitchConfig("Relay1", "relay_1", "relays.relay1.info.onoff", is_relay=True),
-    AquariteSwitchConfig("Relay2", "relay_2", "relays.relay2.info.onoff", is_relay=True),
-    AquariteSwitchConfig("Relay3", "relay_3", "relays.relay3.info.onoff", is_relay=True),
-    AquariteSwitchConfig("Relay4", "relay_4", "relays.relay4.info.onoff", is_relay=True),
-    AquariteSwitchConfig("Filtration Status", "filtration", "filtration.status"),
+    AquariteSwitchConfig("electrolysis_cover", "hidro.cover_enabled"),
+    AquariteSwitchConfig("electrolysis_boost", "hidro.cloration_enabled"),
+    AquariteSwitchConfig("relay_1", "relays.relay1.info.onoff", is_relay=True),
+    AquariteSwitchConfig("relay_2", "relays.relay2.info.onoff", is_relay=True),
+    AquariteSwitchConfig("relay_3", "relays.relay3.info.onoff", is_relay=True),
+    AquariteSwitchConfig("relay_4", "relays.relay4.info.onoff", is_relay=True),
+    AquariteSwitchConfig("filtration", "filtration.status"),
 )
 
 PARALLEL_UPDATES = 1
@@ -44,7 +44,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Aquarite switch platform."""
-    dataservice = entry.runtime_data.coordinator
+    dataservice = entry.runtime_data
     pool_id, pool_name = dataservice.pool_id, entry.title
 
     entities = [
@@ -52,27 +52,24 @@ async def async_setup_entry(
         for config in SWITCH_DEFINITIONS
     ]
 
-    # HEAT mode "Climat" toggle (visible under the HEAT slider position in
-    # the Hayward app).
+    # HEAT mode "Climat" toggle
     if dataservice.get_value("filtration.hasHeat"):
         entities.append(
             AquariteSwitchEntity(
                 dataservice, pool_id, pool_name,
                 AquariteSwitchConfig(
-                    "Heating Climate", "heating_climate", "filtration.heating.clima",
+                    "heating_climate", "filtration.heating.clima",
                 ),
             )
         )
 
-    # SMART mode "Antigel" (freeze protection) toggle. Replaces the read-only
-    # binary sensor that previously exposed `filtration.smart.freeze` —
-    # see PR description for the breaking-change note.
+    # SMART mode "Antigel" (freeze protection) toggle.
     if dataservice.get_value("filtration.hasSmart"):
         entities.append(
             AquariteSwitchEntity(
                 dataservice, pool_id, pool_name,
                 AquariteSwitchConfig(
-                    "Smart Mode Freeze", "smart_mode_freeze", "filtration.smart.freeze",
+                    "smart_mode_freeze", "filtration.smart.freeze",
                 ),
             )
         )
@@ -95,15 +92,16 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
         self._value_path = config.value_path
         self._is_relay = config.is_relay
         self._attr_translation_key = config.translation_key
-        self._attr_unique_id = self.build_unique_id(config.name)
+        self._attr_unique_id = self.build_unique_id(config.translation_key)
 
     @property
     def is_on(self) -> bool:
         """Return true if switch is on."""
-        onoff = bool(self.coordinator.get_value(self._value_path))
+        onoff = bool(int(self.coordinator.get_value(self._value_path) or 0))
         if self._is_relay:
-            status_path = self._value_path.replace("onoff", "status")
-            status = bool(self.coordinator.get_value(status_path))
+            path_parts = self._value_path.split(".")
+            status_path = ".".join([*path_parts[:-1], "status"])
+            status = bool(int(self.coordinator.get_value(status_path) or 0))
             return onoff or status
         return onoff
 
@@ -112,11 +110,19 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
         try:
             await self.coordinator.api.set_value(self._pool_id, self._value_path, 1)
         except Exception as err:
-            raise HomeAssistantError(f"Failed to turn on: {err}") from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="communication_error",
+                translation_placeholders={"error": str(err)},
+            ) from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         try:
             await self.coordinator.api.set_value(self._pool_id, self._value_path, 0)
         except Exception as err:
-            raise HomeAssistantError(f"Failed to turn off: {err}") from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="communication_error",
+                translation_placeholders={"error": str(err)},
+            ) from err
