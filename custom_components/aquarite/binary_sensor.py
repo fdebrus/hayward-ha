@@ -12,7 +12,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AquariteConfigEntry
 from .const import PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
@@ -204,7 +204,7 @@ def _hidro_low_description(coordinator: AquariteDataUpdateCoordinator) -> Aquari
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Aquarite binary sensors."""
     entities: list[AquariteBinarySensor] = []

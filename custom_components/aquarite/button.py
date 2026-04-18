@@ -6,7 +6,7 @@ import asyncio
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AquariteConfigEntry
 from .const import DOMAIN, LED_PULSE_DELAY, PATH_HASLED
@@ -19,13 +19,13 @@ PARALLEL_UPDATES = 1
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Aquarite button platform."""
     async_add_entities(
         AquariteLEDPulseButtonEntity(dataservice)
         for dataservice in entry.runtime_data.coordinators.values()
-        if dataservice.get_value(PATH_HASLED)
+        if dataservice.get_bool(PATH_HASLED)
     )
 
 

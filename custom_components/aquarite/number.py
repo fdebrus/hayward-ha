@@ -9,10 +9,14 @@ from homeassistant.components.number import (
     NumberEntity,
     NumberEntityDescription,
 )
-from homeassistant.const import EntityCategory, UnitOfTemperature
+from homeassistant.const import (
+    EntityCategory,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AquariteConfigEntry
 from .const import DOMAIN
@@ -46,7 +50,7 @@ NUMBERS: tuple[AquariteNumberEntityDescription, ...] = (
         translation_key="redox_setpoint",
         native_min_value=500,
         native_max_value=800,
-        native_unit_of_measurement="mV",
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
         value_path="modules.rx.status.value",
     ),
     AquariteNumberEntityDescription(
@@ -72,7 +76,7 @@ NUMBERS: tuple[AquariteNumberEntityDescription, ...] = (
         translation_key="electrolysis_setpoint",
         native_min_value=0,
         native_max_value=50,  # overridden by max_fn at runtime
-        native_unit_of_measurement="gr/h",
+        native_unit_of_measurement="g/h",
         value_path="hidro.level",
         scale=10,
         max_fn=_max_electrolysis,
@@ -132,7 +136,7 @@ NUMBERS: tuple[AquariteNumberEntityDescription, ...] = (
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Aquarite number entities."""
     async_add_entities(

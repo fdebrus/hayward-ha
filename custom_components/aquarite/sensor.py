@@ -16,9 +16,10 @@ from homeassistant.const import (
     EntityCategory,
     UnitOfElectricPotential,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AquariteConfigEntry
 from .const import (
@@ -122,7 +123,9 @@ SENSORS: tuple[AquariteSensorEntityDescription, ...] = (
     AquariteSensorEntityDescription(
         key="filtration_intel_time",
         translation_key="filtration_intel_time",
-        native_unit_of_measurement="h",
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTime.HOURS,
         value_fn=_scaled("filtration.intel.time", 60),
     ),
     AquariteSensorEntityDescription(
@@ -145,7 +148,7 @@ def _hidro_description(coordinator: AquariteDataUpdateCoordinator) -> AquariteSe
     return AquariteSensorEntityDescription(
         key=key,
         translation_key=key,
-        native_unit_of_measurement="gr/h",
+        native_unit_of_measurement="g/h",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=_scaled("hidro.current", 10),
     )
@@ -154,7 +157,7 @@ def _hidro_description(coordinator: AquariteDataUpdateCoordinator) -> AquariteSe
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Aquarite sensors."""
     entities: list[AquariteSensor] = []
