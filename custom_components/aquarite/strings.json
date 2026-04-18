@@ -65,27 +65,6 @@
       "filtration_intel_time": {
         "name": "Filtration intel time"
       },
-      "city": {
-        "name": "City"
-      },
-      "street": {
-        "name": "Street"
-      },
-      "zipcode": {
-        "name": "Zipcode"
-      },
-      "country": {
-        "name": "Country"
-      },
-      "latitude": {
-        "name": "Latitude"
-      },
-      "longitude": {
-        "name": "Longitude"
-      },
-      "pool_name": {
-        "name": "Pool name"
-      },
       "rssi": {
         "name": "Wi-Fi signal strength"
       }

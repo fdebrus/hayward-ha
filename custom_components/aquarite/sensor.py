@@ -65,13 +65,6 @@ def _path(path: str, converter: Callable[[Any], Any] = _coerce_float) -> Callabl
     return _fn
 
 
-def _form_field(field: str) -> Callable[[AquariteDataUpdateCoordinator], str | None]:
-    def _fn(coordinator: AquariteDataUpdateCoordinator) -> str | None:
-        form = coordinator.get_value("form")
-        return form.get(field) if form else None
-    return _fn
-
-
 @dataclass(frozen=True, kw_only=True)
 class AquariteSensorEntityDescription(SensorEntityDescription):
     """Describes an Aquarite sensor."""
@@ -131,48 +124,6 @@ SENSORS: tuple[AquariteSensorEntityDescription, ...] = (
         translation_key="filtration_intel_time",
         native_unit_of_measurement="h",
         value_fn=_scaled("filtration.intel.time", 60),
-    ),
-    AquariteSensorEntityDescription(
-        key="city",
-        translation_key="city",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=_form_field("city"),
-    ),
-    AquariteSensorEntityDescription(
-        key="street",
-        translation_key="street",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=_form_field("street"),
-    ),
-    AquariteSensorEntityDescription(
-        key="zipcode",
-        translation_key="zipcode",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=_form_field("zipcode"),
-    ),
-    AquariteSensorEntityDescription(
-        key="country",
-        translation_key="country",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=_form_field("country"),
-    ),
-    AquariteSensorEntityDescription(
-        key="latitude",
-        translation_key="latitude",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=_form_field("lat"),
-    ),
-    AquariteSensorEntityDescription(
-        key="longitude",
-        translation_key="longitude",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=_form_field("lng"),
-    ),
-    AquariteSensorEntityDescription(
-        key="pool_name",
-        translation_key="pool_name",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda c: c.pool_name,
     ),
     AquariteSensorEntityDescription(
         key="rssi",
