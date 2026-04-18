@@ -1,128 +1,60 @@
 {
   "config": {
+    "abort": {
+      "already_configured": "Kontoen er allerede konfigureret",
+      "reauth_successful": "Genautentificering lykkedes",
+      "reconfigure_successful": "Genkonfigurering lykkedes"
+    },
+    "error": {
+      "invalid_auth": "Ugyldig godkendelse",
+      "unknown": "Uventet fejl"
+    },
     "step": {
-      "user": {
-        "data": {
-          "username": "Hayward brugernavn",
-          "password": "Kodeord"
-        },
-        "description": "Udfyld dine Hayward loginoplysninger.",
-        "title": "Login"
-      },
       "reauth_confirm": {
         "data": {
-          "username": "Brugernavn",
-          "password": "Kodeord"
+          "password": "Kodeord",
+          "username": "Brugernavn"
+        },
+        "data_description": {
+          "password": "Kodeord til din Hayward-konto.",
+          "username": "E-mailadresse eller brugernavn registreret hos Hayward."
         },
         "description": "Genautentificer din Hayward-konto for at fortsætte.",
         "title": "Genautentificer"
       },
-      "pool": {
-        "data": {
-          "pool_id": "Pool"
-        },
-        "description": "Vælg pool der skal tilføjes HA.",
-        "title": "Vælg Pool"
-      },
       "reconfigure": {
         "data": {
-          "username": "Brugernavn",
-          "password": "Kodeord"
+          "password": "Kodeord",
+          "username": "Brugernavn"
+        },
+        "data_description": {
+          "password": "Kodeord til din Hayward-konto.",
+          "username": "E-mailadresse eller brugernavn registreret hos Hayward."
         },
         "description": "Opdater dine Hayward loginoplysninger.",
         "title": "Genkonfigurer"
-      }
-    },
-    "error": {
-      "auth_error": "Login fejlede, tjek brugernavn og kodeord.",
-      "no_pools_found": "Ingen pools fundet for din konto.",
-      "unknown_error": "Uventet fejl. Prøv igen."
-    },
-    "abort": {
-      "reauth_successful": "Genautentificering lykkedes.",
-      "reconfigure_successful": "Genkonfigurering lykkedes."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
+      },
+      "user": {
         "data": {
-          "health_check_interval": "Sundhedstjek interval (sekunder)"
+          "password": "Kodeord",
+          "username": "Brugernavn"
         },
-        "description": "Konfigurer Aquarite integrationen.",
-        "title": "Indstillinger"
+        "data_description": {
+          "password": "Kodeord til din Hayward-konto.",
+          "username": "E-mailadresse eller brugernavn registreret hos Hayward."
+        },
+        "description": "Udfyld dine Hayward loginoplysninger. Alle pools tilknyttet kontoen opdages automatisk.",
+        "title": "Login"
       }
     }
   },
   "entity": {
-    "sensor": {
-      "temperature": {
-        "name": "Temperatur"
-      },
-      "cd": {
-        "name": "CD"
-      },
-      "cl": {
-        "name": "CL"
-      },
-      "ph": {
-        "name": "pH"
-      },
-      "rx": {
-        "name": "Rx"
-      },
-      "uv": {
-        "name": "UV"
-      },
-      "electrolysis": {
-        "name": "Elektrolyse"
-      },
-      "hydrolysis": {
-        "name": "Hydrolyse"
-      },
-      "filtration_intel_time": {
-        "name": "Filtrering intel tid"
-      },
-      "city": {
-        "name": "By"
-      },
-      "street": {
-        "name": "Gade"
-      },
-      "zipcode": {
-        "name": "Postnummer"
-      },
-      "country": {
-        "name": "Land"
-      },
-      "latitude": {
-        "name": "Breddegrad"
-      },
-      "longitude": {
-        "name": "Længdegrad"
-      },
-      "pool_name": {
-        "name": "Poolnavn"
-      },
-      "rssi": {
-        "name": "Wi-Fi signalstyrke"
-      }
-    },
     "binary_sensor": {
-      "hidro_flow_status": {
-        "name": "Hydrolyse flow status"
-      },
-      "filtration_status": {
-        "name": "Filtreringsstatus"
+      "acid_tank": {
+        "name": "Syretank"
       },
       "backwash_status": {
-        "name": "Tilbageskylningsstatus"
-      },
-      "hidro_cover_reduction": {
-        "name": "Hydrolyse overdækning reduktion"
-      },
-      "ph_pump_alarm": {
-        "name": "pH pumpe alarm"
+        "name": "Tilbageskyl status"
       },
       "cd_module_installed": {
         "name": "CD modul installeret"
@@ -130,17 +62,38 @@
       "cl_module_installed": {
         "name": "CL modul installeret"
       },
-      "rx_module_installed": {
-        "name": "RX modul installeret"
+      "cl_pump_status": {
+        "name": "Klorpumpe status"
       },
-      "ph_module_installed": {
-        "name": "pH modul installeret"
+      "connected": {
+        "name": "Forbundet"
       },
-      "io_module_installed": {
-        "name": "IO modul installeret"
+      "electrolysis_low": {
+        "name": "Elektrolyse lav"
+      },
+      "filtration_status": {
+        "name": "Filtreringsstatus"
+      },
+      "heating_status": {
+        "name": "Opvarmningsstatus"
+      },
+      "hidro_cover_reduction": {
+        "name": "Hydrolyse afdækning reduktion"
+      },
+      "hidro_fl2_status": {
+        "name": "Hydrolyse FL2 status"
+      },
+      "hidro_flow_status": {
+        "name": "Hydrolyse flow status"
       },
       "hidro_module_installed": {
         "name": "Hydrolyse modul installeret"
+      },
+      "hydrolysis_low": {
+        "name": "Hydrolyse lav"
+      },
+      "io_module_installed": {
+        "name": "IO modul installeret"
       },
       "ph_acid_pump": {
         "name": "pH syrepumpe"
@@ -148,37 +101,151 @@
       "ph_base_pump": {
         "name": "pH basepumpe"
       },
-      "cl_pump_status": {
-        "name": "Klorpumpestatus"
+      "ph_module_installed": {
+        "name": "pH modul installeret"
+      },
+      "ph_pump_alarm": {
+        "name": "pH pumpealarm"
+      },
+      "rx_module_installed": {
+        "name": "RX modul installeret"
       },
       "rx_pump_status": {
         "name": "Rx pumpestatus"
+      }
+    },
+    "button": {
+      "led_pulse": {
+        "name": "LED puls"
+      }
+    },
+    "device_tracker": {
+      "location": {
+        "name": "Placering"
+      }
+    },
+    "light": {
+      "pool_light": {
+        "name": "Lys"
+      }
+    },
+    "number": {
+      "electrolysis_setpoint": {
+        "name": "Elektrolyse setpunkt"
       },
-      "heating_status": {
-        "name": "Opvarmningsstatus"
+      "heating_mode_max_temperature": {
+        "name": "Opvarmning max temperatur"
       },
-      "connected": {
-        "name": "Forbundet"
+      "heating_mode_min_temperature": {
+        "name": "Opvarmning min temperatur"
       },
-      "hidro_fl2_status": {
-        "name": "Hydrolyse FL2 status"
+      "intel_mode_temperature": {
+        "name": "Intel tilstand temperatur"
       },
-      "acid_tank": {
-        "name": "Syretank"
+      "ph_low": {
+        "name": "pH lav"
       },
-      "electrolysis_low": {
-        "name": "Elektrolyse lav"
+      "ph_max": {
+        "name": "pH max"
       },
-      "hydrolysis_low": {
-        "name": "Hydrolyse lav"
+      "redox_setpoint": {
+        "name": "Redox setpunkt"
+      },
+      "smart_mode_max_temperature": {
+        "name": "Smart max temperatur"
+      },
+      "smart_mode_min_temperature": {
+        "name": "Smart min temperatur"
+      }
+    },
+    "select": {
+      "filtration_timer_speed_1": {
+        "name": "Filtrering timer hastighed 1",
+        "state": {
+          "high": "Høj",
+          "medium": "Middel",
+          "slow": "Langsom"
+        }
+      },
+      "filtration_timer_speed_2": {
+        "name": "Filtrering timer hastighed 2",
+        "state": {
+          "high": "Høj",
+          "medium": "Middel",
+          "slow": "Langsom"
+        }
+      },
+      "filtration_timer_speed_3": {
+        "name": "Filtrering timer hastighed 3",
+        "state": {
+          "high": "Høj",
+          "medium": "Middel",
+          "slow": "Langsom"
+        }
+      },
+      "pump_mode": {
+        "name": "Pumpetilstand",
+        "state": {
+          "auto": "Auto",
+          "heat": "Opvarmning",
+          "intel": "Intel",
+          "manual": "Manuel",
+          "smart": "Smart"
+        }
+      },
+      "pump_speed": {
+        "name": "Pumpehastighed",
+        "state": {
+          "high": "Høj",
+          "medium": "Middel",
+          "slow": "Langsom"
+        }
+      }
+    },
+    "sensor": {
+      "cd": {
+        "name": "CD"
+      },
+      "cl": {
+        "name": "CL"
+      },
+      "electrolysis": {
+        "name": "Elektrolyse"
+      },
+      "filtration_intel_time": {
+        "name": "Filtrering intel tid"
+      },
+      "hydrolysis": {
+        "name": "Hydrolyse"
+      },
+      "ph": {
+        "name": "pH"
+      },
+      "rssi": {
+        "name": "Wi-Fi signalstyrke"
+      },
+      "rx": {
+        "name": "Rx"
+      },
+      "temperature": {
+        "name": "Temperatur"
+      },
+      "uv": {
+        "name": "UV"
       }
     },
     "switch": {
-      "electrolysis_cover": {
-        "name": "Elektrolyse overdækning"
-      },
       "electrolysis_boost": {
         "name": "Elektrolyse boost"
+      },
+      "electrolysis_cover": {
+        "name": "Elektrolyse afdækning"
+      },
+      "filtration": {
+        "name": "Filtrering"
+      },
+      "heating_climate": {
+        "name": "Opvarmning klima"
       },
       "relay_1": {
         "name": "Relæ 1"
@@ -192,87 +259,8 @@
       "relay_4": {
         "name": "Relæ 4"
       },
-      "filtration": {
-        "name": "Filtrering"
-      },
-      "heating_climate": {
-        "name": "Opvarmning klima"
-      },
       "smart_mode_freeze": {
         "name": "Smart frostbeskyttelse"
-      }
-    },
-    "number": {
-      "redox_setpoint": {
-        "name": "Redox sætpunkt"
-      },
-      "ph_low": {
-        "name": "pH lav"
-      },
-      "ph_max": {
-        "name": "pH maks"
-      },
-      "electrolysis_setpoint": {
-        "name": "Elektrolyse sætpunkt"
-      },
-      "intel_mode_temperature": {
-        "name": "Intel tilstand temperatur"
-      },
-      "heating_mode_min_temperature": {
-        "name": "Opvarmning min temperatur"
-      },
-      "heating_mode_max_temperature": {
-        "name": "Opvarmning maks temperatur"
-      },
-      "smart_mode_min_temperature": {
-        "name": "Smart min temperatur"
-      },
-      "smart_mode_max_temperature": {
-        "name": "Smart maks temperatur"
-      }
-    },
-    "select": {
-      "pump_mode": {
-        "name": "Pumpetilstand",
-        "state": {
-          "manual": "Manuel",
-          "auto": "Automatisk",
-          "heat": "Opvarmning",
-          "smart": "Smart",
-          "intel": "Intel"
-        }
-      },
-      "pump_speed": {
-        "name": "Pumpehastighed",
-        "state": {
-          "slow": "Langsom",
-          "medium": "Middel",
-          "high": "Høj"
-        }
-      },
-      "filtration_timer_speed_1": {
-        "name": "Filtrering timer hastighed 1",
-        "state": {
-          "slow": "Langsom",
-          "medium": "Middel",
-          "high": "Høj"
-        }
-      },
-      "filtration_timer_speed_2": {
-        "name": "Filtrering timer hastighed 2",
-        "state": {
-          "slow": "Langsom",
-          "medium": "Middel",
-          "high": "Høj"
-        }
-      },
-      "filtration_timer_speed_3": {
-        "name": "Filtrering timer hastighed 3",
-        "state": {
-          "slow": "Langsom",
-          "medium": "Middel",
-          "high": "Høj"
-        }
       }
     },
     "time": {
@@ -294,35 +282,20 @@
       "filtration_interval_3_to": {
         "name": "Filtrering interval 3 til"
       }
-    },
-    "light": {
-      "pool_light": {
-        "name": "Lys"
-      }
-    },
-    "button": {
-      "led_pulse": {
-        "name": "LED puls"
-      }
-    },
-    "device_tracker": {
-      "location": {
-        "name": "Placering"
-      }
     }
   },
   "exceptions": {
-    "communication_error": {
-      "message": "Der opstod en fejl under kommunikation med Aquarite-enheden: {error}"
-    },
     "authentication_error": {
-      "message": "Godkendelse mislykkedes. Tjek dine loginoplysninger."
+      "message": "Godkendelse fejlede. Tjek dine loginoplysninger."
+    },
+    "communication_error": {
+      "message": "Fejl ved kommunikation med Aquarite-enheden: {error}"
     }
   },
   "services": {
     "sync_pool_time": {
-      "name": "Synkroniser pooltid",
-      "description": "Synkroniser Home Assistant dato og tid til poolcontrolleren."
+      "description": "Synkroniserer Home Assistant dato og tid til pool-controlleren.",
+      "name": "Synkroniser pooltid"
     }
   }
 }
