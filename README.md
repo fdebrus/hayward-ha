@@ -23,15 +23,28 @@ Home Assistant custom integration for monitoring and controlling **Hayward-brand
 
 The integration connects to the **official Hayward cloud API** and exposes your pool equipment as native Home Assistant entities.
 
+## Upgrading to 2.0.0
+
+Version 2.0.0 reworks how the integration is organised. **Existing installs must be removed and re-added** after upgrading:
+
+1. **Settings → Devices & Services → Aquarite → three-dots menu → Delete**
+2. Restart Home Assistant (or reload the integration)
+3. **Add Integration → Aquarite** and sign in with your Hayward credentials
+
+What changes:
+- **One config entry per account**, not per pool. Every pool linked to the account is discovered automatically and becomes its own device under that entry.
+- **Entity IDs keep working** but their internal `unique_id` layout changed, so historical state from the 1.x entities will remain as orphaned entries (safe to delete from the entity registry).
+- **Removed sensors**: `pool_name` (redundant with the device name), `city`, `street`, `zipcode`, `country`, `latitude`, `longitude`. Latitude and longitude are still exposed through the per-pool `device_tracker` entity; the rest is kept in the diagnostics download.
+- **Options flow removed**. The health-check interval is a fixed 5 minutes — close enough to the old default that the configurability was not worth the UI surface.
+
 ## Features
 
 - Secure cloud authentication using your existing Hayward account  
-- Automatic discovery of linked pool controllers  
+- Automatic discovery of every pool linked to the account (one config entry per account)  
 - Real-time data updates via cloud push (no polling)  
 - Background token refresh and health monitoring  
 - Reconfigure credentials without removing the integration  
 - Downloadable diagnostics for troubleshooting  
-- Configurable options (health check interval) via the integration's Configure menu  
 - Multi-language support (English, Dutch, Danish)  
 
 ### Sensors
@@ -41,7 +54,6 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 - Electrolysis / hydrolysis production level  
 - Filtration intel time  
 - Wi-Fi signal strength (diagnostic, disabled by default)  
-- Pool location and name  
 
 ### Controls
 
@@ -68,7 +80,7 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 
 | Platform | Count | Description |
 |----------|-------|-------------|
-| `sensor` | 7+ | Temperature, pH, Rx, Cl, CD, UV, electrolysis, intel time, RSSI, location |
+| `sensor` | 3+ | Temperature, pH, Rx, Cl, CD, UV, electrolysis, intel time, RSSI |
 | `binary_sensor` | 13+ | Filtration/heating/backwash status, pump states, module presence, tank levels |
 | `switch` | 7+ | Filtration, electrolysis cover/boost, relays, heating climate, freeze protection |
 | `number` | 5+ | pH, Rx, electrolysis setpoints, mode temperatures |
@@ -76,16 +88,16 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 | `time` | 6 | Filtration interval 1-3 start/end times |
 | `light` | 1 | Pool light on/off |
 | `button` | 0-1 | LED color advance (only with LED hardware) |
-| `device_tracker` | 1 | Pool GPS location |
+| `device_tracker` | 1 per pool | Pool GPS location |
 
-Entity counts vary based on installed modules (CD, CL, pH, RX, UV, hydrolysis) and enabled features (Heat, Smart mode).
+Entity counts vary based on installed modules (CD, CL, pH, RX, UV, hydrolysis) and enabled features (Heat, Smart mode). All entity counts are *per pool* — a Hayward account with multiple pools gets one device (and one full set of entities) per pool under a single config entry.
 
 ## Requirements
 
 - A supported Hayward-compatible pool controller  
 - A Wi-Fi module connected to the internet  
 - The controller must already be linked to your Hayward cloud account  
-- Home Assistant 2024.1.0 or later  
+- Home Assistant 2025.8.0 or later  
 
 ## Installation
 
@@ -111,9 +123,8 @@ You can install the integration using **HACS** (recommended) or manually.
 2. Click **Add Integration**
 3. Search for **Aquarite**
 4. Enter your Hayward cloud **username and password**
-5. Select the pool controller you want to add
 
-All supported entities are created automatically once the integration is set up.
+Every pool linked to the account is discovered automatically and appears as its own device under a single config entry. All supported entities are created once the integration is set up.
 
 ### Reconfiguring credentials
 
@@ -123,15 +134,6 @@ If you need to update your Hayward credentials:
 2. Find the **Aquarite** integration
 3. Click the **three dots menu** → **Reconfigure**
 4. Enter your new credentials
-
-### Configuring options
-
-After setup, you can adjust integration settings:
-
-1. Go to **Settings → Devices & Services**
-2. Find the **Aquarite** integration
-3. Click the **three dots menu** → **Configure**
-4. Adjust the **health check interval** (60–3600 seconds, default 300)
 
 ### Downloading diagnostics
 
@@ -180,7 +182,7 @@ The integration includes a test suite that runs automatically via GitHub Actions
 To run tests locally:
 
 ```bash
-pip install pytest pytest-asyncio pytest-homeassistant-custom-component aioaquarite==0.1.0
+pip install pytest pytest-asyncio pytest-homeassistant-custom-component aioaquarite==0.2.0
 python -m pytest tests/ -v
 ```
 
