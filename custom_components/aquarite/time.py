@@ -4,6 +4,8 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.time import TimeEntity, TimeEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -84,7 +86,7 @@ class AquariteTime(AquariteEntity, TimeEntity):
                 self.entity_description.value_path,
                 seconds,
             )
-        except Exception as err:
+        except AquariteError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="communication_error",

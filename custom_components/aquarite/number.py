@@ -4,6 +4,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
@@ -188,7 +190,7 @@ class AquariteNumber(AquariteEntity, NumberEntity):
                 self.entity_description.value_path,
                 raw,
             )
-        except Exception as err:
+        except AquariteError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="communication_error",

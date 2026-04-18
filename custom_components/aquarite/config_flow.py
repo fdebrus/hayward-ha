@@ -39,7 +39,7 @@ class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
             await auth.authenticate()
         except AuthenticationError:
             return "invalid_auth"
-        except Exception:
+        except Exception:  # noqa: BLE001
             _LOGGER.exception("Unexpected error during authentication")
             return "unknown"
         return None

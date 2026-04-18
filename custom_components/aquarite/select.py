@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -100,7 +102,7 @@ class AquariteSelect(AquariteEntity, SelectEntity):
                 self.entity_description.value_path,
                 self.entity_description.options_map.index(option),
             )
-        except Exception as err:
+        except AquariteError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="communication_error",

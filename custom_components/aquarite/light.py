@@ -4,6 +4,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -81,7 +83,7 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
             await self.coordinator.api.set_value(
                 self.coordinator.pool_id, self._value_path, 1 if state else 0
             )
-        except Exception as err:
+        except AquariteError as err:
             # If the API call fails immediately, reset and revert UI
             self._target_state = None
             self.async_write_ha_state()

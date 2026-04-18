@@ -5,6 +5,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -135,7 +137,7 @@ class AquariteSwitch(AquariteEntity, SwitchEntity):
             await self.coordinator.api.set_value(
                 self.coordinator.pool_id, self.entity_description.value_path, value
             )
-        except Exception as err:
+        except AquariteError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="communication_error",

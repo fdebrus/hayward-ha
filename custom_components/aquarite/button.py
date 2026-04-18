@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import asyncio
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -63,7 +65,7 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
             await self.coordinator.api.set_value(
                 self.coordinator.pool_id, "light.status", 1
             )
-        except Exception as err:
+        except AquariteError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="communication_error",

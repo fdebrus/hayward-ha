@@ -7,7 +7,12 @@ import contextlib
 from dataclasses import dataclass, field
 import logging
 
-from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
+from aioaquarite import (
+    AquariteAuth,
+    AquariteClient,
+    AquariteError,
+    AuthenticationError,
+)
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
@@ -58,14 +63,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
         await auth.authenticate()
     except AuthenticationError as err:
         raise ConfigEntryAuthFailed from err
-    except Exception as err:
+    except AquariteError as err:
         raise ConfigEntryNotReady from err
 
     api = AquariteClient(auth)
 
     try:
         pools = await api.get_pools()
-    except Exception as err:
+    except AquariteError as err:
         raise ConfigEntryNotReady from err
 
     if not pools:
@@ -80,7 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
         try:
             coordinator.data = await api.fetch_pool_data(pool_id)
             await coordinator.subscribe()
-        except Exception as err:
+        except AquariteError as err:
             for existing in data.coordinators.values():
                 await existing.async_shutdown()
             raise ConfigEntryNotReady from err
@@ -155,7 +160,7 @@ async def _health_check_loop(hass: HomeAssistant, data: AquariteData) -> None:
         except Exception as err:  # noqa: BLE001
             _LOGGER.error("Health check failed, resubscribing all pools: %s", err)
             for coordinator in data.coordinators.values():
-                with contextlib.suppress(Exception):
+                with contextlib.suppress(Exception):  # noqa: BLE001
                     await coordinator.refresh_subscription()
 
 
