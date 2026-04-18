@@ -25,8 +25,6 @@ async def async_setup_entry(
     entities: list[AquariteNumberEntity] = []
 
     for dataservice in entry.runtime_data.coordinators.values():
-        pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
-
         # Safely determine max electrolysis
         raw_max = dataservice.get_value("hidro.maxAllowedValue", 0)
         try:
@@ -36,25 +34,25 @@ async def async_setup_entry(
 
         entities.extend([
             AquariteNumberEntity(
-                dataservice, pool_id, pool_name,
+                dataservice,
                 500, 800, "Redox Setpoint", "redox_setpoint", "modules.rx.status.value",
             ),
             AquariteNumberEntity(
-                dataservice, pool_id, pool_name,
+                dataservice,
                 6, 8, "pH Low", "ph_low", "modules.ph.status.low_value",
             ),
             AquariteNumberEntity(
-                dataservice, pool_id, pool_name,
+                dataservice,
                 6, 8, "pH Max", "ph_max", "modules.ph.status.high_value",
             ),
             AquariteNumberEntity(
-                dataservice, pool_id, pool_name,
+                dataservice,
                 0, max_electrolysis, "Electrolysis Setpoint", "electrolysis_setpoint", "hidro.level",
             ),
             # INTEL mode target temperature (matches the "Température" field shown
             # under the INTEL slider position in the Hayward app).
             AquariteNumberEntity(
-                dataservice, pool_id, pool_name,
+                dataservice,
                 5, 40, "Intel Mode Temperature", "intel_mode_temperature", "filtration.intel.temp",
             ),
         ])
@@ -67,11 +65,11 @@ async def async_setup_entry(
         if dataservice.get_value("filtration.hasHeat"):
             entities.extend([
                 AquariteNumberEntity(
-                    dataservice, pool_id, pool_name,
+                    dataservice,
                     5, 40, "Heating Setpoint", "heating_mode_min_temperature", "filtration.heating.temp",
                 ),
                 AquariteNumberEntity(
-                    dataservice, pool_id, pool_name,
+                    dataservice,
                     5, 40, "Heating High Setpoint", "heating_mode_max_temperature", "filtration.heating.tempHi",
                 ),
             ])
@@ -82,11 +80,11 @@ async def async_setup_entry(
         if dataservice.get_value("filtration.hasSmart"):
             entities.extend([
                 AquariteNumberEntity(
-                    dataservice, pool_id, pool_name,
+                    dataservice,
                     5, 40, "Smart Mode Min Temperature", "smart_mode_min_temperature", "filtration.smart.tempMin",
                 ),
                 AquariteNumberEntity(
-                    dataservice, pool_id, pool_name,
+                    dataservice,
                     5, 40, "Smart Mode Max Temperature", "smart_mode_max_temperature", "filtration.smart.tempHigh",
                 ),
             ])
@@ -126,8 +124,6 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
     def __init__(
         self,
         dataservice: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
         value_min: float,
         value_max: float,
         name: str,
@@ -135,7 +131,7 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         value_path: str,
     ) -> None:
         """Initialize the number entity."""
-        super().__init__(dataservice, pool_id, pool_name)
+        super().__init__(dataservice)
         self._attr_native_min_value = value_min
         self._attr_native_max_value = value_max
         self._value_path = value_path
@@ -165,7 +161,7 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         raw_value = int(value * scale) if scale else value
         try:
             await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, raw_value
+                self.coordinator.pool_id, self._value_path, raw_value
             )
         except Exception as err:
             raise HomeAssistantError(f"Failed to set value: {err}") from err

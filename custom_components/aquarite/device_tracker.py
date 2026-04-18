@@ -21,9 +21,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the pool location tracker."""
     async_add_entities(
-        PoolLocationDeviceTracker(
-            coordinator, coordinator.pool_id, coordinator.pool_name
-        )
+        PoolLocationDeviceTracker(coordinator)
         for coordinator in entry.runtime_data.coordinators.values()
     )
 
@@ -35,14 +33,9 @@ class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "location"
 
-    def __init__(
-        self,
-        coordinator: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
-    ) -> None:
+    def __init__(self, coordinator: AquariteDataUpdateCoordinator) -> None:
         """Initialize the tracker."""
-        super().__init__(coordinator, pool_id, pool_name)
+        super().__init__(coordinator)
         self._attr_unique_id = self.build_unique_id("location-tracker")
 
     @property

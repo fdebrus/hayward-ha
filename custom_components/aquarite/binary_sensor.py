@@ -122,11 +122,8 @@ async def async_setup_entry(
     entities: list[BinarySensorEntity] = []
 
     for dataservice in entry.runtime_data.coordinators.values():
-        pool_id = dataservice.pool_id
-        pool_name = dataservice.pool_name
-
         entities.extend(
-            AquariteBinarySensorEntity(dataservice, config, pool_id, pool_name)
+            AquariteBinarySensorEntity(dataservice, config)
             for config in BASE_SENSORS
         )
 
@@ -138,8 +135,6 @@ async def async_setup_entry(
                         "Hidro FL2 Status", "hidro_fl2_status",
                         "hidro.fl2", BinarySensorDeviceClass.PROBLEM,
                     ),
-                    pool_id,
-                    pool_name,
                 )
             )
             entities.append(
@@ -149,8 +144,6 @@ async def async_setup_entry(
                         "Cl Pump Status", "cl_pump_status",
                         "modules.cl.pump_status", BinarySensorDeviceClass.RUNNING,
                     ),
-                    pool_id,
-                    pool_name,
                 )
             )
 
@@ -162,8 +155,6 @@ async def async_setup_entry(
                         "Rx Pump Status", "rx_pump_status",
                         "modules.rx.pump_status", BinarySensorDeviceClass.RUNNING,
                     ),
-                    pool_id,
-                    pool_name,
                 )
             )
 
@@ -173,7 +164,7 @@ async def async_setup_entry(
         ):
             entities.append(
                 AquariteBinarySensorTankEntity(
-                    dataservice, "Acid Tank", "acid_tank", pool_id, pool_name
+                    dataservice, "Acid Tank", "acid_tank"
                 )
             )
 
@@ -186,8 +177,6 @@ async def async_setup_entry(
                 AquariteBinarySensorConfig(
                     low_name, low_key, "hidro.low", BinarySensorDeviceClass.PROBLEM
                 ),
-                pool_id,
-                pool_name,
             )
         )
 
@@ -201,11 +190,9 @@ class AquariteBinarySensorEntity(AquariteEntity, BinarySensorEntity):
         self,
         dataservice: AquariteDataUpdateCoordinator,
         config: AquariteBinarySensorConfig,
-        pool_id: str,
-        pool_name: str,
     ) -> None:
         """Initialize the binary sensor."""
-        super().__init__(dataservice, pool_id, pool_name)
+        super().__init__(dataservice)
         self._value_path = config.value_path
         self._attr_device_class = config.device_class
         self._attr_translation_key = config.translation_key
@@ -234,11 +221,9 @@ class AquariteBinarySensorTankEntity(AquariteEntity, BinarySensorEntity):
         dataservice: AquariteDataUpdateCoordinator,
         name: str,
         translation_key: str,
-        pool_id: str,
-        pool_name: str,
     ) -> None:
         """Initialize the tank sensor."""
-        super().__init__(dataservice, pool_id, pool_name)
+        super().__init__(dataservice)
         self._attr_translation_key = translation_key
         self._attr_unique_id = self.build_unique_id(name)
 

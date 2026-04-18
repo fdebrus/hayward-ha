@@ -24,8 +24,6 @@ async def async_setup_entry(
     entities: list[AquariteTimeEntity] = []
 
     for dataservice in entry.runtime_data.coordinators.values():
-        pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
-
         for name, translation_key, path in (
             ("Filtration Interval 1 From", "filtration_interval_1_from", "filtration.interval1.from"),
             ("Filtration Interval 1 To", "filtration_interval_1_to", "filtration.interval1.to"),
@@ -36,7 +34,7 @@ async def async_setup_entry(
         ):
             entities.append(
                 AquariteTimeEntity(
-                    dataservice, pool_id, pool_name, name, translation_key, path,
+                    dataservice, name, translation_key, path,
                 )
             )
 
@@ -49,14 +47,12 @@ class AquariteTimeEntity(AquariteEntity, TimeEntity):
     def __init__(
         self,
         dataservice: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
         name: str,
         translation_key: str,
         value_path: str,
     ) -> None:
         """Initialize the time entity."""
-        super().__init__(dataservice, pool_id, pool_name)
+        super().__init__(dataservice)
         self._value_path = value_path
         self._attr_translation_key = translation_key
         self._attr_unique_id = self.build_unique_id(name)
@@ -78,7 +74,7 @@ class AquariteTimeEntity(AquariteEntity, TimeEntity):
         seconds = value.hour * 3600 + value.minute * 60
         try:
             await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, seconds,
+                self.coordinator.pool_id, self._value_path, seconds,
             )
         except Exception as err:
             raise HomeAssistantError(f"Failed to set time: {err}") from err

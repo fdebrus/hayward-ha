@@ -23,9 +23,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Aquarite button platform."""
     async_add_entities(
-        AquariteLEDPulseButtonEntity(
-            dataservice, dataservice.pool_id, dataservice.pool_name
-        )
+        AquariteLEDPulseButtonEntity(dataservice)
         for dataservice in entry.runtime_data.coordinators.values()
         if dataservice.get_value(PATH_HASLED)
     )
@@ -41,15 +39,11 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
     in its internal sequence.
     """
 
-    def __init__(
-        self,
-        coordinator: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
-    ) -> None:
+    _attr_translation_key = "led_pulse"
+
+    def __init__(self, coordinator: AquariteDataUpdateCoordinator) -> None:
         """Initialize the LED pulse button."""
-        super().__init__(coordinator, pool_id, pool_name)
-        self._attr_translation_key = "led_pulse"
+        super().__init__(coordinator)
         self._attr_unique_id = self.build_unique_id("LEDPulse")
 
     async def async_press(self) -> None:
@@ -62,8 +56,12 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
         """
         try:
             if self.coordinator.get_value("light.status"):
-                await self.coordinator.api.set_value(self._pool_id, "light.status", 0)
+                await self.coordinator.api.set_value(
+                    self.coordinator.pool_id, "light.status", 0
+                )
                 await asyncio.sleep(LED_PULSE_DELAY)
-            await self.coordinator.api.set_value(self._pool_id, "light.status", 1)
+            await self.coordinator.api.set_value(
+                self.coordinator.pool_id, "light.status", 1
+            )
         except Exception as err:
             raise HomeAssistantError(f"Failed to pulse LED: {err}") from err

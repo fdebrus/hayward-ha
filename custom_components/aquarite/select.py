@@ -26,15 +26,13 @@ async def async_setup_entry(
     entities: list[AquariteSelectEntity] = []
 
     for dataservice in entry.runtime_data.coordinators.values():
-        pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
-
         entities.extend([
             AquariteSelectEntity(
-                dataservice, pool_id, pool_name,
+                dataservice,
                 "Pump Mode", "pump_mode", "filtration.mode", PUMP_MODE_OPTIONS,
             ),
             AquariteSelectEntity(
-                dataservice, pool_id, pool_name,
+                dataservice,
                 "Pump Speed", "pump_speed", "filtration.manVel", PUMP_SPEED_OPTIONS,
             ),
         ])
@@ -42,7 +40,7 @@ async def async_setup_entry(
         for index in range(1, 4):
             entities.append(
                 AquariteSelectEntity(
-                    dataservice, pool_id, pool_name,
+                    dataservice,
                     f"Filtration Timer Speed {index}",
                     f"filtration_timer_speed_{index}",
                     f"filtration.timerVel{index}",
@@ -59,15 +57,13 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
     def __init__(
         self,
         dataservice: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
         name: str,
         translation_key: str,
         value_path: str,
         options: tuple[str, ...],
     ) -> None:
         """Initialize the select entity."""
-        super().__init__(dataservice, pool_id, pool_name)
+        super().__init__(dataservice)
         self._value_path = value_path
         self._options_map = options
         self._attr_translation_key = translation_key
@@ -87,7 +83,9 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
         """Select an option."""
         try:
             await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, self._options_map.index(option)
+                self.coordinator.pool_id,
+                self._value_path,
+                self._options_map.index(option),
             )
         except Exception as err:
             raise HomeAssistantError(f"Failed to select option: {err}") from err

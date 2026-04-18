@@ -47,10 +47,8 @@ async def async_setup_entry(
     entities: list[AquariteSwitchEntity] = []
 
     for dataservice in entry.runtime_data.coordinators.values():
-        pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
-
         entities.extend(
-            AquariteSwitchEntity(dataservice, pool_id, pool_name, config)
+            AquariteSwitchEntity(dataservice, config)
             for config in SWITCH_DEFINITIONS
         )
 
@@ -59,7 +57,7 @@ async def async_setup_entry(
         if dataservice.get_value("filtration.hasHeat"):
             entities.append(
                 AquariteSwitchEntity(
-                    dataservice, pool_id, pool_name,
+                    dataservice,
                     AquariteSwitchConfig(
                         "Heating Climate", "heating_climate", "filtration.heating.clima",
                     ),
@@ -72,7 +70,7 @@ async def async_setup_entry(
         if dataservice.get_value("filtration.hasSmart"):
             entities.append(
                 AquariteSwitchEntity(
-                    dataservice, pool_id, pool_name,
+                    dataservice,
                     AquariteSwitchConfig(
                         "Smart Mode Freeze", "smart_mode_freeze", "filtration.smart.freeze",
                     ),
@@ -88,12 +86,10 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
     def __init__(
         self,
         coordinator: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
         config: AquariteSwitchConfig,
     ) -> None:
         """Initialize the switch."""
-        super().__init__(coordinator, pool_id, pool_name)
+        super().__init__(coordinator)
         self._value_path = config.value_path
         self._is_relay = config.is_relay
         self._attr_translation_key = config.translation_key
@@ -112,13 +108,17 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
         try:
-            await self.coordinator.api.set_value(self._pool_id, self._value_path, 1)
+            await self.coordinator.api.set_value(
+                self.coordinator.pool_id, self._value_path, 1
+            )
         except Exception as err:
             raise HomeAssistantError(f"Failed to turn on: {err}") from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         try:
-            await self.coordinator.api.set_value(self._pool_id, self._value_path, 0)
+            await self.coordinator.api.set_value(
+                self.coordinator.pool_id, self._value_path, 0
+            )
         except Exception as err:
             raise HomeAssistantError(f"Failed to turn off: {err}") from err

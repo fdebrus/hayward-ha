@@ -25,10 +25,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Aquarite light platform."""
     async_add_entities(
-        AquariteLightEntity(
-            dataservice, dataservice.pool_id, dataservice.pool_name,
-            "Light", "pool_light", "light.status",
-        )
+        AquariteLightEntity(dataservice, "Light", "pool_light", "light.status")
         for dataservice in entry.runtime_data.coordinators.values()
     )
 
@@ -42,14 +39,12 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
     def __init__(
         self,
         dataservice: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
         name: str,
         translation_key: str,
         value_path: str,
     ) -> None:
         """Initialize the light entity."""
-        super().__init__(dataservice, pool_id, pool_name)
+        super().__init__(dataservice)
         self._value_path = value_path
         self._attr_translation_key = translation_key
         self._attr_unique_id = self.build_unique_id(name)
@@ -88,7 +83,7 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
 
         try:
             await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, 1 if state else 0
+                self.coordinator.pool_id, self._value_path, 1 if state else 0
             )
         except Exception:
             # If the API call fails immediately, reset and revert UI
