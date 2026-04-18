@@ -6,9 +6,11 @@ from typing import Any
 
 from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
+from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -79,11 +81,15 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
             await self.coordinator.api.set_value(
                 self.coordinator.pool_id, self._value_path, 1 if state else 0
             )
-        except Exception:
+        except Exception as err:
             # If the API call fails immediately, reset and revert UI
             self._target_state = None
             self.async_write_ha_state()
-            raise
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="communication_error",
+                translation_placeholders={"error": str(err)},
+            ) from err
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""

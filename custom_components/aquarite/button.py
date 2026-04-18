@@ -9,7 +9,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
-from .const import LED_PULSE_DELAY, PATH_HASLED
+from .const import DOMAIN, LED_PULSE_DELAY, PATH_HASLED
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -64,4 +64,8 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
                 self.coordinator.pool_id, "light.status", 1
             )
         except Exception as err:
-            raise HomeAssistantError(f"Failed to pulse LED: {err}") from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="communication_error",
+                translation_placeholders={"error": str(err)},
+            ) from err
