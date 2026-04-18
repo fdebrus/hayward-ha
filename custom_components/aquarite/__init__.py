@@ -55,9 +55,7 @@ type AquariteConfigEntry = ConfigEntry[AquariteData]
 async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> bool:
     """Set up Aquarite from a config entry."""
     session = async_get_clientsession(hass)
-    auth = AquariteAuth(
-        session, entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
-    )
+    auth = AquariteAuth(session, entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
 
     try:
         await auth.authenticate()
@@ -109,9 +107,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
     return True
 
 
-async def async_unload_entry(
-    hass: HomeAssistant, entry: AquariteConfigEntry
-) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> bool:
     """Unload Aquarite config entry."""
     data = entry.runtime_data
 
@@ -187,8 +183,7 @@ def _async_maybe_unregister_service(
     remaining = [
         e
         for e in hass.config_entries.async_entries(DOMAIN)
-        if e.entry_id != unloading_entry.entry_id
-        and e.state is ConfigEntryState.LOADED
+        if e.entry_id != unloading_entry.entry_id and e.state is ConfigEntryState.LOADED
     ]
     if not remaining:
         hass.services.async_remove(DOMAIN, "sync_pool_time")

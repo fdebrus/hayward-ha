@@ -1,4 +1,5 @@
 """Aquarite Sensor entities."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -50,19 +51,25 @@ def _coerce_int(value: Any) -> int | None:
         return None
 
 
-def _scaled(path: str, divisor: float) -> Callable[[AquariteDataUpdateCoordinator], float | None]:
+def _scaled(
+    path: str, divisor: float
+) -> Callable[[AquariteDataUpdateCoordinator], float | None]:
     def _fn(coordinator: AquariteDataUpdateCoordinator) -> float | None:
         value = coordinator.get_value(path)
         try:
             return float(value) / divisor
         except (TypeError, ValueError):
             return None
+
     return _fn
 
 
-def _path(path: str, converter: Callable[[Any], Any] = _coerce_float) -> Callable[[AquariteDataUpdateCoordinator], Any]:
+def _path(
+    path: str, converter: Callable[[Any], Any] = _coerce_float
+) -> Callable[[AquariteDataUpdateCoordinator], Any]:
     def _fn(coordinator: AquariteDataUpdateCoordinator) -> Any:
         return converter(coordinator.get_value(path))
+
     return _fn
 
 
@@ -141,7 +148,9 @@ SENSORS: tuple[AquariteSensorEntityDescription, ...] = (
 )
 
 
-def _hidro_description(coordinator: AquariteDataUpdateCoordinator) -> AquariteSensorEntityDescription:
+def _hidro_description(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> AquariteSensorEntityDescription:
     """Return either electrolysis or hydrolysis description for the hidro module."""
     is_electrolysis = coordinator.get_bool("hidro.is_electrolysis")
     key = "electrolysis" if is_electrolysis else "hydrolysis"

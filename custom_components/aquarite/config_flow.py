@@ -1,4 +1,5 @@
 """Config Flow for the Aquarite integration."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -29,9 +30,7 @@ USER_SCHEMA = vol.Schema(
 class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
     """Aquarite config flow."""
 
-    async def _async_validate(
-        self, username: str, password: str
-    ) -> str | None:
+    async def _async_validate(self, username: str, password: str) -> str | None:
         """Validate credentials. Returns an error key, or None on success."""
         session = async_get_clientsession(self.hass)
         auth = AquariteAuth(session, username, password)

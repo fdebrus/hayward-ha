@@ -1,4 +1,5 @@
 """Aquarite Switch entities."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -119,9 +120,7 @@ class AquariteSwitch(AquariteEntity, SwitchEntity):
         path = self.entity_description.value_path
         onoff = self.coordinator.get_bool(path)
         if self.entity_description.is_relay:
-            return onoff or self.coordinator.get_bool(
-                path.replace("onoff", "status")
-            )
+            return onoff or self.coordinator.get_bool(path.replace("onoff", "status"))
         return onoff
 
     async def async_turn_on(self, **kwargs: Any) -> None:

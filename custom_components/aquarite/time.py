@@ -1,4 +1,5 @@
 """Aquarite Time entities for filtration interval control."""
+
 from __future__ import annotations
 
 import datetime

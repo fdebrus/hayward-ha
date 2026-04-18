@@ -1,4 +1,5 @@
 """Aquarite Button entities."""
+
 from __future__ import annotations
 
 import asyncio

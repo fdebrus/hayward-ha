@@ -1,9 +1,9 @@
 """Aquarite Binary Sensor entities."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -34,6 +34,7 @@ def _bool_path(path: str) -> Callable[[AquariteDataUpdateCoordinator], bool | No
         if coordinator.get_value(path) is None:
             return None
         return coordinator.get_bool(path)
+
     return _fn
 
 
@@ -190,7 +191,9 @@ BASE_SENSORS: tuple[AquariteBinarySensorEntityDescription, ...] = (
 )
 
 
-def _hidro_low_description(coordinator: AquariteDataUpdateCoordinator) -> AquariteBinarySensorEntityDescription:
+def _hidro_low_description(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> AquariteBinarySensorEntityDescription:
     is_electrolysis = coordinator.get_bool("hidro.is_electrolysis")
     key = "electrolysis_low" if is_electrolysis else "hydrolysis_low"
     return AquariteBinarySensorEntityDescription(

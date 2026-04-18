@@ -1,4 +1,5 @@
 """Aquarite Light entity with State Reconciliation and Failure Handling."""
+
 from __future__ import annotations
 
 import time

@@ -1,4 +1,5 @@
 """Aquarite Number entities."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -164,7 +165,9 @@ class AquariteNumber(AquariteEntity, NumberEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = self.build_unique_id(description.key)
-        self._attr_native_step = 1 / description.scale if description.scale != 1 else 1.0
+        self._attr_native_step = (
+            1 / description.scale if description.scale != 1 else 1.0
+        )
         if description.max_fn is not None:
             self._attr_native_max_value = description.max_fn(coordinator)
 
