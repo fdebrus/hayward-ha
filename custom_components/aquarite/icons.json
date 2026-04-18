@@ -28,29 +28,8 @@
       "filtration_intel_time": {
         "default": "mdi:timer-outline"
       },
-      "pool_name": {
-        "default": "mdi:pool"
-      },
       "rssi": {
         "default": "mdi:wifi"
-      },
-      "city": {
-        "default": "mdi:city"
-      },
-      "street": {
-        "default": "mdi:road"
-      },
-      "zipcode": {
-        "default": "mdi:numeric"
-      },
-      "country": {
-        "default": "mdi:earth"
-      },
-      "latitude": {
-        "default": "mdi:latitude"
-      },
-      "longitude": {
-        "default": "mdi:longitude"
       }
     },
     "binary_sensor": {

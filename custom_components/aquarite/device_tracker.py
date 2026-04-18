@@ -1,29 +1,30 @@
 """Aquarite Device Tracker entity."""
+
 from __future__ import annotations
 
 from homeassistant.components.device_tracker import SourceType
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AquariteConfigEntry
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
+PARALLEL_UPDATES = 0
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the pool location tracker."""
-    coordinator = entry.runtime_data
-    pool_id = coordinator.pool_id
-    pool_name = entry.title
-
-    async_add_entities([
-        PoolLocationDeviceTracker(coordinator, pool_id, pool_name)
-    ])
+    async_add_entities(
+        PoolLocationDeviceTracker(coordinator)
+        for coordinator in entry.runtime_data.coordinators.values()
+    )
 
 
 class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):
@@ -33,14 +34,9 @@ class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "location"
 
-    def __init__(
-        self,
-        coordinator: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
-    ) -> None:
+    def __init__(self, coordinator: AquariteDataUpdateCoordinator) -> None:
         """Initialize the tracker."""
-        super().__init__(coordinator, pool_id, pool_name)
+        super().__init__(coordinator)
         self._attr_unique_id = self.build_unique_id("location")
 
     @property

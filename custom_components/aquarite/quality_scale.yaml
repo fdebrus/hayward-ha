@@ -16,7 +16,7 @@ rules:
     status: done
   config-flow-test-coverage:
     status: done
-    comment: Tests cover user, pool, reauth, reconfigure, options, errors, duplicate
+    comment: Tests cover user, reauth, reconfigure, errors, duplicate
   dependency-transparency:
     status: done
     comment: aioaquarite published on PyPI
@@ -40,16 +40,16 @@ rules:
     comment: _attr_has_entity_name = True on base entity
   runtime-data:
     status: done
-    comment: Uses entry.runtime_data typed as AquariteDataUpdateCoordinator
+    comment: Uses entry.runtime_data typed as AquariteData (auth, api, coordinators, background tasks)
   test-before-configure:
     status: done
-    comment: Auth tested before creating entry in async_step_pool
+    comment: Auth tested before creating entry in async_step_user
   test-before-setup:
     status: done
     comment: Auth tested in async_setup_entry, raises ConfigEntryAuthFailed
   unique-config-entry:
     status: done
-    comment: unique_id set to pool_id, _abort_if_unique_id_configured used
+    comment: unique_id set to username.lower(), _abort_if_unique_id_configured used
 
   # Silver
   action-exceptions:
@@ -57,14 +57,14 @@ rules:
     comment: All entity actions raise HomeAssistantError on API failure
   config-entry-unloading:
     status: done
-    comment: async_unload_entry properly unloads platforms and shuts down coordinator
+    comment: async_unload_entry cancels background tasks and shuts down every coordinator
   docs-configuration-parameters:
     status: todo
   docs-troubleshooting:
     status: todo
   entity-category:
     status: done
-    comment: Diagnostic entities properly categorized (location, module presence, RSSI)
+    comment: Diagnostic entities properly categorized (device_tracker location, module presence, RSSI)
   entity-disabled-by-default:
     status: done
     comment: Module presence sensors and RSSI disabled by default
@@ -109,10 +109,10 @@ rules:
     status: todo
   dynamic-devices:
     status: exempt
-    comment: Single pool device per config entry, statically configured
+    comment: Pools are discovered at setup time; adding a new pool requires reload
   entity-translations:
     status: done
-    comment: All 70 entities use translation_key with en, nl, da translations
+    comment: All entities use translation_key with en, nl, da translations
   exception-translations:
     status: done
     comment: Exception strings defined in strings.json
@@ -126,7 +126,7 @@ rules:
     comment: No known repair scenarios
   stale-devices:
     status: exempt
-    comment: Single device per entry, no stale device scenario
+    comment: Devices are keyed on pool_id which is stable for the lifetime of the pool
 
   # Platinum
   async-dependency:

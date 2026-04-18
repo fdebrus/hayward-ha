@@ -1,4 +1,5 @@
 """Config Flow for the Aquarite integration."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -7,23 +8,18 @@ from typing import Any
 
 import voluptuous as vol
 
-from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
+from aioaquarite import AquariteAuth, AuthenticationError
 
-from homeassistant.config_entries import (
-    ConfigEntry,
-    ConfigFlow,
-    ConfigFlowResult,
-    OptionsFlow,
-)
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
-from .const import CONF_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_INTERVAL, DOMAIN
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-AUTH_SCHEMA = vol.Schema(
+USER_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
@@ -31,111 +27,41 @@ AUTH_SCHEMA = vol.Schema(
 )
 
 
-class AquariteOptionsFlow(OptionsFlow):
-    """Options flow for Aquarite."""
-
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the options form."""
-        if user_input is not None:
-            return self.async_create_entry(data=user_input)
-
-        current = self.config_entry.options.get(
-            CONF_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_INTERVAL
-        )
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_HEALTH_CHECK_INTERVAL, default=current
-                ): vol.All(int, vol.Range(min=60, max=3600)),
-            }
-        )
-        return self.async_show_form(step_id="init", data_schema=schema)
-
-
 class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
     """Aquarite config flow."""
 
-    @staticmethod
-    def async_get_options_flow(
-        config_entry: ConfigEntry,
-    ) -> AquariteOptionsFlow:
-        """Return the options flow handler."""
-        return AquariteOptionsFlow()
-
-    def __init__(self) -> None:
-        """Initialize the config flow."""
-        self._user_data: dict[str, Any] = {}
-        self._available_pools: dict[str, str] = {}
+    async def _async_validate(self, username: str, password: str) -> str | None:
+        """Validate credentials. Returns an error key, or None on success."""
+        session = async_get_clientsession(self.hass)
+        auth = AquariteAuth(session, username, password)
+        try:
+            await auth.authenticate()
+        except AuthenticationError:
+            return "invalid_auth"
+        except Exception:  # noqa: BLE001
+            _LOGGER.exception("Unexpected error during authentication")
+            return "unknown"
+        return None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
+        errors: dict[str, str] = {}
+
         if user_input is not None:
-            self._user_data = {
-                CONF_USERNAME: user_input[CONF_USERNAME],
-                CONF_PASSWORD: user_input[CONF_PASSWORD],
-            }
-            return await self.async_step_pool()
-
-        return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA)
-
-    async def async_step_pool(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the pool selection step."""
-        if user_input is not None:
-            pool_id: str = user_input["pool_id"]
-
-            await self.async_set_unique_id(pool_id)
+            username = user_input[CONF_USERNAME]
+            await self.async_set_unique_id(username.lower())
             self._abort_if_unique_id_configured()
 
-            return self.async_create_entry(
-                title=self._available_pools.get(pool_id, pool_id),
-                data={
-                    CONF_USERNAME: self._user_data[CONF_USERNAME],
-                    CONF_PASSWORD: self._user_data[CONF_PASSWORD],
-                    "pool_id": pool_id,
-                },
-            )
+            error = await self._async_validate(username, user_input[CONF_PASSWORD])
+            if error is None:
+                return self.async_create_entry(title=username, data=user_input)
+            errors["base"] = error
 
-        try:
-            session = async_get_clientsession(self.hass)
-            auth = AquariteAuth(
-                session,
-                self._user_data[CONF_USERNAME],
-                self._user_data[CONF_PASSWORD],
-            )
-            await auth.authenticate()
-            api = AquariteClient(auth)
-            self._available_pools = await api.get_pools()
-        except AuthenticationError:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=AUTH_SCHEMA,
-                errors={"base": "auth_error"},
-            )
-        except Exception:
-            _LOGGER.exception("Unexpected error during authentication")
-            return self.async_show_form(
-                step_id="user",
-                data_schema=AUTH_SCHEMA,
-                errors={"base": "unknown_error"},
-            )
-
-        if not self._available_pools:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=AUTH_SCHEMA,
-                errors={"base": "no_pools_found"},
-            )
-
-        pool_schema = vol.Schema(
-            {vol.Required("pool_id"): vol.In(self._available_pools)}
+        return self.async_show_form(
+            step_id="user", data_schema=USER_SCHEMA, errors=errors
         )
-        return self.async_show_form(step_id="pool", data_schema=pool_schema)
 
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
@@ -151,17 +77,10 @@ class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
         reauth_entry = self._get_reauth_entry()
 
         if user_input is not None:
-            session = async_get_clientsession(self.hass)
-            try:
-                auth = AquariteAuth(
-                    session,
-                    user_input[CONF_USERNAME],
-                    user_input[CONF_PASSWORD],
-                )
-                await auth.authenticate()
-            except AuthenticationError:
-                errors["base"] = "auth_error"
-            else:
+            error = await self._async_validate(
+                user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
+            )
+            if error is None:
                 return self.async_update_reload_and_abort(
                     reauth_entry,
                     data={
@@ -170,6 +89,7 @@ class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
                     },
                 )
+            errors["base"] = error
 
         schema = vol.Schema(
             {
@@ -192,17 +112,10 @@ class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
         reconfigure_entry = self._get_reconfigure_entry()
 
         if user_input is not None:
-            session = async_get_clientsession(self.hass)
-            try:
-                auth = AquariteAuth(
-                    session,
-                    user_input[CONF_USERNAME],
-                    user_input[CONF_PASSWORD],
-                )
-                await auth.authenticate()
-            except AuthenticationError:
-                errors["base"] = "auth_error"
-            else:
+            error = await self._async_validate(
+                user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
+            )
+            if error is None:
                 return self.async_update_reload_and_abort(
                     reconfigure_entry,
                     data={
@@ -211,6 +124,7 @@ class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
                     },
                 )
+            errors["base"] = error
 
         schema = vol.Schema(
             {

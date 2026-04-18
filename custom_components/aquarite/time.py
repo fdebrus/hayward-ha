@@ -1,12 +1,16 @@
 """Aquarite Time entities for filtration interval control."""
+
 from __future__ import annotations
 
 import datetime
+from dataclasses import dataclass
 
-from homeassistant.components.time import TimeEntity
+from aioaquarite import AquariteError
+
+from homeassistant.components.time import TimeEntity, TimeEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AquariteConfigEntry
 from .const import DOMAIN
@@ -16,57 +20,58 @@ from .entity import AquariteEntity
 PARALLEL_UPDATES = 1
 
 
+@dataclass(frozen=True, kw_only=True)
+class AquariteTimeEntityDescription(TimeEntityDescription):
+    """Describes an Aquarite time entity."""
+
+    value_path: str
+
+
+TIMES: tuple[AquariteTimeEntityDescription, ...] = tuple(
+    AquariteTimeEntityDescription(
+        key=f"filtration_interval_{i}_{which}",
+        translation_key=f"filtration_interval_{i}_{which}",
+        value_path=f"filtration.interval{i}.{which}",
+    )
+    for i in range(1, 4)
+    for which in ("from", "to")
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Aquarite time entities."""
-    dataservice = entry.runtime_data
-    pool_id, pool_name = dataservice.pool_id, entry.title
-
-    entities: list[AquariteTimeEntity] = []
-
-    for translation_key, path in (
-        ("filtration_interval_1_from", "filtration.interval1.from"),
-        ("filtration_interval_1_to", "filtration.interval1.to"),
-        ("filtration_interval_2_from", "filtration.interval2.from"),
-        ("filtration_interval_2_to", "filtration.interval2.to"),
-        ("filtration_interval_3_from", "filtration.interval3.from"),
-        ("filtration_interval_3_to", "filtration.interval3.to"),
-    ):
-        entities.append(
-            AquariteTimeEntity(
-                dataservice, pool_id, pool_name, translation_key, path,
-            )
-        )
-
-    async_add_entities(entities)
+    async_add_entities(
+        AquariteTime(coordinator, description)
+        for coordinator in entry.runtime_data.coordinators.values()
+        for description in TIMES
+    )
 
 
-class AquariteTimeEntity(AquariteEntity, TimeEntity):
-    """Time entity for filtration interval from/to values."""
+class AquariteTime(AquariteEntity, TimeEntity):
+    """Aquarite time entity for filtration interval from/to values."""
+
+    entity_description: AquariteTimeEntityDescription
 
     def __init__(
         self,
-        dataservice: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
-        translation_key: str,
-        value_path: str,
+        coordinator: AquariteDataUpdateCoordinator,
+        description: AquariteTimeEntityDescription,
     ) -> None:
         """Initialize the time entity."""
-        super().__init__(dataservice, pool_id, pool_name)
-        self._value_path = value_path
-        self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = self.build_unique_id(description.key)
 
     @property
     def native_value(self) -> datetime.time | None:
         """Return the interval time as a time object."""
-        raw_value = self.coordinator.get_value(self._value_path)
+        raw = self.coordinator.get_value(self.entity_description.value_path)
         try:
-            seconds = int(raw_value)
+            seconds = int(raw)
             hours = (seconds // 3600) % 24
             minutes = (seconds % 3600) // 60
             return datetime.time(hours, minutes)
@@ -78,9 +83,11 @@ class AquariteTimeEntity(AquariteEntity, TimeEntity):
         seconds = value.hour * 3600 + value.minute * 60
         try:
             await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, seconds,
+                self.coordinator.pool_id,
+                self.entity_description.value_path,
+                seconds,
             )
-        except Exception as err:
+        except AquariteError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="communication_error",

@@ -1,13 +1,25 @@
 {
-    "domain": "aquarite",
-    "name": "Aquarite",
-    "codeowners": ["@fdebrus"],
-    "config_flow": true,
-    "documentation": "https://www.home-assistant.io/integrations/aquarite",
-    "homeassistant": "2025.8.0",
-    "iot_class": "cloud_push",
-    "loggers": ["aioaquarite"],
-    "requirements": [
-        "aioaquarite==0.2.0"
-    ]
+  "domain": "aquarite",
+  "name": "Aquarite",
+  "codeowners": ["@fdebrus"],
+  "config_flow": true,
+  "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
+  "homeassistant": "2025.8.0",
+  "integration_type": "hub",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/fdebrus/hayward-ha/issues",
+  "loggers": ["custom_components.aquarite", "aioaquarite"],
+  "requirements": ["aioaquarite==0.2.0"],
+  "supported_platforms": [
+    "binary_sensor",
+    "button",
+    "device_tracker",
+    "light",
+    "number",
+    "select",
+    "sensor",
+    "switch",
+    "time"
+  ],
+  "version": "2.0.0"
 }

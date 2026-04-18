@@ -1,14 +1,19 @@
 """Aquarite Light entity with State Reconciliation and Failure Handling."""
+
 from __future__ import annotations
 
 import time
 from typing import Any
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AquariteConfigEntry
+from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -21,15 +26,13 @@ PARALLEL_UPDATES = 1
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Aquarite light platform."""
-    dataservice = entry.runtime_data
-    pool_id, pool_name = dataservice.pool_id, entry.title
-
-    async_add_entities([
-        AquariteLightEntity(dataservice, pool_id, pool_name, "pool_light", "light.status")
-    ])
+    async_add_entities(
+        AquariteLightEntity(coordinator)
+        for coordinator in entry.runtime_data.coordinators.values()
+    )
 
 
 class AquariteLightEntity(AquariteEntity, LightEntity):
@@ -37,20 +40,13 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
 
     _attr_supported_color_modes = {ColorMode.ONOFF}
     _attr_color_mode = ColorMode.ONOFF
+    _attr_translation_key = "pool_light"
+    _value_path = "light.status"
 
-    def __init__(
-        self,
-        dataservice: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
-        translation_key: str,
-        value_path: str,
-    ) -> None:
+    def __init__(self, coordinator: AquariteDataUpdateCoordinator) -> None:
         """Initialize the light entity."""
-        super().__init__(dataservice, pool_id, pool_name)
-        self._value_path = value_path
-        self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(translation_key)
+        super().__init__(coordinator)
+        self._attr_unique_id = self.build_unique_id("pool_light")
 
         # Reconciliation logic
         self._target_state: bool | None = None
@@ -59,7 +55,7 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
     @property
     def is_on(self) -> bool:
         """Return true if light is on."""
-        actual_state = bool(int(self.coordinator.get_value(self._value_path) or 0))
+        actual_state = self.coordinator.get_bool(self._value_path)
 
         # If we aren't waiting for a change, show actual state
         if self._target_state is None:
@@ -86,13 +82,17 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
 
         try:
             await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, 1 if state else 0
+                self.coordinator.pool_id, self._value_path, 1 if state else 0
             )
-        except Exception:
+        except AquariteError as err:
             # If the API call fails immediately, reset and revert UI
             self._target_state = None
             self.async_write_ha_state()
-            raise
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="communication_error",
+                translation_placeholders={"error": str(err)},
+            ) from err
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""

@@ -1,12 +1,15 @@
 """Aquarite Button entities."""
+
 from __future__ import annotations
 
 import asyncio
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AquariteConfigEntry
 from .const import DOMAIN, LED_PULSE_DELAY, PATH_HASLED
@@ -19,18 +22,14 @@ PARALLEL_UPDATES = 1
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Aquarite button platform."""
-    dataservice = entry.runtime_data
-    pool_id, pool_name = dataservice.pool_id, entry.title
-
-    if not dataservice.get_value(PATH_HASLED):
-        return
-
-    async_add_entities([
-        AquariteLEDPulseButtonEntity(dataservice, pool_id, pool_name)
-    ])
+    async_add_entities(
+        AquariteLEDPulseButtonEntity(dataservice)
+        for dataservice in entry.runtime_data.coordinators.values()
+        if dataservice.get_bool(PATH_HASLED)
+    )
 
 
 class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
@@ -43,15 +42,11 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
     in its internal sequence.
     """
 
-    def __init__(
-        self,
-        coordinator: AquariteDataUpdateCoordinator,
-        pool_id: str,
-        pool_name: str,
-    ) -> None:
+    _attr_translation_key = "led_pulse"
+
+    def __init__(self, coordinator: AquariteDataUpdateCoordinator) -> None:
         """Initialize the LED pulse button."""
-        super().__init__(coordinator, pool_id, pool_name)
-        self._attr_translation_key = "led_pulse"
+        super().__init__(coordinator)
         self._attr_unique_id = self.build_unique_id("led_pulse")
 
     async def async_press(self) -> None:
@@ -63,11 +58,15 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
         simply turn it on.
         """
         try:
-            if bool(int(self.coordinator.get_value("light.status") or 0)):
-                await self.coordinator.api.set_value(self._pool_id, "light.status", 0)
+            if self.coordinator.get_bool("light.status"):
+                await self.coordinator.api.set_value(
+                    self.coordinator.pool_id, "light.status", 0
+                )
                 await asyncio.sleep(LED_PULSE_DELAY)
-            await self.coordinator.api.set_value(self._pool_id, "light.status", 1)
-        except Exception as err:
+            await self.coordinator.api.set_value(
+                self.coordinator.pool_id, "light.status", 1
+            )
+        except AquariteError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="communication_error",
