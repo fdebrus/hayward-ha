@@ -25,8 +25,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Aquarite light platform."""
     async_add_entities(
-        AquariteLightEntity(dataservice, "Light", "pool_light", "light.status")
-        for dataservice in entry.runtime_data.coordinators.values()
+        AquariteLightEntity(coordinator)
+        for coordinator in entry.runtime_data.coordinators.values()
     )
 
 
@@ -35,19 +35,13 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
 
     _attr_supported_color_modes = {ColorMode.ONOFF}
     _attr_color_mode = ColorMode.ONOFF
+    _attr_translation_key = "pool_light"
+    _value_path = "light.status"
 
-    def __init__(
-        self,
-        dataservice: AquariteDataUpdateCoordinator,
-        name: str,
-        translation_key: str,
-        value_path: str,
-    ) -> None:
+    def __init__(self, coordinator: AquariteDataUpdateCoordinator) -> None:
         """Initialize the light entity."""
-        super().__init__(dataservice)
-        self._value_path = value_path
-        self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(name)
+        super().__init__(coordinator)
+        self._attr_unique_id = self.build_unique_id("pool_light")
 
         # Reconciliation logic
         self._target_state: bool | None = None

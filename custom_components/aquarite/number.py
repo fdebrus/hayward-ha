@@ -1,9 +1,14 @@
 """Aquarite Number entities."""
 from __future__ import annotations
 
-from typing import Final
+from collections.abc import Callable
+from dataclasses import dataclass
 
-from homeassistant.components.number import NumberDeviceClass, NumberEntity
+from homeassistant.components.number import (
+    NumberDeviceClass,
+    NumberEntity,
+    NumberEntityDescription,
+)
 from homeassistant.const import EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -16,152 +21,167 @@ from .entity import AquariteEntity
 PARALLEL_UPDATES = 1
 
 
+@dataclass(frozen=True, kw_only=True)
+class AquariteNumberEntityDescription(NumberEntityDescription):
+    """Describes an Aquarite number entity."""
+
+    value_path: str
+    scale: int = 1
+    max_fn: Callable[[AquariteDataUpdateCoordinator], float] | None = None
+    exists_fn: Callable[[AquariteDataUpdateCoordinator], bool] | None = None
+
+
+def _max_electrolysis(coordinator: AquariteDataUpdateCoordinator) -> float:
+    raw = coordinator.get_value("hidro.maxAllowedValue", 0)
+    try:
+        return int(raw) / 10 if raw else 50.0
+    except (TypeError, ValueError):
+        return 50.0
+
+
+NUMBERS: tuple[AquariteNumberEntityDescription, ...] = (
+    AquariteNumberEntityDescription(
+        key="redox_setpoint",
+        translation_key="redox_setpoint",
+        native_min_value=500,
+        native_max_value=800,
+        native_unit_of_measurement="mV",
+        value_path="modules.rx.status.value",
+    ),
+    AquariteNumberEntityDescription(
+        key="ph_low",
+        translation_key="ph_low",
+        native_min_value=6,
+        native_max_value=8,
+        native_unit_of_measurement="pH",
+        value_path="modules.ph.status.low_value",
+        scale=100,
+    ),
+    AquariteNumberEntityDescription(
+        key="ph_max",
+        translation_key="ph_max",
+        native_min_value=6,
+        native_max_value=8,
+        native_unit_of_measurement="pH",
+        value_path="modules.ph.status.high_value",
+        scale=100,
+    ),
+    AquariteNumberEntityDescription(
+        key="electrolysis_setpoint",
+        translation_key="electrolysis_setpoint",
+        native_min_value=0,
+        native_max_value=50,  # overridden by max_fn at runtime
+        native_unit_of_measurement="gr/h",
+        value_path="hidro.level",
+        scale=10,
+        max_fn=_max_electrolysis,
+    ),
+    AquariteNumberEntityDescription(
+        key="intel_mode_temperature",
+        translation_key="intel_mode_temperature",
+        native_min_value=5,
+        native_max_value=40,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        value_path="filtration.intel.temp",
+    ),
+    AquariteNumberEntityDescription(
+        key="heating_mode_min_temperature",
+        translation_key="heating_mode_min_temperature",
+        native_min_value=5,
+        native_max_value=40,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        value_path="filtration.heating.temp",
+        exists_fn=lambda c: bool(c.get_value("filtration.hasHeat")),
+    ),
+    AquariteNumberEntityDescription(
+        key="heating_mode_max_temperature",
+        translation_key="heating_mode_max_temperature",
+        native_min_value=5,
+        native_max_value=40,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        value_path="filtration.heating.tempHi",
+        exists_fn=lambda c: bool(c.get_value("filtration.hasHeat")),
+    ),
+    AquariteNumberEntityDescription(
+        key="smart_mode_min_temperature",
+        translation_key="smart_mode_min_temperature",
+        native_min_value=5,
+        native_max_value=40,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        value_path="filtration.smart.tempMin",
+        exists_fn=lambda c: bool(c.get_value("filtration.hasSmart")),
+    ),
+    AquariteNumberEntityDescription(
+        key="smart_mode_max_temperature",
+        translation_key="smart_mode_max_temperature",
+        native_min_value=5,
+        native_max_value=40,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        value_path="filtration.smart.tempHigh",
+        exists_fn=lambda c: bool(c.get_value("filtration.hasSmart")),
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AquariteConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Aquarite number entities."""
-    entities: list[AquariteNumberEntity] = []
-
-    for dataservice in entry.runtime_data.coordinators.values():
-        # Safely determine max electrolysis
-        raw_max = dataservice.get_value("hidro.maxAllowedValue", 0)
-        try:
-            max_electrolysis = int(raw_max) / 10 if raw_max else 50.0
-        except (ValueError, TypeError):
-            max_electrolysis = 50.0
-
-        entities.extend([
-            AquariteNumberEntity(
-                dataservice,
-                500, 800, "Redox Setpoint", "redox_setpoint", "modules.rx.status.value",
-            ),
-            AquariteNumberEntity(
-                dataservice,
-                6, 8, "pH Low", "ph_low", "modules.ph.status.low_value",
-            ),
-            AquariteNumberEntity(
-                dataservice,
-                6, 8, "pH Max", "ph_max", "modules.ph.status.high_value",
-            ),
-            AquariteNumberEntity(
-                dataservice,
-                0, max_electrolysis, "Electrolysis Setpoint", "electrolysis_setpoint", "hidro.level",
-            ),
-            # INTEL mode target temperature (matches the "Température" field shown
-            # under the INTEL slider position in the Hayward app).
-            AquariteNumberEntity(
-                dataservice,
-                5, 40, "Intel Mode Temperature", "intel_mode_temperature", "filtration.intel.temp",
-            ),
-        ])
-
-        # HEAT mode min/max range (the two arrows under "Température minimale" /
-        # "Température maximale" when the HEAT slider position is selected).
-        # Translation keys are intentionally renamed from PR #62 to clarify they
-        # are bounds, not single setpoints. The Python `name` arguments are kept
-        # unchanged so existing unique_ids are preserved.
-        if dataservice.get_value("filtration.hasHeat"):
-            entities.extend([
-                AquariteNumberEntity(
-                    dataservice,
-                    5, 40, "Heating Setpoint", "heating_mode_min_temperature", "filtration.heating.temp",
-                ),
-                AquariteNumberEntity(
-                    dataservice,
-                    5, 40, "Heating High Setpoint", "heating_mode_max_temperature", "filtration.heating.tempHi",
-                ),
-            ])
-
-        # SMART mode min/max range (replaces the read-only sensors that previously
-        # exposed `filtration.smart.tempMin` / `tempHigh` — see PR description for
-        # the breaking-change note).
-        if dataservice.get_value("filtration.hasSmart"):
-            entities.extend([
-                AquariteNumberEntity(
-                    dataservice,
-                    5, 40, "Smart Mode Min Temperature", "smart_mode_min_temperature", "filtration.smart.tempMin",
-                ),
-                AquariteNumberEntity(
-                    dataservice,
-                    5, 40, "Smart Mode Max Temperature", "smart_mode_max_temperature", "filtration.smart.tempHigh",
-                ),
-            ])
-
-    async_add_entities(entities)
+    async_add_entities(
+        AquariteNumber(coordinator, description)
+        for coordinator in entry.runtime_data.coordinators.values()
+        for description in NUMBERS
+        if description.exists_fn is None or description.exists_fn(coordinator)
+    )
 
 
-class AquariteNumberEntity(AquariteEntity, NumberEntity):
-    """Number entity for Aquarite data points."""
+class AquariteNumber(AquariteEntity, NumberEntity):
+    """Aquarite number entity."""
 
     _attr_entity_category = EntityCategory.CONFIG
-
-    SCALE_MAP: Final[dict[str, int]] = {
-        "modules.ph.status.low_value": 100,
-        "modules.ph.status.high_value": 100,
-        "hidro.level": 10,
-    }
-    UNIT_MAP: Final[dict[str, str]] = {
-        "modules.rx.status.value": "mV",
-        "modules.ph.status.low_value": "pH",
-        "modules.ph.status.high_value": "pH",
-        "hidro.level": "gr/h",
-        "filtration.heating.temp": UnitOfTemperature.CELSIUS,
-        "filtration.heating.tempHi": UnitOfTemperature.CELSIUS,
-        "filtration.intel.temp": UnitOfTemperature.CELSIUS,
-        "filtration.smart.tempMin": UnitOfTemperature.CELSIUS,
-        "filtration.smart.tempHigh": UnitOfTemperature.CELSIUS,
-    }
-    DEVICE_CLASS_MAP: Final[dict[str, NumberDeviceClass]] = {
-        "filtration.heating.temp": NumberDeviceClass.TEMPERATURE,
-        "filtration.heating.tempHi": NumberDeviceClass.TEMPERATURE,
-        "filtration.intel.temp": NumberDeviceClass.TEMPERATURE,
-        "filtration.smart.tempMin": NumberDeviceClass.TEMPERATURE,
-        "filtration.smart.tempHigh": NumberDeviceClass.TEMPERATURE,
-    }
+    entity_description: AquariteNumberEntityDescription
 
     def __init__(
         self,
-        dataservice: AquariteDataUpdateCoordinator,
-        value_min: float,
-        value_max: float,
-        name: str,
-        translation_key: str,
-        value_path: str,
+        coordinator: AquariteDataUpdateCoordinator,
+        description: AquariteNumberEntityDescription,
     ) -> None:
         """Initialize the number entity."""
-        super().__init__(dataservice)
-        self._attr_native_min_value = value_min
-        self._attr_native_max_value = value_max
-        self._value_path = value_path
-        self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(name)
-        self._attr_native_unit_of_measurement = self.UNIT_MAP.get(value_path)
-        self._attr_device_class = self.DEVICE_CLASS_MAP.get(value_path)
-        self._attr_native_step = self._get_scaled_step()
-
-    def _get_scaled_step(self) -> float:
-        """Return step size based on scale factor."""
-        scale = self.SCALE_MAP.get(self._value_path)
-        return 1 / scale if scale else 1.0
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = self.build_unique_id(description.key)
+        self._attr_native_step = 1 / description.scale if description.scale != 1 else 1.0
+        if description.max_fn is not None:
+            self._attr_native_max_value = description.max_fn(coordinator)
 
     @property
     def native_value(self) -> float | None:
         """Return the current value."""
-        raw_value = self.coordinator.get_value(self._value_path)
-        if raw_value is None:
+        raw = self.coordinator.get_value(self.entity_description.value_path)
+        if raw is None:
             return None
-        scale = self.SCALE_MAP.get(self._value_path)
-        return int(raw_value) / scale if scale else float(raw_value)
+        scale = self.entity_description.scale
+        try:
+            return int(raw) / scale if scale != 1 else float(raw)
+        except (TypeError, ValueError):
+            return None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the value."""
-        scale = self.SCALE_MAP.get(self._value_path)
-        raw_value = int(value * scale) if scale else value
+        scale = self.entity_description.scale
+        raw = int(round(value * scale)) if scale != 1 else value
         try:
             await self.coordinator.api.set_value(
-                self.coordinator.pool_id, self._value_path, raw_value
+                self.coordinator.pool_id,
+                self.entity_description.value_path,
+                raw,
             )
         except Exception as err:
             raise HomeAssistantError(f"Failed to set value: {err}") from err

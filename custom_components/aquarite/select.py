@@ -1,7 +1,9 @@
 """Aquarite Select entities."""
 from __future__ import annotations
 
-from homeassistant.components.select import SelectEntity
+from dataclasses import dataclass
+
+from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -10,11 +12,46 @@ from . import AquariteConfigEntry
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
-PUMP_MODE_OPTIONS: tuple[str, ...] = ("manual", "auto", "heat", "smart", "intel")
-PUMP_SPEED_OPTIONS: tuple[str, ...] = ("slow", "medium", "high")
-TIMER_SPEED_OPTIONS: tuple[str, ...] = ("slow", "medium", "high")
-
 PARALLEL_UPDATES = 1
+
+PUMP_MODE_OPTIONS: tuple[str, ...] = ("manual", "auto", "heat", "smart", "intel")
+SPEED_OPTIONS: tuple[str, ...] = ("slow", "medium", "high")
+
+
+@dataclass(frozen=True, kw_only=True)
+class AquariteSelectEntityDescription(SelectEntityDescription):
+    """Describes an Aquarite select entity."""
+
+    value_path: str
+    options_map: tuple[str, ...]
+
+
+SELECTS: tuple[AquariteSelectEntityDescription, ...] = (
+    AquariteSelectEntityDescription(
+        key="pump_mode",
+        translation_key="pump_mode",
+        options=list(PUMP_MODE_OPTIONS),
+        options_map=PUMP_MODE_OPTIONS,
+        value_path="filtration.mode",
+    ),
+    AquariteSelectEntityDescription(
+        key="pump_speed",
+        translation_key="pump_speed",
+        options=list(SPEED_OPTIONS),
+        options_map=SPEED_OPTIONS,
+        value_path="filtration.manVel",
+    ),
+    *(
+        AquariteSelectEntityDescription(
+            key=f"filtration_timer_speed_{i}",
+            translation_key=f"filtration_timer_speed_{i}",
+            options=list(SPEED_OPTIONS),
+            options_map=SPEED_OPTIONS,
+            value_path=f"filtration.timerVel{i}",
+        )
+        for i in range(1, 4)
+    ),
+)
 
 
 async def async_setup_entry(
@@ -23,59 +60,34 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up select entities."""
-    entities: list[AquariteSelectEntity] = []
-
-    for dataservice in entry.runtime_data.coordinators.values():
-        entities.extend([
-            AquariteSelectEntity(
-                dataservice,
-                "Pump Mode", "pump_mode", "filtration.mode", PUMP_MODE_OPTIONS,
-            ),
-            AquariteSelectEntity(
-                dataservice,
-                "Pump Speed", "pump_speed", "filtration.manVel", PUMP_SPEED_OPTIONS,
-            ),
-        ])
-
-        for index in range(1, 4):
-            entities.append(
-                AquariteSelectEntity(
-                    dataservice,
-                    f"Filtration Timer Speed {index}",
-                    f"filtration_timer_speed_{index}",
-                    f"filtration.timerVel{index}",
-                    TIMER_SPEED_OPTIONS,
-                )
-            )
-
-    async_add_entities(entities)
+    async_add_entities(
+        AquariteSelect(coordinator, description)
+        for coordinator in entry.runtime_data.coordinators.values()
+        for description in SELECTS
+    )
 
 
-class AquariteSelectEntity(AquariteEntity, SelectEntity):
+class AquariteSelect(AquariteEntity, SelectEntity):
     """Aquarite select entity."""
+
+    entity_description: AquariteSelectEntityDescription
 
     def __init__(
         self,
-        dataservice: AquariteDataUpdateCoordinator,
-        name: str,
-        translation_key: str,
-        value_path: str,
-        options: tuple[str, ...],
+        coordinator: AquariteDataUpdateCoordinator,
+        description: AquariteSelectEntityDescription,
     ) -> None:
         """Initialize the select entity."""
-        super().__init__(dataservice)
-        self._value_path = value_path
-        self._options_map = options
-        self._attr_translation_key = translation_key
-        self._attr_unique_id = self.build_unique_id(name)
-        self._attr_options = list(options)
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = self.build_unique_id(description.key)
 
     @property
     def current_option(self) -> str | None:
         """Return the current selected option."""
-        raw_value = self.coordinator.get_value(self._value_path)
+        raw = self.coordinator.get_value(self.entity_description.value_path)
         try:
-            return self._options_map[int(raw_value)]
+            return self.entity_description.options_map[int(raw)]
         except (TypeError, ValueError, IndexError):
             return None
 
@@ -84,8 +96,8 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
         try:
             await self.coordinator.api.set_value(
                 self.coordinator.pool_id,
-                self._value_path,
-                self._options_map.index(option),
+                self.entity_description.value_path,
+                self.entity_description.options_map.index(option),
             )
         except Exception as err:
             raise HomeAssistantError(f"Failed to select option: {err}") from err

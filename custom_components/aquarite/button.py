@@ -44,7 +44,7 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
     def __init__(self, coordinator: AquariteDataUpdateCoordinator) -> None:
         """Initialize the LED pulse button."""
         super().__init__(coordinator)
-        self._attr_unique_id = self.build_unique_id("LEDPulse")
+        self._attr_unique_id = self.build_unique_id("led_pulse")
 
     async def async_press(self) -> None:
         """Send a pulse to the pool LED.
