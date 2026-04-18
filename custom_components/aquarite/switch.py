@@ -44,38 +44,40 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Aquarite switch platform."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
+    entities: list[AquariteSwitchEntity] = []
 
-    entities = [
-        AquariteSwitchEntity(dataservice, pool_id, pool_name, config)
-        for config in SWITCH_DEFINITIONS
-    ]
+    for dataservice in entry.runtime_data.coordinators.values():
+        pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
 
-    # HEAT mode "Climat" toggle (visible under the HEAT slider position in
-    # the Hayward app).
-    if dataservice.get_value("filtration.hasHeat"):
-        entities.append(
-            AquariteSwitchEntity(
-                dataservice, pool_id, pool_name,
-                AquariteSwitchConfig(
-                    "Heating Climate", "heating_climate", "filtration.heating.clima",
-                ),
-            )
+        entities.extend(
+            AquariteSwitchEntity(dataservice, pool_id, pool_name, config)
+            for config in SWITCH_DEFINITIONS
         )
 
-    # SMART mode "Antigel" (freeze protection) toggle. Replaces the read-only
-    # binary sensor that previously exposed `filtration.smart.freeze` —
-    # see PR description for the breaking-change note.
-    if dataservice.get_value("filtration.hasSmart"):
-        entities.append(
-            AquariteSwitchEntity(
-                dataservice, pool_id, pool_name,
-                AquariteSwitchConfig(
-                    "Smart Mode Freeze", "smart_mode_freeze", "filtration.smart.freeze",
-                ),
+        # HEAT mode "Climat" toggle (visible under the HEAT slider position in
+        # the Hayward app).
+        if dataservice.get_value("filtration.hasHeat"):
+            entities.append(
+                AquariteSwitchEntity(
+                    dataservice, pool_id, pool_name,
+                    AquariteSwitchConfig(
+                        "Heating Climate", "heating_climate", "filtration.heating.clima",
+                    ),
+                )
             )
-        )
+
+        # SMART mode "Antigel" (freeze protection) toggle. Replaces the read-only
+        # binary sensor that previously exposed `filtration.smart.freeze` —
+        # see PR description for the breaking-change note.
+        if dataservice.get_value("filtration.hasSmart"):
+            entities.append(
+                AquariteSwitchEntity(
+                    dataservice, pool_id, pool_name,
+                    AquariteSwitchConfig(
+                        "Smart Mode Freeze", "smart_mode_freeze", "filtration.smart.freeze",
+                    ),
+                )
+            )
 
     async_add_entities(entities)
 

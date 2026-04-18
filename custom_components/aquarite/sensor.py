@@ -36,102 +36,102 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Aquarite sensors."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id = dataservice.pool_id
-    pool_name = entry.title
-
     entities: list[AquariteEntity] = []
 
-    # Pool water temperature (the only read-only temperature; all setpoints
-    # are exposed as Number entities — see number.py)
-    entities.append(
-        AquariteTemperatureSensorEntity(
-            dataservice, pool_id, pool_name,
-            "Temperature", "temperature", "main.temperature",
-        )
-    )
+    for dataservice in entry.runtime_data.coordinators.values():
+        pool_id = dataservice.pool_id
+        pool_name = dataservice.pool_name
 
-    # Module Presence Sensors
-    if dataservice.get_value(PATH_HASCD):
+        # Pool water temperature (the only read-only temperature; all setpoints
+        # are exposed as Number entities — see number.py)
         entities.append(
-            AquariteValueSensorEntity(
-                dataservice, pool_id, pool_name, "CD", "cd", "modules.cd.current"
+            AquariteTemperatureSensorEntity(
+                dataservice, pool_id, pool_name,
+                "Temperature", "temperature", "main.temperature",
             )
         )
 
-    if dataservice.get_value(PATH_HASCL):
+        # Module Presence Sensors
+        if dataservice.get_value(PATH_HASCD):
+            entities.append(
+                AquariteValueSensorEntity(
+                    dataservice, pool_id, pool_name, "CD", "cd", "modules.cd.current"
+                )
+            )
+
+        if dataservice.get_value(PATH_HASCL):
+            entities.append(
+                AquariteValueSensorEntity(
+                    dataservice, pool_id, pool_name, "Cl", "cl", "modules.cl.current"
+                )
+            )
+
+        if dataservice.get_value(PATH_HASPH):
+            entities.append(
+                AquariteValueSensorEntity(
+                    dataservice, pool_id, pool_name, "pH", "ph",
+                    "modules.ph.current",
+                    device_class=SensorDeviceClass.PH,
+                )
+            )
+
+        if dataservice.get_value(PATH_HASRX):
+            entities.append(
+                AquariteRxValueSensorEntity(
+                    dataservice, pool_id, pool_name, "Rx", "rx", "modules.rx.current"
+                )
+            )
+
+        if dataservice.get_value(PATH_HASUV):
+            entities.append(
+                AquariteValueSensorEntity(
+                    dataservice, pool_id, pool_name, "UV", "uv", "modules.uv.current"
+                )
+            )
+
+        if dataservice.get_value(PATH_HASHIDRO):
+            is_electrolysis = dataservice.get_value("hidro.is_electrolysis")
+            name = "Electrolysis" if is_electrolysis else "Hidrolysis"
+            key = "electrolysis" if is_electrolysis else "hydrolysis"
+            entities.append(
+                AquariteHydrolyserSensorEntity(
+                    dataservice, pool_id, pool_name, name, key, "hidro.current"
+                )
+            )
+
+        # Wi-Fi signal strength (diagnostic, off by default — only useful on Wi-Fi controllers)
         entities.append(
-            AquariteValueSensorEntity(
-                dataservice, pool_id, pool_name, "Cl", "cl", "modules.cl.current"
+            AquariteRssiSensorEntity(dataservice, pool_id, pool_name)
+        )
+
+        # Time and Interval Sensors
+        entities.append(
+            AquariteTimeSensorEntity(
+                dataservice, pool_id, pool_name,
+                "Filtration Intel Time", "filtration_intel_time",
+                "filtration.intel.time",
+                native_unit_of_measurement="h",
             )
         )
 
-    if dataservice.get_value(PATH_HASPH):
-        entities.append(
-            AquariteValueSensorEntity(
-                dataservice, pool_id, pool_name, "pH", "ph",
-                "modules.ph.current",
-                device_class=SensorDeviceClass.PH,
+        # Location sensors (diagnostic)
+        for name, translation_key, key in (
+            ("City", "city", "city"),
+            ("Street", "street", "street"),
+            ("Zipcode", "zipcode", "zipcode"),
+            ("Country", "country", "country"),
+            ("Latitude", "latitude", "lat"),
+            ("Longitude", "longitude", "lng"),
+        ):
+            entities.append(
+                AquariteLocationSensorEntity(
+                    dataservice, pool_id, pool_name, name, translation_key, key
+                )
             )
-        )
 
-    if dataservice.get_value(PATH_HASRX):
         entities.append(
-            AquariteRxValueSensorEntity(
-                dataservice, pool_id, pool_name, "Rx", "rx", "modules.rx.current"
-            )
+            AquaritePoolNameSensorEntity(dataservice, pool_id, pool_name)
         )
-
-    if dataservice.get_value(PATH_HASUV):
-        entities.append(
-            AquariteValueSensorEntity(
-                dataservice, pool_id, pool_name, "UV", "uv", "modules.uv.current"
-            )
-        )
-
-    if dataservice.get_value(PATH_HASHIDRO):
-        is_electrolysis = dataservice.get_value("hidro.is_electrolysis")
-        name = "Electrolysis" if is_electrolysis else "Hidrolysis"
-        key = "electrolysis" if is_electrolysis else "hydrolysis"
-        entities.append(
-            AquariteHydrolyserSensorEntity(
-                dataservice, pool_id, pool_name, name, key, "hidro.current"
-            )
-        )
-
-    # Wi-Fi signal strength (diagnostic, off by default — only useful on Wi-Fi controllers)
-    entities.append(
-        AquariteRssiSensorEntity(dataservice, pool_id, pool_name)
-    )
-
-    # Time and Interval Sensors
-    entities.append(
-        AquariteTimeSensorEntity(
-            dataservice, pool_id, pool_name,
-            "Filtration Intel Time", "filtration_intel_time",
-            "filtration.intel.time",
-            native_unit_of_measurement="h",
-        )
-    )
-
-    # Location sensors (diagnostic)
-    for name, translation_key, key in (
-        ("City", "city", "city"),
-        ("Street", "street", "street"),
-        ("Zipcode", "zipcode", "zipcode"),
-        ("Country", "country", "country"),
-        ("Latitude", "latitude", "lat"),
-        ("Longitude", "longitude", "lng"),
-    ):
-        entities.append(
-            AquariteLocationSensorEntity(
-                dataservice, pool_id, pool_name, name, translation_key, key
-            )
-        )
-
-    entities.append(
-        AquaritePoolNameSensorEntity(dataservice, pool_id, pool_name)
-    )
 
     async_add_entities(entities)
 

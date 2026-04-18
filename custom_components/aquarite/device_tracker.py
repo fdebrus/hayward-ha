@@ -20,13 +20,12 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the pool location tracker."""
-    coordinator = entry.runtime_data.coordinator
-    pool_id = coordinator.pool_id
-    pool_name = entry.title
-
-    async_add_entities([
-        PoolLocationDeviceTracker(coordinator, pool_id, pool_name)
-    ])
+    async_add_entities(
+        PoolLocationDeviceTracker(
+            coordinator, coordinator.pool_id, coordinator.pool_name
+        )
+        for coordinator in entry.runtime_data.coordinators.values()
+    )
 
 
 class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):

@@ -23,30 +23,32 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up select entities."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
+    entities: list[AquariteSelectEntity] = []
 
-    entities = [
-        AquariteSelectEntity(
-            dataservice, pool_id, pool_name,
-            "Pump Mode", "pump_mode", "filtration.mode", PUMP_MODE_OPTIONS,
-        ),
-        AquariteSelectEntity(
-            dataservice, pool_id, pool_name,
-            "Pump Speed", "pump_speed", "filtration.manVel", PUMP_SPEED_OPTIONS,
-        ),
-    ]
+    for dataservice in entry.runtime_data.coordinators.values():
+        pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
 
-    for index in range(1, 4):
-        entities.append(
+        entities.extend([
             AquariteSelectEntity(
                 dataservice, pool_id, pool_name,
-                f"Filtration Timer Speed {index}",
-                f"filtration_timer_speed_{index}",
-                f"filtration.timerVel{index}",
-                TIMER_SPEED_OPTIONS,
+                "Pump Mode", "pump_mode", "filtration.mode", PUMP_MODE_OPTIONS,
+            ),
+            AquariteSelectEntity(
+                dataservice, pool_id, pool_name,
+                "Pump Speed", "pump_speed", "filtration.manVel", PUMP_SPEED_OPTIONS,
+            ),
+        ])
+
+        for index in range(1, 4):
+            entities.append(
+                AquariteSelectEntity(
+                    dataservice, pool_id, pool_name,
+                    f"Filtration Timer Speed {index}",
+                    f"filtration_timer_speed_{index}",
+                    f"filtration.timerVel{index}",
+                    TIMER_SPEED_OPTIONS,
+                )
             )
-        )
 
     async_add_entities(entities)
 

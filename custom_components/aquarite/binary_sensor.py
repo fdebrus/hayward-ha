@@ -119,75 +119,77 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Aquarite binary sensors."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id = dataservice.pool_id
-    pool_name = entry.title
+    entities: list[BinarySensorEntity] = []
 
-    entities: list[BinarySensorEntity] = [
-        AquariteBinarySensorEntity(dataservice, config, pool_id, pool_name)
-        for config in BASE_SENSORS
-    ]
+    for dataservice in entry.runtime_data.coordinators.values():
+        pool_id = dataservice.pool_id
+        pool_name = dataservice.pool_name
 
-    if dataservice.get_value("main.hasCL"):
+        entities.extend(
+            AquariteBinarySensorEntity(dataservice, config, pool_id, pool_name)
+            for config in BASE_SENSORS
+        )
+
+        if dataservice.get_value("main.hasCL"):
+            entities.append(
+                AquariteBinarySensorEntity(
+                    dataservice,
+                    AquariteBinarySensorConfig(
+                        "Hidro FL2 Status", "hidro_fl2_status",
+                        "hidro.fl2", BinarySensorDeviceClass.PROBLEM,
+                    ),
+                    pool_id,
+                    pool_name,
+                )
+            )
+            entities.append(
+                AquariteBinarySensorEntity(
+                    dataservice,
+                    AquariteBinarySensorConfig(
+                        "Cl Pump Status", "cl_pump_status",
+                        "modules.cl.pump_status", BinarySensorDeviceClass.RUNNING,
+                    ),
+                    pool_id,
+                    pool_name,
+                )
+            )
+
+        if dataservice.get_value(PATH_HASRX):
+            entities.append(
+                AquariteBinarySensorEntity(
+                    dataservice,
+                    AquariteBinarySensorConfig(
+                        "Rx Pump Status", "rx_pump_status",
+                        "modules.rx.pump_status", BinarySensorDeviceClass.RUNNING,
+                    ),
+                    pool_id,
+                    pool_name,
+                )
+            )
+
+        if any(
+            dataservice.get_value(path)
+            for path in (PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX)
+        ):
+            entities.append(
+                AquariteBinarySensorTankEntity(
+                    dataservice, "Acid Tank", "acid_tank", pool_id, pool_name
+                )
+            )
+
+        is_electrolysis = dataservice.get_value("hidro.is_electrolysis")
+        low_name = "Electrolysis Low" if is_electrolysis else "Hidrolysis Low"
+        low_key = "electrolysis_low" if is_electrolysis else "hydrolysis_low"
         entities.append(
             AquariteBinarySensorEntity(
                 dataservice,
                 AquariteBinarySensorConfig(
-                    "Hidro FL2 Status", "hidro_fl2_status",
-                    "hidro.fl2", BinarySensorDeviceClass.PROBLEM,
+                    low_name, low_key, "hidro.low", BinarySensorDeviceClass.PROBLEM
                 ),
                 pool_id,
                 pool_name,
             )
         )
-        entities.append(
-            AquariteBinarySensorEntity(
-                dataservice,
-                AquariteBinarySensorConfig(
-                    "Cl Pump Status", "cl_pump_status",
-                    "modules.cl.pump_status", BinarySensorDeviceClass.RUNNING,
-                ),
-                pool_id,
-                pool_name,
-            )
-        )
-
-    if dataservice.get_value(PATH_HASRX):
-        entities.append(
-            AquariteBinarySensorEntity(
-                dataservice,
-                AquariteBinarySensorConfig(
-                    "Rx Pump Status", "rx_pump_status",
-                    "modules.rx.pump_status", BinarySensorDeviceClass.RUNNING,
-                ),
-                pool_id,
-                pool_name,
-            )
-        )
-
-    if any(
-        dataservice.get_value(path)
-        for path in (PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX)
-    ):
-        entities.append(
-            AquariteBinarySensorTankEntity(
-                dataservice, "Acid Tank", "acid_tank", pool_id, pool_name
-            )
-        )
-
-    is_electrolysis = dataservice.get_value("hidro.is_electrolysis")
-    low_name = "Electrolysis Low" if is_electrolysis else "Hidrolysis Low"
-    low_key = "electrolysis_low" if is_electrolysis else "hydrolysis_low"
-    entities.append(
-        AquariteBinarySensorEntity(
-            dataservice,
-            AquariteBinarySensorConfig(
-                low_name, low_key, "hidro.low", BinarySensorDeviceClass.PROBLEM
-            ),
-            pool_id,
-            pool_name,
-        )
-    )
 
     async_add_entities(entities)
 

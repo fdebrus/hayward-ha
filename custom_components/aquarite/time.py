@@ -21,24 +21,24 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Aquarite time entities."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
-
     entities: list[AquariteTimeEntity] = []
 
-    for name, translation_key, path in (
-        ("Filtration Interval 1 From", "filtration_interval_1_from", "filtration.interval1.from"),
-        ("Filtration Interval 1 To", "filtration_interval_1_to", "filtration.interval1.to"),
-        ("Filtration Interval 2 From", "filtration_interval_2_from", "filtration.interval2.from"),
-        ("Filtration Interval 2 To", "filtration_interval_2_to", "filtration.interval2.to"),
-        ("Filtration Interval 3 From", "filtration_interval_3_from", "filtration.interval3.from"),
-        ("Filtration Interval 3 To", "filtration_interval_3_to", "filtration.interval3.to"),
-    ):
-        entities.append(
-            AquariteTimeEntity(
-                dataservice, pool_id, pool_name, name, translation_key, path,
+    for dataservice in entry.runtime_data.coordinators.values():
+        pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
+
+        for name, translation_key, path in (
+            ("Filtration Interval 1 From", "filtration_interval_1_from", "filtration.interval1.from"),
+            ("Filtration Interval 1 To", "filtration_interval_1_to", "filtration.interval1.to"),
+            ("Filtration Interval 2 From", "filtration_interval_2_from", "filtration.interval2.from"),
+            ("Filtration Interval 2 To", "filtration_interval_2_to", "filtration.interval2.to"),
+            ("Filtration Interval 3 From", "filtration_interval_3_from", "filtration.interval3.from"),
+            ("Filtration Interval 3 To", "filtration_interval_3_to", "filtration.interval3.to"),
+        ):
+            entities.append(
+                AquariteTimeEntity(
+                    dataservice, pool_id, pool_name, name, translation_key, path,
+                )
             )
-        )
 
     async_add_entities(entities)
 

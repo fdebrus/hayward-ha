@@ -22,15 +22,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Aquarite button platform."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
-
-    if not dataservice.get_value(PATH_HASLED):
-        return
-
-    async_add_entities([
-        AquariteLEDPulseButtonEntity(dataservice, pool_id, pool_name)
-    ])
+    async_add_entities(
+        AquariteLEDPulseButtonEntity(
+            dataservice, dataservice.pool_id, dataservice.pool_name
+        )
+        for dataservice in entry.runtime_data.coordinators.values()
+        if dataservice.get_value(PATH_HASLED)
+    )
 
 
 class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):

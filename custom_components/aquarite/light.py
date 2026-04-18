@@ -24,12 +24,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Aquarite light platform."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
-
-    async_add_entities([
-        AquariteLightEntity(dataservice, pool_id, pool_name, "Light", "pool_light", "light.status")
-    ])
+    async_add_entities(
+        AquariteLightEntity(
+            dataservice, dataservice.pool_id, dataservice.pool_name,
+            "Light", "pool_light", "light.status",
+        )
+        for dataservice in entry.runtime_data.coordinators.values()
+    )
 
 
 class AquariteLightEntity(AquariteEntity, LightEntity):

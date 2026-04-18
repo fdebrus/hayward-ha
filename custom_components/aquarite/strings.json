@@ -17,13 +17,6 @@
         "description": "Re-authenticate your Hayward account to continue.",
         "title": "[%key:common::config_flow::title::reauth%]"
       },
-      "pool": {
-        "data": {
-          "pool_id": "Pool"
-        },
-        "description": "Please choose the pool for this integration.",
-        "title": "Select Pool"
-      },
       "reconfigure": {
         "data": {
           "username": "[%key:common::config_flow::data::username%]",
@@ -34,24 +27,13 @@
       }
     },
     "error": {
-      "auth_error": "Authorization failed, check username and password.",
-      "no_pools_found": "No pools found for your account.",
-      "unknown_error": "Unexpected error. Please try again."
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_account%]",
       "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
       "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "data": {
-          "health_check_interval": "Health check interval (seconds)"
-        },
-        "description": "Configure the Aquarite integration.",
-        "title": "Options"
-      }
     }
   },
   "entity": {

@@ -22,72 +22,74 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Aquarite number entities."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
+    entities: list[AquariteNumberEntity] = []
 
-    # Safely determine max electrolysis
-    raw_max = dataservice.get_value("hidro.maxAllowedValue", 0)
-    try:
-        max_electrolysis = int(raw_max) / 10 if raw_max else 50.0
-    except (ValueError, TypeError):
-        max_electrolysis = 50.0
+    for dataservice in entry.runtime_data.coordinators.values():
+        pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
 
-    entities = [
-        AquariteNumberEntity(
-            dataservice, pool_id, pool_name,
-            500, 800, "Redox Setpoint", "redox_setpoint", "modules.rx.status.value",
-        ),
-        AquariteNumberEntity(
-            dataservice, pool_id, pool_name,
-            6, 8, "pH Low", "ph_low", "modules.ph.status.low_value",
-        ),
-        AquariteNumberEntity(
-            dataservice, pool_id, pool_name,
-            6, 8, "pH Max", "ph_max", "modules.ph.status.high_value",
-        ),
-        AquariteNumberEntity(
-            dataservice, pool_id, pool_name,
-            0, max_electrolysis, "Electrolysis Setpoint", "electrolysis_setpoint", "hidro.level",
-        ),
-        # INTEL mode target temperature (matches the "Température" field shown
-        # under the INTEL slider position in the Hayward app).
-        AquariteNumberEntity(
-            dataservice, pool_id, pool_name,
-            5, 40, "Intel Mode Temperature", "intel_mode_temperature", "filtration.intel.temp",
-        ),
-    ]
+        # Safely determine max electrolysis
+        raw_max = dataservice.get_value("hidro.maxAllowedValue", 0)
+        try:
+            max_electrolysis = int(raw_max) / 10 if raw_max else 50.0
+        except (ValueError, TypeError):
+            max_electrolysis = 50.0
 
-    # HEAT mode min/max range (the two arrows under "Température minimale" /
-    # "Température maximale" when the HEAT slider position is selected).
-    # Translation keys are intentionally renamed from PR #62 to clarify they
-    # are bounds, not single setpoints. The Python `name` arguments are kept
-    # unchanged so existing unique_ids are preserved.
-    if dataservice.get_value("filtration.hasHeat"):
         entities.extend([
             AquariteNumberEntity(
                 dataservice, pool_id, pool_name,
-                5, 40, "Heating Setpoint", "heating_mode_min_temperature", "filtration.heating.temp",
+                500, 800, "Redox Setpoint", "redox_setpoint", "modules.rx.status.value",
             ),
             AquariteNumberEntity(
                 dataservice, pool_id, pool_name,
-                5, 40, "Heating High Setpoint", "heating_mode_max_temperature", "filtration.heating.tempHi",
+                6, 8, "pH Low", "ph_low", "modules.ph.status.low_value",
+            ),
+            AquariteNumberEntity(
+                dataservice, pool_id, pool_name,
+                6, 8, "pH Max", "ph_max", "modules.ph.status.high_value",
+            ),
+            AquariteNumberEntity(
+                dataservice, pool_id, pool_name,
+                0, max_electrolysis, "Electrolysis Setpoint", "electrolysis_setpoint", "hidro.level",
+            ),
+            # INTEL mode target temperature (matches the "Température" field shown
+            # under the INTEL slider position in the Hayward app).
+            AquariteNumberEntity(
+                dataservice, pool_id, pool_name,
+                5, 40, "Intel Mode Temperature", "intel_mode_temperature", "filtration.intel.temp",
             ),
         ])
 
-    # SMART mode min/max range (replaces the read-only sensors that previously
-    # exposed `filtration.smart.tempMin` / `tempHigh` — see PR description for
-    # the breaking-change note).
-    if dataservice.get_value("filtration.hasSmart"):
-        entities.extend([
-            AquariteNumberEntity(
-                dataservice, pool_id, pool_name,
-                5, 40, "Smart Mode Min Temperature", "smart_mode_min_temperature", "filtration.smart.tempMin",
-            ),
-            AquariteNumberEntity(
-                dataservice, pool_id, pool_name,
-                5, 40, "Smart Mode Max Temperature", "smart_mode_max_temperature", "filtration.smart.tempHigh",
-            ),
-        ])
+        # HEAT mode min/max range (the two arrows under "Température minimale" /
+        # "Température maximale" when the HEAT slider position is selected).
+        # Translation keys are intentionally renamed from PR #62 to clarify they
+        # are bounds, not single setpoints. The Python `name` arguments are kept
+        # unchanged so existing unique_ids are preserved.
+        if dataservice.get_value("filtration.hasHeat"):
+            entities.extend([
+                AquariteNumberEntity(
+                    dataservice, pool_id, pool_name,
+                    5, 40, "Heating Setpoint", "heating_mode_min_temperature", "filtration.heating.temp",
+                ),
+                AquariteNumberEntity(
+                    dataservice, pool_id, pool_name,
+                    5, 40, "Heating High Setpoint", "heating_mode_max_temperature", "filtration.heating.tempHi",
+                ),
+            ])
+
+        # SMART mode min/max range (replaces the read-only sensors that previously
+        # exposed `filtration.smart.tempMin` / `tempHigh` — see PR description for
+        # the breaking-change note).
+        if dataservice.get_value("filtration.hasSmart"):
+            entities.extend([
+                AquariteNumberEntity(
+                    dataservice, pool_id, pool_name,
+                    5, 40, "Smart Mode Min Temperature", "smart_mode_min_temperature", "filtration.smart.tempMin",
+                ),
+                AquariteNumberEntity(
+                    dataservice, pool_id, pool_name,
+                    5, 40, "Smart Mode Max Temperature", "smart_mode_max_temperature", "filtration.smart.tempHigh",
+                ),
+            ])
 
     async_add_entities(entities)
 
