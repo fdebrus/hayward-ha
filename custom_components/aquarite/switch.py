@@ -70,13 +70,13 @@ SWITCHES: tuple[AquariteSwitchEntityDescription, ...] = (
         key="heating_climate",
         translation_key="heating_climate",
         value_path="filtration.heating.clima",
-        exists_fn=lambda c: bool(c.get_value("filtration.hasHeat")),
+        exists_fn=lambda c: c.get_bool("filtration.hasHeat"),
     ),
     AquariteSwitchEntityDescription(
         key="smart_mode_freeze",
         translation_key="smart_mode_freeze",
         value_path="filtration.smart.freeze",
-        exists_fn=lambda c: bool(c.get_value("filtration.hasSmart")),
+        exists_fn=lambda c: c.get_bool("filtration.hasSmart"),
     ),
 )
 
@@ -114,12 +114,11 @@ class AquariteSwitch(AquariteEntity, SwitchEntity):
     def is_on(self) -> bool:
         """Return true if switch is on."""
         path = self.entity_description.value_path
-        onoff = bool(self.coordinator.get_value(path))
+        onoff = self.coordinator.get_bool(path)
         if self.entity_description.is_relay:
-            status = bool(
-                self.coordinator.get_value(path.replace("onoff", "status"))
+            return onoff or self.coordinator.get_bool(
+                path.replace("onoff", "status")
             )
-            return onoff or status
         return onoff
 
     async def async_turn_on(self, **kwargs: Any) -> None:

@@ -74,6 +74,13 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Get nested data using dot-notation path."""
         return AquariteClient.get_value(self.data, path, default)
 
+    def get_bool(self, path: str) -> bool:
+        """Read a boolean field, coercing string "0" / "1" correctly."""
+        try:
+            return bool(int(self.get_value(path) or 0))
+        except (TypeError, ValueError):
+            return False
+
     async def set_pool_time_to_now(self) -> None:
         """Sync the pool controller clock with the current time."""
         now = dt_util.now()

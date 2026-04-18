@@ -31,20 +31,19 @@ TANK_MODULE_PATHS = (
 
 def _bool_path(path: str) -> Callable[[AquariteDataUpdateCoordinator], bool | None]:
     def _fn(coordinator: AquariteDataUpdateCoordinator) -> bool | None:
-        value = coordinator.get_value(path)
-        if value is None:
+        if coordinator.get_value(path) is None:
             return None
-        return bool(value)
+        return coordinator.get_bool(path)
     return _fn
 
 
 def _any_tank_low(coordinator: AquariteDataUpdateCoordinator) -> bool:
-    return any(coordinator.get_value(path) for path in TANK_MODULE_PATHS)
+    return any(coordinator.get_bool(path) for path in TANK_MODULE_PATHS)
 
 
 def _has_tank_module(coordinator: AquariteDataUpdateCoordinator) -> bool:
     return any(
-        coordinator.get_value(path)
+        coordinator.get_bool(path)
         for path in (PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX)
     )
 
@@ -165,21 +164,21 @@ BASE_SENSORS: tuple[AquariteBinarySensorEntityDescription, ...] = (
         translation_key="hidro_fl2_status",
         device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_bool_path("hidro.fl2"),
-        exists_fn=lambda c: bool(c.get_value("main.hasCL")),
+        exists_fn=lambda c: c.get_bool("main.hasCL"),
     ),
     AquariteBinarySensorEntityDescription(
         key="cl_pump_status",
         translation_key="cl_pump_status",
         device_class=BinarySensorDeviceClass.RUNNING,
         value_fn=_bool_path("modules.cl.pump_status"),
-        exists_fn=lambda c: bool(c.get_value("main.hasCL")),
+        exists_fn=lambda c: c.get_bool("main.hasCL"),
     ),
     AquariteBinarySensorEntityDescription(
         key="rx_pump_status",
         translation_key="rx_pump_status",
         device_class=BinarySensorDeviceClass.RUNNING,
         value_fn=_bool_path("modules.rx.pump_status"),
-        exists_fn=lambda c: bool(c.get_value(PATH_HASRX)),
+        exists_fn=lambda c: c.get_bool(PATH_HASRX),
     ),
     AquariteBinarySensorEntityDescription(
         key="acid_tank",
@@ -192,7 +191,7 @@ BASE_SENSORS: tuple[AquariteBinarySensorEntityDescription, ...] = (
 
 
 def _hidro_low_description(coordinator: AquariteDataUpdateCoordinator) -> AquariteBinarySensorEntityDescription:
-    is_electrolysis = bool(coordinator.get_value("hidro.is_electrolysis"))
+    is_electrolysis = coordinator.get_bool("hidro.is_electrolysis")
     key = "electrolysis_low" if is_electrolysis else "hydrolysis_low"
     return AquariteBinarySensorEntityDescription(
         key=key,

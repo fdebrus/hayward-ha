@@ -93,7 +93,7 @@ NUMBERS: tuple[AquariteNumberEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=NumberDeviceClass.TEMPERATURE,
         value_path="filtration.heating.temp",
-        exists_fn=lambda c: bool(c.get_value("filtration.hasHeat")),
+        exists_fn=lambda c: c.get_bool("filtration.hasHeat"),
     ),
     AquariteNumberEntityDescription(
         key="heating_mode_max_temperature",
@@ -103,7 +103,7 @@ NUMBERS: tuple[AquariteNumberEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=NumberDeviceClass.TEMPERATURE,
         value_path="filtration.heating.tempHi",
-        exists_fn=lambda c: bool(c.get_value("filtration.hasHeat")),
+        exists_fn=lambda c: c.get_bool("filtration.hasHeat"),
     ),
     AquariteNumberEntityDescription(
         key="smart_mode_min_temperature",
@@ -113,7 +113,7 @@ NUMBERS: tuple[AquariteNumberEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=NumberDeviceClass.TEMPERATURE,
         value_path="filtration.smart.tempMin",
-        exists_fn=lambda c: bool(c.get_value("filtration.hasSmart")),
+        exists_fn=lambda c: c.get_bool("filtration.hasSmart"),
     ),
     AquariteNumberEntityDescription(
         key="smart_mode_max_temperature",
@@ -123,7 +123,7 @@ NUMBERS: tuple[AquariteNumberEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=NumberDeviceClass.TEMPERATURE,
         value_path="filtration.smart.tempHigh",
-        exists_fn=lambda c: bool(c.get_value("filtration.hasSmart")),
+        exists_fn=lambda c: c.get_bool("filtration.hasSmart"),
     ),
 )
 

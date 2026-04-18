@@ -94,14 +94,14 @@ SENSORS: tuple[AquariteSensorEntityDescription, ...] = (
         translation_key="cd",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=_scaled("modules.cd.current", 100),
-        exists_fn=lambda c: bool(c.get_value(PATH_HASCD)),
+        exists_fn=lambda c: c.get_bool(PATH_HASCD),
     ),
     AquariteSensorEntityDescription(
         key="cl",
         translation_key="cl",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=_scaled("modules.cl.current", 100),
-        exists_fn=lambda c: bool(c.get_value(PATH_HASCL)),
+        exists_fn=lambda c: c.get_bool(PATH_HASCL),
     ),
     AquariteSensorEntityDescription(
         key="ph",
@@ -109,7 +109,7 @@ SENSORS: tuple[AquariteSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.PH,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=_scaled("modules.ph.current", 100),
-        exists_fn=lambda c: bool(c.get_value(PATH_HASPH)),
+        exists_fn=lambda c: c.get_bool(PATH_HASPH),
     ),
     AquariteSensorEntityDescription(
         key="rx",
@@ -117,14 +117,14 @@ SENSORS: tuple[AquariteSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=_path("modules.rx.current", _coerce_int),
-        exists_fn=lambda c: bool(c.get_value(PATH_HASRX)),
+        exists_fn=lambda c: c.get_bool(PATH_HASRX),
     ),
     AquariteSensorEntityDescription(
         key="uv",
         translation_key="uv",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=_scaled("modules.uv.current", 100),
-        exists_fn=lambda c: bool(c.get_value(PATH_HASUV)),
+        exists_fn=lambda c: c.get_bool(PATH_HASUV),
     ),
     AquariteSensorEntityDescription(
         key="filtration_intel_time",
@@ -189,7 +189,7 @@ SENSORS: tuple[AquariteSensorEntityDescription, ...] = (
 
 def _hidro_description(coordinator: AquariteDataUpdateCoordinator) -> AquariteSensorEntityDescription:
     """Return either electrolysis or hydrolysis description for the hidro module."""
-    is_electrolysis = bool(coordinator.get_value("hidro.is_electrolysis"))
+    is_electrolysis = coordinator.get_bool("hidro.is_electrolysis")
     key = "electrolysis" if is_electrolysis else "hydrolysis"
     return AquariteSensorEntityDescription(
         key=key,
@@ -215,7 +215,7 @@ async def async_setup_entry(
             if description.exists_fn is None or description.exists_fn(coordinator)
         )
 
-        if bool(coordinator.get_value(PATH_HASHIDRO)):
+        if coordinator.get_bool(PATH_HASHIDRO):
             entities.append(
                 AquariteSensor(coordinator, _hidro_description(coordinator))
             )

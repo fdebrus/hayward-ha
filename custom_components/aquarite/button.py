@@ -55,7 +55,7 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
         simply turn it on.
         """
         try:
-            if self.coordinator.get_value("light.status"):
+            if self.coordinator.get_bool("light.status"):
                 await self.coordinator.api.set_value(
                     self.coordinator.pool_id, "light.status", 0
                 )
