@@ -4,7 +4,7 @@
   "codeowners": ["@fdebrus"],
   "config_flow": true,
   "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
-  "homeassistant": "2024.1.0",
+  "homeassistant": "2025.8.0",
   "integration_type": "hub",
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/fdebrus/hayward-ha/issues",
