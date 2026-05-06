@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 from dataclasses import dataclass
 import logging
 
@@ -37,6 +39,8 @@ class AquariteRuntimeData:
 
     coordinator: AquariteDataUpdateCoordinator
     auth: AquariteAuth
+    token_task: asyncio.Task[None] | None = None
+    health_task: asyncio.Task[None] | None = None
 
 
 AquariteConfigEntry = ConfigEntry[AquariteRuntimeData]
@@ -62,15 +66,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
         coordinator.data = await api.fetch_pool_data(pool_id)
         await coordinator.subscribe()
 
-        # Start background tasks (token refresh and health check)
-        await coordinator.setup_tasks()
+        # Anchor the long-running loops to the entry so HA cancels them
+        # automatically on entry unload (see async_unload_entry below).
+        token_task = entry.async_create_background_task(
+            hass, coordinator.token_refresh_loop(), "Aquarite token refresh"
+        )
+        health_task = entry.async_create_background_task(
+            hass, coordinator.periodic_health_check(), "Aquarite health check"
+        )
 
         entry.runtime_data = AquariteRuntimeData(
             coordinator=coordinator,
             auth=auth,
+            token_task=token_task,
+            health_task=health_task,
         )
-
-        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         async def handle_sync_time(call: ServiceCall) -> None:
             """Service call to sync pool time for all loaded entries."""
@@ -94,6 +104,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
 
         entry.async_on_unload(_maybe_remove_service)
 
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
         return True
 
     except AuthenticationError as exc:
@@ -107,9 +119,19 @@ async def async_unload_entry(
     hass: HomeAssistant, entry: AquariteConfigEntry
 ) -> bool:
     """Unload Aquarite config entry."""
+    data = entry.runtime_data
+
+    # Cancel background loops first so the resubscription paths can't fire
+    # while platforms (and the coordinator) are being torn down.
+    for task in (data.health_task, data.token_task):
+        if task:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unloaded:
-        await entry.runtime_data.coordinator.async_shutdown()
+        await data.coordinator.async_shutdown()
 
     return unloaded

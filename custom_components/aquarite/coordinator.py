@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 from typing import Any
 
@@ -34,8 +33,6 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.api = api
         self.pool_id: str = pool_id
         self.watch: Any | None = None
-        self._health_task: asyncio.Task[None] | None = None
-        self._token_task: asyncio.Task[None] | None = None
         self._subscription_lock = asyncio.Lock()
 
         super().__init__(
@@ -55,16 +52,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self.watch = await self.api.subscribe_pool(self.pool_id, _on_data)
 
-    async def setup_tasks(self) -> None:
-        """Start background health monitoring and token refresh."""
-        self._health_task = self.hass.async_create_background_task(
-            self.periodic_health_check(), "Aquarite health check"
-        )
-        self._token_task = self.hass.async_create_background_task(
-            self._token_refresh_loop(), "Aquarite token refresh"
-        )
-
-    async def _token_refresh_loop(self) -> None:
+    async def token_refresh_loop(self) -> None:
         """Maintain token validity with exponential backoff on error."""
         retry_delay = 10
         while not self.hass.is_stopping:
@@ -112,17 +100,17 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             await self.subscribe()
 
     async def async_shutdown(self) -> None:
-        """Cleanly unsubscribe and cancel tasks."""
+        """Cleanly unsubscribe.
+
+        Background tasks (token refresh + health check) are owned by the
+        config entry via entry.async_create_background_task and are
+        cancelled by async_unload_entry before this runs — see __init__.py.
+        """
         async with self._subscription_lock:
             watch = self.watch
             self.watch = None
             if watch:
                 await asyncio.to_thread(watch.unsubscribe)
-        for task in (self._health_task, self._token_task):
-            if task:
-                task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await task
         await super().async_shutdown()
 
     def get_value(self, path: str, default: Any = None) -> Any:

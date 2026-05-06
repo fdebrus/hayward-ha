@@ -67,20 +67,19 @@ async def test_refresh_subscription(
 async def test_async_shutdown(
     coordinator: AquariteDataUpdateCoordinator,
 ) -> None:
-    """Test shutdown cancels tasks and unsubscribes."""
+    """Test shutdown unsubscribes the watch.
+
+    Background task cancellation is owned by the config entry now (see
+    __init__.async_unload_entry), not the coordinator.
+    """
     mock_watch = MagicMock()
     coordinator.watch = mock_watch
 
-    mock_health_task = AsyncMock()
-    mock_token_task = AsyncMock()
-    coordinator._health_task = mock_health_task
-    coordinator._token_task = mock_token_task
-
-    with patch("asyncio.to_thread", new_callable=AsyncMock):
+    with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
         await coordinator.async_shutdown()
 
-    mock_health_task.cancel.assert_called_once()
-    mock_token_task.cancel.assert_called_once()
+    mock_to_thread.assert_called_once_with(mock_watch.unsubscribe)
+    assert coordinator.watch is None
 
 
 async def test_set_pool_time_to_now(
