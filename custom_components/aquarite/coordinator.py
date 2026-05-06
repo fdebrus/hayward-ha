@@ -105,14 +105,19 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Resubscribe to Firestore after a token refresh."""
         async with self._subscription_lock:
             _LOGGER.debug("Refreshing Firestore subscription for %s", self.pool_id)
-            if self.watch:
-                await asyncio.to_thread(self.watch.unsubscribe)
+            watch = self.watch
+            self.watch = None
+            if watch:
+                await asyncio.to_thread(watch.unsubscribe)
             await self.subscribe()
 
     async def async_shutdown(self) -> None:
         """Cleanly unsubscribe and cancel tasks."""
-        if self.watch:
-            await asyncio.to_thread(self.watch.unsubscribe)
+        async with self._subscription_lock:
+            watch = self.watch
+            self.watch = None
+            if watch:
+                await asyncio.to_thread(watch.unsubscribe)
         for task in (self._health_task, self._token_task):
             if task:
                 task.cancel()
