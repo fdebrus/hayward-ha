@@ -77,7 +77,9 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 retry_delay = 10
                 sleep_time = self.auth.calculate_sleep_duration()
                 await asyncio.sleep(sleep_time)
-            except Exception as err:
+            except asyncio.CancelledError:
+                raise
+            except Exception as err:  # noqa: BLE001
                 _LOGGER.error(
                     "Error maintaining token: %s. Retrying in %ss", err, retry_delay
                 )
@@ -93,7 +95,9 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             await asyncio.sleep(interval)
             try:
                 await self.auth.get_client()
-            except Exception as err:
+            except asyncio.CancelledError:
+                raise
+            except Exception as err:  # noqa: BLE001
                 _LOGGER.error("Health check failed, resubscribing: %s", err)
                 await self.refresh_subscription()
 
