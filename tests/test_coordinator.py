@@ -15,7 +15,12 @@ from .conftest import MOCK_POOL_ID
 # Skip the entire module if Home Assistant is not installed
 pytest.importorskip("homeassistant")
 
-from custom_components.aquarite.coordinator import AquariteDataUpdateCoordinator  # noqa: E402
+from aioaquarite import AquariteError  # noqa: E402
+from homeassistant.helpers.update_coordinator import UpdateFailed  # noqa: E402
+
+from custom_components.aquarite.coordinator import (  # noqa: E402
+    AquariteDataUpdateCoordinator,
+)
 
 
 @pytest.fixture
@@ -25,12 +30,10 @@ def coordinator(
 ) -> AquariteDataUpdateCoordinator:
     """Create a coordinator with mock dependencies."""
     mock_auth = AsyncMock()
-    mock_auth.is_token_expiring = MagicMock(return_value=False)
-    mock_auth.calculate_sleep_duration = MagicMock(return_value=3600)
-    mock_auth.get_client = AsyncMock(return_value=(MagicMock(), False))
 
     mock_api = AsyncMock()
-    mock_api.subscribe_pool = AsyncMock(return_value=MagicMock())
+    mock_api.subscribe_pool_resilient = AsyncMock(return_value=MagicMock())
+    mock_api.fetch_pool_data = AsyncMock(return_value=mock_pool_data)
     mock_api.set_value = AsyncMock()
 
     mock_entry = MagicMock()
@@ -45,42 +48,42 @@ def coordinator(
 
 
 async def test_subscribe(coordinator: AquariteDataUpdateCoordinator) -> None:
-    """Test subscribe calls the API."""
+    """Test subscribe uses the library's resilient subscription."""
     await coordinator.subscribe()
-    coordinator.api.subscribe_pool.assert_called_once()
+    coordinator.api.subscribe_pool_resilient.assert_called_once()
+    assert coordinator.subscription is not None
 
 
-async def test_refresh_subscription(
+async def test_async_update_data(
+    coordinator: AquariteDataUpdateCoordinator,
+    mock_pool_data,
+) -> None:
+    """Test the initial/manual refresh fetches pool data."""
+    result = await coordinator._async_update_data()
+    assert result == mock_pool_data
+    coordinator.api.fetch_pool_data.assert_called_once_with(MOCK_POOL_ID)
+
+
+async def test_async_update_data_raises_update_failed(
     coordinator: AquariteDataUpdateCoordinator,
 ) -> None:
-    """Test refresh_subscription unsubscribes and resubscribes."""
-    mock_watch = MagicMock()
-    coordinator.watch = mock_watch
-
-    with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
-        await coordinator.refresh_subscription()
-
-    mock_to_thread.assert_called_once_with(mock_watch.unsubscribe)
-    coordinator.api.subscribe_pool.assert_called_once()
+    """Test a library error is translated into UpdateFailed."""
+    coordinator.api.fetch_pool_data = AsyncMock(side_effect=AquariteError("boom"))
+    with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
 
 
 async def test_async_shutdown(
     coordinator: AquariteDataUpdateCoordinator,
 ) -> None:
-    """Test shutdown cancels tasks and unsubscribes."""
-    mock_watch = MagicMock()
-    coordinator.watch = mock_watch
+    """Test shutdown closes the resilient subscription."""
+    mock_subscription = AsyncMock()
+    coordinator.subscription = mock_subscription
 
-    mock_health_task = AsyncMock()
-    mock_token_task = AsyncMock()
-    coordinator._health_task = mock_health_task
-    coordinator._token_task = mock_token_task
+    await coordinator.async_shutdown()
 
-    with patch("asyncio.to_thread", new_callable=AsyncMock):
-        await coordinator.async_shutdown()
-
-    mock_health_task.cancel.assert_called_once()
-    mock_token_task.cancel.assert_called_once()
+    mock_subscription.aclose.assert_called_once()
+    assert coordinator.subscription is None
 
 
 async def test_set_pool_time_to_now(

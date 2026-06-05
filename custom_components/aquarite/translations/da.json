@@ -317,6 +317,9 @@
     },
     "authentication_error": {
       "message": "Godkendelse mislykkedes. Tjek dine loginoplysninger."
+    },
+    "update_failed": {
+      "message": "Kunne ikke hente data fra Aquarite-skytjenesten."
     }
   },
   "services": {

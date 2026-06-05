@@ -28,7 +28,7 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 - Secure cloud authentication using your existing Hayward account  
 - Automatic discovery of linked pool controllers  
 - Real-time data updates via cloud push (no polling)  
-- Background token refresh and health monitoring  
+- Resilient subscription with automatic reconnection and token refresh (handled by the `aioaquarite` library)  
 - Reconfigure credentials without removing the integration  
 - Downloadable diagnostics for troubleshooting  
 - Configurable options (health check interval) via the integration's Configure menu  
@@ -180,7 +180,7 @@ The integration includes a test suite that runs automatically via GitHub Actions
 To run tests locally:
 
 ```bash
-pip install pytest pytest-asyncio pytest-homeassistant-custom-component aioaquarite==0.1.0
+pip install pytest pytest-asyncio pytest-homeassistant-custom-component aioaquarite==0.5.1
 python -m pytest tests/ -v
 ```
 

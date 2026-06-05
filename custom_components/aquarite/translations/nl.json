@@ -317,6 +317,9 @@
     },
     "authentication_error": {
       "message": "Authenticatie mislukt. Controleer je inloggegevens."
+    },
+    "update_failed": {
+      "message": "Kan geen gegevens ophalen van de Aquarite-clouddienst."
     }
   },
   "services": {

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Final
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.const import EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -10,6 +12,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
+from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -165,5 +168,9 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
             await self.coordinator.api.set_value(
                 self._pool_id, self._value_path, raw_value
             )
-        except Exception as err:
-            raise HomeAssistantError(f"Failed to set value: {err}") from err
+        except AquariteError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="communication_error",
+                translation_placeholders={"error": str(err)},
+            ) from err

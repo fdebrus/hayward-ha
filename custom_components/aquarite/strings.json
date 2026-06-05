@@ -317,6 +317,9 @@
     },
     "authentication_error": {
       "message": "Authentication failed. Please check your credentials."
+    },
+    "update_failed": {
+      "message": "Failed to retrieve data from the Aquarite cloud service."
     }
   },
   "services": {

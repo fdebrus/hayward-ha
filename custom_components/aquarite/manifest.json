@@ -3,13 +3,20 @@
     "name": "Aquarite",
     "codeowners": ["@fdebrus"],
     "config_flow": true,
+    "dhcp": [
+        {
+            "hostname": "sugarwifi"
+        }
+    ],
     "documentation": "https://community.home-assistant.io/t/custom-component-hayward-aquarite/728136",
     "homeassistant": "2024.1.0",
+    "integration_type": "hub",
     "iot_class": "cloud_push",
     "issue_tracker": "https://github.com/fdebrus/hayward-ha/issues",
     "loggers": ["custom_components.aquarite", "aioaquarite"],
+    "quality_scale": "bronze",
     "requirements": [
-        "aioaquarite==0.2.0"
+        "aioaquarite==0.5.1"
     ],
     "supported_platforms": [
         "binary_sensor",

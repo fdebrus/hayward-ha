@@ -10,7 +10,16 @@ from homeassistant.core import HomeAssistant
 from . import AquariteConfigEntry
 
 TO_REDACT_CONFIG = {CONF_USERNAME, CONF_PASSWORD}
-TO_REDACT_COORDINATOR = {"city", "street", "zipcode", "lat", "lng", "email"}
+TO_REDACT_COORDINATOR = {
+    "city",
+    "country",
+    "email",
+    "lat",
+    "lng",
+    "street",
+    "wifi",
+    "zipcode",
+}
 
 
 async def async_get_config_entry_diagnostics(
