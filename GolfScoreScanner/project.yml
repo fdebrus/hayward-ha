@@ -1,0 +1,43 @@
+# Configuration XcodeGen : générez le projet Xcode avec `xcodegen generate`
+# (installation : `brew install xcodegen`), puis ouvrez GolfScoreScanner.xcodeproj.
+name: GolfScoreScanner
+options:
+  bundleIdPrefix: com.fdebrus
+  deploymentTarget:
+    iOS: "17.0"
+
+targets:
+  GolfScoreScanner:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Golf Score Scanner
+        UILaunchScreen: {}
+        NSCameraUsageDescription: "L'appareil photo est utilisé pour scanner votre carte de score."
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+
+  GolfScoreScannerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: GolfScoreScanner
+
+schemes:
+  GolfScoreScanner:
+    build:
+      targets:
+        GolfScoreScanner: all
+    test:
+      targets:
+        - GolfScoreScannerTests
