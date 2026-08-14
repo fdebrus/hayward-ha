@@ -191,6 +191,12 @@
       },
       "filtration_timer_speed_3": {
         "default": "mdi:speedometer"
+      },
+      "light_mode": {
+        "default": "mdi:lightbulb-auto"
+      },
+      "light_schedule_frequency": {
+        "default": "mdi:calendar-refresh"
       }
     },
     "time": {
@@ -210,6 +216,12 @@
         "default": "mdi:clock-start"
       },
       "filtration_interval_3_to": {
+        "default": "mdi:clock-end"
+      },
+      "light_schedule_from": {
+        "default": "mdi:clock-start"
+      },
+      "light_schedule_to": {
         "default": "mdi:clock-end"
       }
     },

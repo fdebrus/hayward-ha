@@ -1,4 +1,4 @@
-"""Aquarite Time entities for filtration interval control."""
+"""Aquarite Time entities for seconds-since-midnight schedule fields."""
 from __future__ import annotations
 
 import datetime
@@ -40,11 +40,23 @@ async def async_setup_entry(
             )
         )
 
+    # Light scheduling fields are not present on every controller
+    for name, translation_key, path in (
+        ("Light Schedule From", "light_schedule_from", "light.from"),
+        ("Light Schedule To", "light_schedule_to", "light.to"),
+    ):
+        if dataservice.get_value(path) is not None:
+            entities.append(
+                AquariteTimeEntity(
+                    dataservice, pool_id, pool_name, name, translation_key, path,
+                )
+            )
+
     async_add_entities(entities)
 
 
 class AquariteTimeEntity(AquariteEntity, TimeEntity):
-    """Time entity for filtration interval from/to values."""
+    """Time entity for a seconds-since-midnight schedule value."""
 
     def __init__(
         self,
@@ -74,11 +86,14 @@ class AquariteTimeEntity(AquariteEntity, TimeEntity):
             return None
 
     async def async_set_value(self, value: datetime.time) -> None:
-        """Set the interval time."""
+        """Set the schedule time.
+
+        Writes through the coordinator's branch-safe path: from/to pairs
+        share a branch, and back-to-back plain set_value calls would revert
+        each other (the command payload is rebuilt from the cached document).
+        """
         seconds = value.hour * 3600 + value.minute * 60
         try:
-            await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, seconds,
-            )
+            await self.coordinator.async_set_values({self._value_path: seconds})
         except Exception as err:
             raise HomeAssistantError(f"Failed to set time: {err}") from err
