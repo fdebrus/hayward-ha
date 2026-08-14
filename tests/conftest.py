@@ -11,6 +11,11 @@ MOCK_POOL_ID = "ABCDEF1234567890"
 MOCK_POOL_NAME = "My Pool"
 
 
+@pytest.fixture(autouse=True)
+def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
+    """Let every test load the aquarite custom integration."""
+
+
 @pytest.fixture
 def mock_pool_data() -> dict[str, Any]:
     """Return mock coordinator pool data."""

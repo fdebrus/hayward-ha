@@ -29,13 +29,40 @@ from custom_components.aquarite.const import (  # noqa: E402
 PATCH_AUTH = "custom_components.aquarite.config_flow.AquariteAuth"
 PATCH_CLIENT = "custom_components.aquarite.config_flow.AquariteClient"
 PATCH_SETUP = "custom_components.aquarite.async_setup_entry"
+PATCH_UNLOAD = "custom_components.aquarite.async_unload_entry"
 
 
 @pytest.fixture
 def mock_setup_entry():
-    """Prevent actual setup during config flow tests."""
-    with patch(PATCH_SETUP, return_value=True) as mock:
+    """Prevent actual setup and teardown during config flow tests."""
+    with (
+        patch(PATCH_SETUP, return_value=True) as mock,
+        patch(PATCH_UNLOAD, return_value=True),
+    ):
         yield mock
+
+
+async def _start_reauth_flow(hass: HomeAssistant, entry) -> dict:
+    """Start a reauth flow for a real (non-mock) config entry."""
+    return await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_REAUTH,
+            "entry_id": entry.entry_id,
+        },
+        data=entry.data,
+    )
+
+
+async def _start_reconfigure_flow(hass: HomeAssistant, entry) -> dict:
+    """Start a reconfigure flow for a real (non-mock) config entry."""
+    return await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
+    )
 
 
 def _mock_auth_and_client(pools=None):
@@ -231,7 +258,7 @@ async def test_reauth_flow_shows_form(
     entry = hass.config_entries.async_entries(DOMAIN)[0]
 
     # Start reauth
-    result = await entry.start_reauth_flow(hass)
+    result = await _start_reauth_flow(hass, entry)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reauth_confirm"
 
@@ -261,7 +288,7 @@ async def test_reauth_flow_success(
         mock_auth = AsyncMock()
         mock_auth_cls.return_value = mock_auth
 
-        result = await entry.start_reauth_flow(hass)
+        result = await _start_reauth_flow(hass, entry)
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_USERNAME: "new@example.com", CONF_PASSWORD: "newpass"},
@@ -300,7 +327,7 @@ async def test_reauth_flow_auth_error(
         mock_auth.authenticate.side_effect = AuthenticationError
         mock_auth_cls.return_value = mock_auth
 
-        result = await entry.start_reauth_flow(hass)
+        result = await _start_reauth_flow(hass, entry)
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_USERNAME: "bad@example.com", CONF_PASSWORD: "wrong"},
@@ -334,7 +361,7 @@ async def test_reconfigure_flow_shows_form(
 
     entry = hass.config_entries.async_entries(DOMAIN)[0]
 
-    result = await entry.start_reconfigure_flow(hass)
+    result = await _start_reconfigure_flow(hass, entry)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reconfigure"
 
@@ -364,7 +391,7 @@ async def test_reconfigure_flow_success(
         mock_auth = AsyncMock()
         mock_auth_cls.return_value = mock_auth
 
-        result = await entry.start_reconfigure_flow(hass)
+        result = await _start_reconfigure_flow(hass, entry)
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_USERNAME: "updated@example.com", CONF_PASSWORD: "updatedpass"},
@@ -403,7 +430,7 @@ async def test_reconfigure_flow_auth_error(
         mock_auth.authenticate.side_effect = AuthenticationError
         mock_auth_cls.return_value = mock_auth
 
-        result = await entry.start_reconfigure_flow(hass)
+        result = await _start_reconfigure_flow(hass, entry)
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_USERNAME: "bad@example.com", CONF_PASSWORD: "wrong"},
