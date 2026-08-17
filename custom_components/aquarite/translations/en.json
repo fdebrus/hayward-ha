@@ -273,6 +273,21 @@
           "medium": "Medium",
           "high": "High"
         }
+      },
+      "light_mode": {
+        "name": "Light mode",
+        "state": {
+          "off": "Off",
+          "on": "On",
+          "auto": "Auto"
+        }
+      },
+      "light_schedule_frequency": {
+        "name": "Light schedule frequency",
+        "state": {
+          "daily": "Daily",
+          "weekly": "Weekly"
+        }
       }
     },
     "time": {
@@ -293,6 +308,12 @@
       },
       "filtration_interval_3_to": {
         "name": "Filtration interval 3 to"
+      },
+      "light_schedule_from": {
+        "name": "Light schedule from"
+      },
+      "light_schedule_to": {
+        "name": "Light schedule to"
       }
     },
     "light": {
