@@ -33,6 +33,7 @@ def coordinator(
     mock_api = AsyncMock()
     mock_api.subscribe_pool = AsyncMock(return_value=MagicMock())
     mock_api.set_value = AsyncMock()
+    mock_api.set_values = AsyncMock()
 
     mock_entry = MagicMock()
     mock_entry.entry_id = "test"
@@ -85,6 +86,22 @@ async def test_async_shutdown(
 
     assert health_task.cancelled()
     assert token_task.cancelled()
+
+
+async def test_async_set_values_delegates_to_api(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> None:
+    """async_set_values is a thin pass-through to AquariteClient.set_values.
+
+    The library validates the branch, sends the command, and mirrors
+    accepted changes into the cached pool document itself (since 0.7.0) —
+    the coordinator no longer needs to duplicate that logic.
+    """
+    updates = {"light.mode": 0, "light.status": 1}
+
+    await coordinator.async_set_values(updates)
+
+    coordinator.api.set_values.assert_awaited_once_with(MOCK_POOL_ID, updates)
 
 
 async def test_set_pool_time_to_now(

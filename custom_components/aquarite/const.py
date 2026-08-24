@@ -19,3 +19,9 @@ LED_PULSE_DELAY = 1.5  # Delay between off and on when cycling LED color
 
 # Options flow keys
 CONF_HEALTH_CHECK_INTERVAL = "health_check_interval"
+
+# get_pool_stats service fields
+ATTR_POOL_ID = "pool_id"
+ATTR_TYPE = "type"
+ATTR_PERIOD = "period"
+DEFAULT_STATS_PERIOD = 30

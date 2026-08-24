@@ -86,8 +86,8 @@ class AquariteLightEntity(AquariteEntity, LightEntity):
         self.async_write_ha_state()
 
         try:
-            await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, 1 if state else 0
+            await self.coordinator.async_set_values(
+                {self._value_path: 1 if state else 0}
             )
         except Exception:
             # If the API call fails immediately, reset and revert UI

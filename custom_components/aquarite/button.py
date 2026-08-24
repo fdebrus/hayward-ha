@@ -64,8 +64,8 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
         """
         try:
             if self.coordinator.get_value("light.status"):
-                await self.coordinator.api.set_value(self._pool_id, "light.status", 0)
+                await self.coordinator.async_set_values({"light.status": 0})
                 await asyncio.sleep(LED_PULSE_DELAY)
-            await self.coordinator.api.set_value(self._pool_id, "light.status", 1)
+            await self.coordinator.async_set_values({"light.status": 1})
         except Exception as err:
             raise HomeAssistantError(f"Failed to pulse LED: {err}") from err

@@ -1,2 +1,34 @@
 sync_pool_time:
   fields: {}
+
+get_pool_stats:
+  fields:
+    pool_id:
+      required: true
+      example: "abc123"
+      selector:
+        text:
+    type:
+      required: true
+      example: "ph"
+      selector:
+        select:
+          options:
+            - "ph"
+            - "rx"
+            - "temp"
+            - "cl"
+            - "cd"
+            - "filtration"
+            - "aux1"
+            - "aux2"
+            - "aux3"
+            - "aux4"
+    period:
+      required: false
+      example: 30
+      selector:
+        number:
+          min: 1
+          max: 365
+          mode: box
