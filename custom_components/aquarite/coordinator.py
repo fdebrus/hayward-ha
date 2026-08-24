@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-from copy import deepcopy
 from typing import Any
 
 from aioaquarite import AquariteAuth, AquariteClient
@@ -122,52 +121,16 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return AquariteClient.get_value(self.data, path, default)
 
     async def async_set_values(self, updates: dict[str, Any]) -> None:
-        """Write several values of one branch as a single cloud command.
+        """Write several values of one command branch as a single cloud command.
 
-        The cloud command payload carries the whole branch rebuilt from the
-        client's cached pool document, so sequential set_value calls on the
-        same branch clobber each other. Patching the caches first lets one
-        set_value call carry every change; a failed command restores them,
-        because no Firestore snapshot will correct a value the cloud never
-        received.
+        Thin pass-through to AquariteClient.set_values, which validates
+        that every path resolves to the same command branch, sends the
+        command, and mirrors accepted changes into the cached pool
+        document (the same dict as self.data) on success only — a failed
+        command leaves the cache untouched, because no Firestore snapshot
+        will correct a value the cloud never received.
         """
-        roots = {path.split(".", 1)[0] for path in updates}
-        if len(roots) != 1:
-            raise ValueError(
-                f"updates must target a single branch, got {sorted(roots)}"
-            )
-        root = next(iter(roots))
-
-        # coordinator.data and the client cache are normally the same dict;
-        # patch both explicitly so the payload builder always sees the update.
-        caches = [self.data]
-        client_cache = self.api.get_pool_data(self.pool_id)
-        if client_cache is not None and client_cache is not self.data:
-            caches.append(client_cache)
-        saved = [(cache, deepcopy(cache.get(root))) for cache in caches]
-
-        for cache in caches:
-            for path, value in updates.items():
-                keys = path.split(".")
-                node = cache
-                for key in keys[:-1]:
-                    node = node.setdefault(key, {})
-                node[keys[-1]] = value
-
-        _LOGGER.debug("Branch write %s: %s", root, updates)
-        # caches are already patched; this call only picks the branch to send
-        path, value = next(iter(updates.items()))
-        try:
-            await self.api.set_value(self.pool_id, path, value)
-        except BaseException:
-            # includes CancelledError: an unsent value must never survive
-            _LOGGER.debug("Branch write %s failed, restoring caches", root)
-            for cache, branch in saved:
-                if branch is None:
-                    cache.pop(root, None)
-                else:
-                    cache[root] = branch
-            raise
+        await self.api.set_values(self.pool_id, updates)
 
     async def set_pool_time_to_now(self) -> None:
         """Sync the pool controller clock with the current time."""

@@ -109,8 +109,8 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         """Select an option."""
         try:
-            await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, self._options_map.index(option)
+            await self.coordinator.async_set_values(
+                {self._value_path: self._options_map.index(option)}
             )
         except Exception as err:
             raise HomeAssistantError(f"Failed to select option: {err}") from err

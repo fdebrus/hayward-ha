@@ -110,13 +110,13 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
         try:
-            await self.coordinator.api.set_value(self._pool_id, self._value_path, 1)
+            await self.coordinator.async_set_values({self._value_path: 1})
         except Exception as err:
             raise HomeAssistantError(f"Failed to turn on: {err}") from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         try:
-            await self.coordinator.api.set_value(self._pool_id, self._value_path, 0)
+            await self.coordinator.async_set_values({self._value_path: 0})
         except Exception as err:
             raise HomeAssistantError(f"Failed to turn off: {err}") from err

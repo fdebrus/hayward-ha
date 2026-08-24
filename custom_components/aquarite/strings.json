@@ -344,6 +344,24 @@
     "sync_pool_time": {
       "name": "Sync pool time",
       "description": "Sync the Home Assistant date and time to the pool controller."
+    },
+    "get_pool_stats": {
+      "name": "Get pool stats",
+      "description": "Fetch a stored historical sample series for a pool metric.",
+      "fields": {
+        "pool_id": {
+          "name": "Pool ID",
+          "description": "The pool to fetch stats for."
+        },
+        "type": {
+          "name": "Metric type",
+          "description": "Which metric's sample series to fetch."
+        },
+        "period": {
+          "name": "Period",
+          "description": "Requested lookback window in days. The Hayward backend currently ignores this and always returns roughly the last 30 days."
+        }
+      }
     }
   }
 }

@@ -63,6 +63,7 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 ### Services
 
 - **Sync pool time**: synchronize the pool controller's internal clock with Home Assistant's timezone  
+- **Get pool stats**: fetch a stored historical sample series (pH, ORP, temperature, filtration, aux relays, …) for a pool, for use in automations or templates  
 
 ### Platforms overview
 
@@ -164,6 +165,20 @@ This is useful to ensure correct scheduling and reporting, especially after powe
 
 ![Time sync service](https://github.com/user-attachments/assets/5b9896b1-b5b8-481f-933e-4e7482072fab)
 
+## Pool stats service
+
+`aquarite.get_pool_stats` fetches the Hayward cloud's stored historical sample series for one pool metric — pH, ORP (Rx), temperature, chlorine/CD probe readings, filtration, and aux relays 1-4.
+
+```yaml
+service: aquarite.get_pool_stats
+data:
+  pool_id: "<your pool's ID>"
+  type: ph
+  period: 30
+```
+
+Returns `{"series": [[{"field": <value>, "seconds": <utc_unix>}, ...]]}` — roughly the last 30 days at ~10-minute granularity regardless of the requested `period` (a quirk of the Hayward backend, not this integration). Use it in a script or automation with `response_variable` to build your own history graphs or alerts.
+
 ## Troubleshooting
 
 | Problem | Solution |
@@ -180,7 +195,9 @@ The integration includes a test suite that runs automatically via GitHub Actions
 To run tests locally:
 
 ```bash
-pip install pytest pytest-asyncio pytest-homeassistant-custom-component aioaquarite==0.1.0
+pip install pytest pytest-asyncio pytest-homeassistant-custom-component
+# integration requirements come from the manifest so this can't drift from it
+pip install $(python -c "import json; print(' '.join(json.load(open('custom_components/aquarite/manifest.json'))['requirements']))")
 python -m pytest tests/ -v
 ```
 

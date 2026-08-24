@@ -162,8 +162,6 @@ class AquariteNumberEntity(AquariteEntity, NumberEntity):
         scale = self.SCALE_MAP.get(self._value_path)
         raw_value = int(value * scale) if scale else value
         try:
-            await self.coordinator.api.set_value(
-                self._pool_id, self._value_path, raw_value
-            )
+            await self.coordinator.async_set_values({self._value_path: raw_value})
         except Exception as err:
             raise HomeAssistantError(f"Failed to set value: {err}") from err
