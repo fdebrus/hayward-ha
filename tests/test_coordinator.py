@@ -102,6 +102,105 @@ async def test_async_set_values_delegates_to_api(
     await coordinator.async_set_values(updates)
 
     coordinator.api.set_values.assert_awaited_once_with(MOCK_POOL_ID, updates)
+    # Written values are applied optimistically pending Firestore confirmation
+    assert coordinator.get_value("light.mode") == 0
+    assert coordinator.get_value("light.status") == 1
+    # Cancel the optimistic TTL timers so no timer outlives the test
+    await coordinator.async_shutdown()
+
+
+async def test_stale_push_does_not_revert_optimistic_write(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> None:
+    """A Firestore push carrying the pre-write value must not flip the UI back.
+
+    The Hayward cloud takes seconds to echo a write back through
+    Firestore; snapshots emitted in between still carry the OLD value.
+    Inside the TTL window the optimistic value must win.
+    """
+    from copy import deepcopy
+
+    stale_snapshot = deepcopy(coordinator.data)  # light.status == 0
+
+    await coordinator.async_set_values({"light.status": 1})
+    assert coordinator.get_value("light.status") == 1
+
+    coordinator._apply_remote_data(stale_snapshot)
+
+    assert coordinator.get_value("light.status") == 1
+    await coordinator.async_shutdown()
+
+
+async def test_confirming_push_clears_optimistic_entry(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> None:
+    """A push that agrees with the optimistic value clears the pending entry."""
+    from copy import deepcopy
+
+    await coordinator.async_set_values({"light.status": 1})
+    assert "light.status" in coordinator._pending_optimistic
+
+    confirming = deepcopy(coordinator.data)
+    confirming["light"]["status"] = 1
+    coordinator._apply_remote_data(confirming)
+
+    assert "light.status" not in coordinator._pending_optimistic
+    assert not coordinator._optimistic_handles
+    assert coordinator.get_value("light.status") == 1
+    await coordinator.async_shutdown()
+
+
+async def test_confirming_push_matches_tolerantly(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> None:
+    """Firestore may echo the value as a string/bool variant; still confirms."""
+    from copy import deepcopy
+
+    await coordinator.async_set_values({"light.status": 1})
+
+    confirming = deepcopy(coordinator.data)
+    confirming["light"]["status"] = "1"  # string echo of the int we wrote
+    coordinator._apply_remote_data(confirming)
+
+    assert "light.status" not in coordinator._pending_optimistic
+    await coordinator.async_shutdown()
+
+
+async def test_expired_optimistic_write_triggers_refresh(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> None:
+    """TTL firing without a confirming push drops the entry and refreshes."""
+    coordinator.api.fetch_pool_data = AsyncMock(return_value=coordinator.data)
+
+    await coordinator.async_set_values({"light.status": 1})
+    assert "light.status" in coordinator._pending_optimistic
+
+    # In reality _expire_optimistic is invoked BY the TTL timer (already
+    # fired); cancel the armed timer before invoking it manually.
+    coordinator._optimistic_handles["light.status"].cancel()
+
+    with patch.object(
+        coordinator, "async_refresh", new_callable=AsyncMock
+    ) as mock_refresh:
+        coordinator._expire_optimistic("light.status")
+        await coordinator.hass.async_block_till_done()
+
+    assert "light.status" not in coordinator._pending_optimistic
+    mock_refresh.assert_awaited_once()
+    await coordinator.async_shutdown()
+
+
+async def test_shutdown_cancels_optimistic_timers(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> None:
+    """Shutdown must cancel TTL timers and clear pending optimistic state."""
+    await coordinator.async_set_values({"light.status": 1})
+    assert coordinator._optimistic_handles
+
+    await coordinator.async_shutdown()
+
+    assert not coordinator._optimistic_handles
+    assert not coordinator._pending_optimistic
 
 
 async def test_set_pool_time_to_now(

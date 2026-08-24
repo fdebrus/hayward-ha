@@ -5,12 +5,15 @@ from dataclasses import dataclass
 
 from typing import Any
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
+from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -111,12 +114,20 @@ class AquariteSwitchEntity(AquariteEntity, SwitchEntity):
         """Turn the switch on."""
         try:
             await self.coordinator.async_set_values({self._value_path: 1})
-        except Exception as err:
-            raise HomeAssistantError(f"Failed to turn on: {err}") from err
+        except AquariteError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_failed",
+                translation_placeholders={"entity": self.entity_id},
+            ) from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         try:
             await self.coordinator.async_set_values({self._value_path: 0})
-        except Exception as err:
-            raise HomeAssistantError(f"Failed to turn off: {err}") from err
+        except AquariteError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_failed",
+                translation_placeholders={"entity": self.entity_id},
+            ) from err

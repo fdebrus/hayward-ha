@@ -117,6 +117,8 @@ async def test_set_values_sends_both_fields_in_one_command(
     # The shared cache now reflects the write
     assert coordinator.get_value("light.mode") == 0
     assert coordinator.get_value("light.status") == 0
+    # Cancel the optimistic TTL timers so no timer outlives the test
+    await coordinator.async_shutdown()
 
 
 @pytest.mark.parametrize(
