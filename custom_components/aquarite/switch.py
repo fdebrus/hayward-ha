@@ -15,7 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import AquariteConfigEntry
 from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
-from .entity import AquariteEntity
+from .entity import AquariteEntity, async_setup_pool_platform
 
 
 @dataclass(frozen=True)
@@ -41,14 +41,11 @@ SWITCH_DEFINITIONS: tuple[AquariteSwitchConfig, ...] = (
 PARALLEL_UPDATES = 1
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up the Aquarite switch platform."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
+def _build_entities(
+    dataservice: AquariteDataUpdateCoordinator,
+) -> list[AquariteSwitchEntity]:
+    """Build the switch entities for one pool."""
+    pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
 
     entities = [
         AquariteSwitchEntity(dataservice, pool_id, pool_name, config)
@@ -80,7 +77,16 @@ async def async_setup_entry(
             )
         )
 
-    async_add_entities(entities)
+    return entities
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: AquariteConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the Aquarite switch platform for every pool on the account."""
+    async_setup_pool_platform(hass, entry, async_add_entities, _build_entities)
 
 
 class AquariteSwitchEntity(AquariteEntity, SwitchEntity):

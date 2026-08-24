@@ -6,39 +6,32 @@
           "username": "Hayward Username",
           "password": "Password"
         },
-        "description": "Enter your Hayward credentials.",
+        "description": "Enter your Hayward credentials. Every pool on the account will be added automatically.",
         "title": "Authentication"
       },
       "reauth_confirm": {
         "data": {
-          "username": "Username",
           "password": "Password"
         },
-        "description": "Re-authenticate your Hayward account to continue.",
+        "description": "Enter the new password for {username} to continue.",
         "title": "Reauthenticate"
-      },
-      "pool": {
-        "data": {
-          "pool_id": "Pool"
-        },
-        "description": "Please choose the pool for this integration.",
-        "title": "Select Pool"
       },
       "reconfigure": {
         "data": {
-          "username": "Username",
           "password": "Password"
         },
-        "description": "Update your Hayward credentials.",
+        "description": "Update the stored password for {username}.",
         "title": "Reconfigure"
       }
     },
     "error": {
       "auth_error": "Authorization failed, check username and password.",
+      "cannot_connect": "Failed to connect to the Hayward cloud. Please try again.",
       "no_pools_found": "No pools found for your account.",
       "unknown_error": "Unexpected error. Please try again."
     },
     "abort": {
+      "already_configured": "Account is already configured",
       "reauth_successful": "Re-authentication was successful.",
       "reconfigure_successful": "Reconfiguration was successful."
     }
@@ -344,6 +337,12 @@
     },
     "update_failed": {
       "message": "Error fetching data from Aquarite."
+    },
+    "no_pools": {
+      "message": "No pools were found on this account."
+    },
+    "duplicate_account": {
+      "message": "This entry duplicates another entry for the same Hayward account and is being removed."
     }
   },
   "services": {

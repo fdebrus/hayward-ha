@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import AquariteConfigEntry
 from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
-from .entity import AquariteEntity
+from .entity import AquariteEntity, async_setup_pool_platform
 
 PUMP_MODE_OPTIONS: tuple[str, ...] = ("manual", "auto", "heat", "smart", "intel")
 PUMP_SPEED_OPTIONS: tuple[str, ...] = ("slow", "medium", "high")
@@ -30,16 +30,13 @@ LIGHT_MODE_UPDATES: dict[str, dict[str, int]] = {
 PARALLEL_UPDATES = 1
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up select entities."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
+def _build_entities(
+    dataservice: AquariteDataUpdateCoordinator,
+) -> list[SelectEntity]:
+    """Build the select entities for one pool."""
+    pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
 
-    entities = [
+    entities: list[SelectEntity] = [
         AquariteSelectEntity(
             dataservice, pool_id, pool_name,
             "Pump Mode", "pump_mode", "filtration.mode", PUMP_MODE_OPTIONS,
@@ -76,7 +73,16 @@ async def async_setup_entry(
             )
         )
 
-    async_add_entities(entities)
+    return entities
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: AquariteConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up select entities for every pool on the account."""
+    async_setup_pool_platform(hass, entry, async_add_entities, _build_entities)
 
 
 class AquariteSelectEntity(AquariteEntity, SelectEntity):

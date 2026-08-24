@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from .conftest import MOCK_POOL_ID
+from .conftest import MOCK_POOL_ID, MOCK_POOL_NAME
 
 # Skip the entire module if Home Assistant is not installed
 pytest.importorskip("homeassistant")
@@ -42,7 +42,7 @@ def coordinator(
     mock_entry.options = {"health_check_interval": 300}
 
     coord = AquariteDataUpdateCoordinator(
-        hass, mock_entry, mock_auth, mock_api, MOCK_POOL_ID
+        hass, mock_entry, mock_auth, mock_api, MOCK_POOL_ID, MOCK_POOL_NAME
     )
     coord.data = mock_pool_data
     return coord

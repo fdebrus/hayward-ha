@@ -13,9 +13,19 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import AquariteConfigEntry
 from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
-from .entity import AquariteEntity
+from .entity import AquariteEntity, async_setup_pool_platform
 
 PARALLEL_UPDATES = 1
+
+
+def _build_entities(
+    dataservice: AquariteDataUpdateCoordinator,
+) -> list[AquariteLightEntity]:
+    """Build the light entities for one pool."""
+    pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
+    return [
+        AquariteLightEntity(dataservice, pool_id, pool_name, "Light", "pool_light", "light.status")
+    ]
 
 
 async def async_setup_entry(
@@ -23,13 +33,8 @@ async def async_setup_entry(
     entry: AquariteConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Aquarite light platform."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
-
-    async_add_entities([
-        AquariteLightEntity(dataservice, pool_id, pool_name, "Light", "pool_light", "light.status")
-    ])
+    """Set up the Aquarite light platform for every pool on the account."""
+    async_setup_pool_platform(hass, entry, async_add_entities, _build_entities)
 
 
 class AquariteLightEntity(AquariteEntity, LightEntity):

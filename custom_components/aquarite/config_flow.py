@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import logging
 from typing import Any
 
 import voluptuous as vol
 
-from aioaquarite import AquariteAuth, AquariteClient, AuthenticationError
+from aioaquarite import AquariteAuth, AquariteClient, AquariteError, AuthenticationError
 
 from homeassistant.config_entries import (
     ConfigEntry,
@@ -20,12 +21,16 @@ import homeassistant.helpers.config_validation as cv
 
 from .const import CONF_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_INTERVAL, DOMAIN
 
+_LOGGER = logging.getLogger(__name__)
+
 AUTH_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
     }
 )
+
+PASSWORD_SCHEMA = vol.Schema({vol.Required(CONF_PASSWORD): cv.string})
 
 
 class AquariteOptionsFlow(OptionsFlow):
@@ -52,7 +57,9 @@ class AquariteOptionsFlow(OptionsFlow):
 
 
 class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Aquarite config flow."""
+    """Aquarite config flow (one entry per Hayward account)."""
+
+    VERSION = 2
 
     @staticmethod
     def async_get_options_flow(
@@ -61,162 +68,113 @@ class AquariteConfigFlow(ConfigFlow, domain=DOMAIN):
         """Return the options flow handler."""
         return AquariteOptionsFlow()
 
-    def __init__(self) -> None:
-        """Initialize the config flow."""
-        self._user_data: dict[str, Any] = {}
-        self._available_pools: dict[str, str] = {}
-
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
+        errors: dict[str, str] = {}
+
         if user_input is not None:
-            self._user_data = {
-                CONF_USERNAME: user_input[CONF_USERNAME],
-                CONF_PASSWORD: user_input[CONF_PASSWORD],
-            }
-            return await self.async_step_pool()
+            username = user_input[CONF_USERNAME]
+            password = user_input[CONF_PASSWORD]
 
-        return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA)
-
-    async def async_step_pool(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the pool selection step."""
-        if user_input is not None:
-            pool_id: str = user_input["pool_id"]
-
-            await self.async_set_unique_id(pool_id)
-            self._abort_if_unique_id_configured()
-
-            return self.async_create_entry(
-                title=self._available_pools.get(pool_id, pool_id),
-                data={
-                    CONF_USERNAME: self._user_data[CONF_USERNAME],
-                    CONF_PASSWORD: self._user_data[CONF_PASSWORD],
-                    "pool_id": pool_id,
-                },
-            )
-
-        try:
             session = async_get_clientsession(self.hass)
-            auth = AquariteAuth(
-                session,
-                self._user_data[CONF_USERNAME],
-                self._user_data[CONF_PASSWORD],
-            )
-            await auth.authenticate()
-            api = AquariteClient(auth)
-            self._available_pools = await api.get_pools()
-        except AuthenticationError:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=AUTH_SCHEMA,
-                errors={"base": "auth_error"},
-            )
-        except Exception:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=AUTH_SCHEMA,
-                errors={"base": "unknown_error"},
-            )
+            auth = AquariteAuth(session, username, password)
+            try:
+                await auth.authenticate()
+            except AuthenticationError:
+                errors["base"] = "auth_error"
+            except AquariteError:
+                errors["base"] = "cannot_connect"
+            except Exception:
+                _LOGGER.exception("Unexpected error during authentication")
+                errors["base"] = "unknown_error"
+            else:
+                await self.async_set_unique_id(username.lower())
+                self._abort_if_unique_id_configured()
 
-        if not self._available_pools:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=AUTH_SCHEMA,
-                errors={"base": "no_pools_found"},
-            )
+                api = AquariteClient(auth)
+                try:
+                    pools = await api.get_pools()
+                except AquariteError:
+                    errors["base"] = "cannot_connect"
+                except Exception:
+                    _LOGGER.exception("Unexpected error fetching pools")
+                    errors["base"] = "unknown_error"
+                else:
+                    if not pools:
+                        errors["base"] = "no_pools_found"
+                    else:
+                        return self.async_create_entry(
+                            title=username,
+                            data={
+                                CONF_USERNAME: username,
+                                CONF_PASSWORD: password,
+                            },
+                        )
 
-        pool_schema = vol.Schema(
-            {vol.Required("pool_id"): vol.In(self._available_pools)}
+        return self.async_show_form(
+            step_id="user", data_schema=AUTH_SCHEMA, errors=errors
         )
-        return self.async_show_form(step_id="pool", data_schema=pool_schema)
 
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
     ) -> ConfigFlowResult:
-        """Start reauth flow."""
+        """Start reauth flow when stored credentials stop working."""
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle reauth credential input."""
-        errors: dict[str, str] = {}
-        reauth_entry = self._get_reauth_entry()
-
-        if user_input is not None:
-            session = async_get_clientsession(self.hass)
-            try:
-                auth = AquariteAuth(
-                    session,
-                    user_input[CONF_USERNAME],
-                    user_input[CONF_PASSWORD],
-                )
-                await auth.authenticate()
-            except AuthenticationError:
-                errors["base"] = "auth_error"
-            else:
-                return self.async_update_reload_and_abort(
-                    reauth_entry,
-                    data={
-                        **reauth_entry.data,
-                        CONF_USERNAME: user_input[CONF_USERNAME],
-                        CONF_PASSWORD: user_input[CONF_PASSWORD],
-                    },
-                )
-
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_USERNAME,
-                    default=reauth_entry.data.get(CONF_USERNAME, ""),
-                ): cv.string,
-                vol.Required(CONF_PASSWORD): cv.string,
-            }
-        )
-        return self.async_show_form(
-            step_id="reauth_confirm", data_schema=schema, errors=errors
+        """Ask for a new password and validate against the same account."""
+        return await self._async_update_password(
+            self._get_reauth_entry(), "reauth_confirm", user_input
         )
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle reconfiguration of credentials."""
+        """Let the user proactively update the stored password."""
+        return await self._async_update_password(
+            self._get_reconfigure_entry(), "reconfigure", user_input
+        )
+
+    async def _async_update_password(
+        self,
+        entry: ConfigEntry,
+        step_id: str,
+        user_input: dict[str, Any] | None,
+    ) -> ConfigFlowResult:
+        """Shared password-update handler for reauth and reconfigure.
+
+        The username identifies the account (it is the entry's unique_id),
+        so only the password can change here; switching accounts means
+        removing the entry and adding a new one.
+        """
         errors: dict[str, str] = {}
-        reconfigure_entry = self._get_reconfigure_entry()
+        username = entry.data[CONF_USERNAME]
 
         if user_input is not None:
+            password = user_input[CONF_PASSWORD]
             session = async_get_clientsession(self.hass)
+            auth = AquariteAuth(session, username, password)
             try:
-                auth = AquariteAuth(
-                    session,
-                    user_input[CONF_USERNAME],
-                    user_input[CONF_PASSWORD],
-                )
                 await auth.authenticate()
             except AuthenticationError:
                 errors["base"] = "auth_error"
+            except AquariteError:
+                errors["base"] = "cannot_connect"
+            except Exception:
+                _LOGGER.exception("Unexpected error during credential update")
+                errors["base"] = "unknown_error"
             else:
                 return self.async_update_reload_and_abort(
-                    reconfigure_entry,
-                    data={
-                        **reconfigure_entry.data,
-                        CONF_USERNAME: user_input[CONF_USERNAME],
-                        CONF_PASSWORD: user_input[CONF_PASSWORD],
-                    },
+                    entry, data_updates={CONF_PASSWORD: password}
                 )
 
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_USERNAME,
-                    default=reconfigure_entry.data.get(CONF_USERNAME, ""),
-                ): cv.string,
-                vol.Required(CONF_PASSWORD): cv.string,
-            }
-        )
         return self.async_show_form(
-            step_id="reconfigure", data_schema=schema, errors=errors
+            step_id=step_id,
+            data_schema=PASSWORD_SCHEMA,
+            description_placeholders={"username": username},
+            errors=errors,
         )

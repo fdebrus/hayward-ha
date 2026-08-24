@@ -1,11 +1,50 @@
 """Shared base entity helpers for Aquarite."""
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING
+
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import BRAND, DOMAIN, MODEL
+from .const import BRAND, DOMAIN, MODEL, SIGNAL_NEW_POOL
 from .coordinator import AquariteDataUpdateCoordinator
+
+if TYPE_CHECKING:
+    from . import AquariteConfigEntry
+
+
+@callback
+def async_setup_pool_platform(
+    hass: HomeAssistant,
+    entry: AquariteConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+    build_entities: Callable[[AquariteDataUpdateCoordinator], Iterable[Entity]],
+) -> None:
+    """Set up a platform's entities for every pool, now and as pools appear.
+
+    Builds entities for each pool coordinator on the account and hooks the
+    SIGNAL_NEW_POOL dispatcher so pools added to the Hayward account at
+    runtime get their entities without a reload.
+    """
+    entities: list[Entity] = []
+    for coordinator in entry.runtime_data.coordinators.values():
+        entities.extend(build_entities(coordinator))
+    async_add_entities(entities)
+
+    @callback
+    def _async_add_pool(coordinator: AquariteDataUpdateCoordinator) -> None:
+        async_add_entities(build_entities(coordinator))
+
+    entry.async_on_unload(
+        async_dispatcher_connect(
+            hass, f"{SIGNAL_NEW_POOL}_{entry.entry_id}", _async_add_pool
+        )
+    )
 
 
 class AquariteEntity(CoordinatorEntity[AquariteDataUpdateCoordinator]):

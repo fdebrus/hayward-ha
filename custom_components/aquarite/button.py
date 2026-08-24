@@ -13,9 +13,22 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import AquariteConfigEntry
 from .const import DOMAIN, LED_PULSE_DELAY, PATH_HASLED
 from .coordinator import AquariteDataUpdateCoordinator
-from .entity import AquariteEntity
+from .entity import AquariteEntity, async_setup_pool_platform
 
 PARALLEL_UPDATES = 1
+
+
+def _build_entities(
+    dataservice: AquariteDataUpdateCoordinator,
+) -> list[AquariteLEDPulseButtonEntity]:
+    """Build the button entities for one pool."""
+    if not dataservice.get_value(PATH_HASLED):
+        return []
+    return [
+        AquariteLEDPulseButtonEntity(
+            dataservice, dataservice.pool_id, dataservice.pool_name
+        )
+    ]
 
 
 async def async_setup_entry(
@@ -23,16 +36,8 @@ async def async_setup_entry(
     entry: AquariteConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Aquarite button platform."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
-
-    if not dataservice.get_value(PATH_HASLED):
-        return
-
-    async_add_entities([
-        AquariteLEDPulseButtonEntity(dataservice, pool_id, pool_name)
-    ])
+    """Set up the Aquarite button platform for every pool on the account."""
+    async_setup_pool_platform(hass, entry, async_add_entities, _build_entities)
 
 
 class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):

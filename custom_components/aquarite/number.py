@@ -14,19 +14,16 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import AquariteConfigEntry
 from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
-from .entity import AquariteEntity
+from .entity import AquariteEntity, async_setup_pool_platform
 
 PARALLEL_UPDATES = 1
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up Aquarite number entities."""
-    dataservice = entry.runtime_data.coordinator
-    pool_id, pool_name = dataservice.pool_id, entry.title
+def _build_entities(
+    dataservice: AquariteDataUpdateCoordinator,
+) -> list[AquariteNumberEntity]:
+    """Build the number entities for one pool."""
+    pool_id, pool_name = dataservice.pool_id, dataservice.pool_name
 
     # Safely determine max electrolysis
     raw_max = dataservice.get_value("hidro.maxAllowedValue", 0)
@@ -92,7 +89,16 @@ async def async_setup_entry(
             ),
         ])
 
-    async_add_entities(entities)
+    return entities
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: AquariteConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Aquarite number entities for every pool on the account."""
+    async_setup_pool_platform(hass, entry, async_add_entities, _build_entities)
 
 
 class AquariteNumberEntity(AquariteEntity, NumberEntity):

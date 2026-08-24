@@ -38,11 +38,13 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         auth: AquariteAuth,
         api: AquariteClient,
         pool_id: str,
+        pool_name: str,
     ) -> None:
         """Initialize the coordinator."""
         self.auth = auth
         self.api = api
         self.pool_id: str = pool_id
+        self.pool_name: str = pool_name
         self.subscription: ResilientPoolSubscription | None = None
         self._pending_optimistic: dict[str, tuple[Any, float]] = {}
         self._optimistic_handles: dict[str, asyncio.TimerHandle] = {}
@@ -50,7 +52,7 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         super().__init__(
             hass,
             logger=_LOGGER,
-            name="Aquarite",
+            name=f"Aquarite {pool_name}",
             update_interval=None,
             config_entry=entry,
         )
