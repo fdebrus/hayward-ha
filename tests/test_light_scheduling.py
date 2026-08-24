@@ -52,6 +52,7 @@ def _fake_coordinator(data: dict[str, Any]) -> MagicMock:
     coordinator = MagicMock()
     coordinator.data = data
     coordinator.pool_id = MOCK_POOL_ID
+    coordinator.pool_name = MOCK_POOL_NAME
     coordinator.get_value = lambda path, default=None: get_value(
         data, path, default
     )
@@ -64,7 +65,8 @@ def _fake_entry(coordinator: MagicMock) -> MagicMock:
     """Return a config-entry double exposing the coordinator."""
     entry = MagicMock()
     entry.title = MOCK_POOL_NAME
-    entry.runtime_data.coordinator = coordinator
+    entry.entry_id = "test-entry"
+    entry.runtime_data.coordinators = {MOCK_POOL_ID: coordinator}
     return entry
 
 
@@ -91,7 +93,7 @@ def real_client_coordinator(
     mock_entry.options = {}
 
     coordinator = AquariteDataUpdateCoordinator(
-        hass, mock_entry, mock_auth, client, MOCK_POOL_ID
+        hass, mock_entry, mock_auth, client, MOCK_POOL_ID, MOCK_POOL_NAME
     )
     coordinator.data = pool_data
     return coordinator, client, pool_data

@@ -9,9 +9,20 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
 from .coordinator import AquariteDataUpdateCoordinator
-from .entity import AquariteEntity
+from .entity import AquariteEntity, async_setup_pool_platform
 
 PARALLEL_UPDATES = 0
+
+
+def _build_entities(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> list[PoolLocationDeviceTracker]:
+    """Build the location tracker for one pool."""
+    return [
+        PoolLocationDeviceTracker(
+            coordinator, coordinator.pool_id, coordinator.pool_name
+        )
+    ]
 
 
 async def async_setup_entry(
@@ -19,14 +30,8 @@ async def async_setup_entry(
     entry: AquariteConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the pool location tracker."""
-    coordinator = entry.runtime_data.coordinator
-    pool_id = coordinator.pool_id
-    pool_name = entry.title
-
-    async_add_entities([
-        PoolLocationDeviceTracker(coordinator, pool_id, pool_name)
-    ])
+    """Set up the pool location tracker for every pool on the account."""
+    async_setup_pool_platform(hass, entry, async_add_entities, _build_entities)
 
 
 class PoolLocationDeviceTracker(AquariteEntity, TrackerEntity):

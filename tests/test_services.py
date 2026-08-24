@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from .conftest import MOCK_PASSWORD, MOCK_POOL_ID, MOCK_USERNAME
+from .conftest import MOCK_PASSWORD, MOCK_POOL_ID, MOCK_POOL_NAME, MOCK_USERNAME
 
 # Skip the entire module if Home Assistant is not installed
 pytest.importorskip("homeassistant")
@@ -38,10 +38,11 @@ async def loaded_entry(hass: HomeAssistant, mock_pool_data):
     """
     entry = MockConfigEntry(
         domain=DOMAIN,
+        version=2,
+        unique_id=MOCK_USERNAME.lower(),
         data={
             CONF_USERNAME: MOCK_USERNAME,
             CONF_PASSWORD: MOCK_PASSWORD,
-            "pool_id": MOCK_POOL_ID,
         },
         options={},
     )
@@ -54,15 +55,27 @@ async def loaded_entry(hass: HomeAssistant, mock_pool_data):
 
     mock_subscription = MagicMock()
     mock_subscription.aclose = AsyncMock()
+    mock_user_subscription = MagicMock()
+    mock_user_subscription.aclose = AsyncMock()
 
     mock_api = AsyncMock()
+    mock_api.get_pools = AsyncMock(return_value={MOCK_POOL_ID: MOCK_POOL_NAME})
     mock_api.fetch_pool_data = AsyncMock(return_value=mock_pool_data)
     mock_api.subscribe_pool_resilient = AsyncMock(return_value=mock_subscription)
+    mock_api.subscribe_user_pools_resilient = AsyncMock(
+        return_value=mock_user_subscription
+    )
     mock_api.get_pool_stats = AsyncMock(return_value=SAMPLE_SERIES)
 
     with (
         patch(PATCH_AUTH, return_value=mock_auth),
         patch(PATCH_CLIENT, return_value=mock_api),
+        # A real aiohttp session spawns a pycares resolver thread that can
+        # linger past the test; the session is unused with auth mocked.
+        patch(
+            "custom_components.aquarite.async_get_clientsession",
+            return_value=MagicMock(),
+        ),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()

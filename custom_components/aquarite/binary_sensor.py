@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import AquariteConfigEntry
 from .const import PATH_HASCD, PATH_HASCL, PATH_HASPH, PATH_HASRX
 from .coordinator import AquariteDataUpdateCoordinator
-from .entity import AquariteEntity
+from .entity import AquariteEntity, async_setup_pool_platform
 
 TANK_MODULE_PATHS = (
     "modules.ph.tank",
@@ -113,15 +113,12 @@ BASE_SENSORS: tuple[AquariteBinarySensorConfig, ...] = (
 )
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up Aquarite binary sensors."""
-    dataservice = entry.runtime_data.coordinator
+def _build_entities(
+    dataservice: AquariteDataUpdateCoordinator,
+) -> list[BinarySensorEntity]:
+    """Build the binary sensor entities for one pool."""
     pool_id = dataservice.pool_id
-    pool_name = entry.title
+    pool_name = dataservice.pool_name
 
     entities: list[BinarySensorEntity] = [
         AquariteBinarySensorEntity(dataservice, config, pool_id, pool_name)
@@ -189,7 +186,16 @@ async def async_setup_entry(
         )
     )
 
-    async_add_entities(entities)
+    return entities
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: AquariteConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Aquarite binary sensors for every pool on the account."""
+    async_setup_pool_platform(hass, entry, async_add_entities, _build_entities)
 
 
 class AquariteBinarySensorEntity(AquariteEntity, BinarySensorEntity):

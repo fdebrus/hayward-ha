@@ -26,7 +26,7 @@ The integration connects to the **official Hayward cloud API** and exposes your 
 ## Features
 
 - Secure cloud authentication using your existing Hayward account  
-- Automatic discovery of linked pool controllers  
+- Automatic discovery of every pool on the account — one device per pool, pools added or removed in the Hayward app reconcile live  
 - Real-time data updates via cloud push (no polling)  
 - Background token refresh and health monitoring  
 - Reconfigure credentials without removing the integration  
@@ -86,7 +86,7 @@ Entity counts vary based on installed modules (CD, CL, pH, RX, UV, hydrolysis) a
 - A supported Hayward-compatible pool controller  
 - A Wi-Fi module connected to the internet  
 - The controller must already be linked to your Hayward cloud account  
-- Home Assistant 2024.1.0 or later  
+- Home Assistant 2025.1.0 or later  
 
 ## Installation
 
@@ -112,18 +112,28 @@ You can install the integration using **HACS** (recommended) or manually.
 2. Click **Add Integration**
 3. Search for **Aquarite**
 4. Enter your Hayward cloud **username and password**
-5. Select the pool controller you want to add
 
-All supported entities are created automatically once the integration is set up.
+Every pool on the account is discovered and added automatically as its own
+device, and all supported entities are created for each of them. Pools added
+to (or removed from) your Hayward account later appear or disappear on their
+own — no reload needed.
 
-### Reconfiguring credentials
+> **Upgrading from 2.x**: config entries used to be one-per-pool. On first
+> start after the upgrade they are migrated automatically to one entry per
+> Hayward account; duplicate entries for the same account are cleaned up and
+> entity IDs, history, and customizations are preserved.
 
-If you need to update your Hayward credentials:
+### Updating your password
+
+If your Hayward password changes:
 
 1. Go to **Settings → Devices & Services**
 2. Find the **Aquarite** integration
 3. Click the **three dots menu** → **Reconfigure**
-4. Enter your new credentials
+4. Enter the new password
+
+(Switching to a different Hayward account means removing the entry and
+adding it again.)
 
 ### Configuring options
 

@@ -25,20 +25,17 @@ from .const import (
     PATH_HASUV,
 )
 from .coordinator import AquariteDataUpdateCoordinator
-from .entity import AquariteEntity
+from .entity import AquariteEntity, async_setup_pool_platform
 
 PARALLEL_UPDATES = 1
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: AquariteConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up Aquarite sensors."""
-    dataservice = entry.runtime_data.coordinator
+def _build_entities(
+    dataservice: AquariteDataUpdateCoordinator,
+) -> list[AquariteEntity]:
+    """Build the sensor entities for one pool."""
     pool_id = dataservice.pool_id
-    pool_name = entry.title
+    pool_name = dataservice.pool_name
 
     entities: list[AquariteEntity] = []
 
@@ -133,7 +130,16 @@ async def async_setup_entry(
         AquaritePoolNameSensorEntity(dataservice, pool_id, pool_name)
     )
 
-    async_add_entities(entities)
+    return entities
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: AquariteConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Aquarite sensors for every pool on the account."""
+    async_setup_pool_platform(hass, entry, async_add_entities, _build_entities)
 
 
 class AquariteTemperatureSensorEntity(AquariteEntity, SensorEntity):
