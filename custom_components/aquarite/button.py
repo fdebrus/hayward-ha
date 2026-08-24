@@ -3,13 +3,15 @@ from __future__ import annotations
 
 import asyncio
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
-from .const import LED_PULSE_DELAY, PATH_HASLED
+from .const import DOMAIN, LED_PULSE_DELAY, PATH_HASLED
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -67,5 +69,9 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
                 await self.coordinator.async_set_values({"light.status": 0})
                 await asyncio.sleep(LED_PULSE_DELAY)
             await self.coordinator.async_set_values({"light.status": 1})
-        except Exception as err:
-            raise HomeAssistantError(f"Failed to pulse LED: {err}") from err
+        except AquariteError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_failed",
+                translation_placeholders={"entity": self.entity_id},
+            ) from err

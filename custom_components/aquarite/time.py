@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import datetime
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.time import TimeEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
+from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -95,5 +98,9 @@ class AquariteTimeEntity(AquariteEntity, TimeEntity):
         seconds = value.hour * 3600 + value.minute * 60
         try:
             await self.coordinator.async_set_values({self._value_path: seconds})
-        except Exception as err:
-            raise HomeAssistantError(f"Failed to set time: {err}") from err
+        except AquariteError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_failed",
+                translation_placeholders={"entity": self.entity_id},
+            ) from err

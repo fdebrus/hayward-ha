@@ -338,6 +338,12 @@
     },
     "authentication_error": {
       "message": "Authentication failed. Please check your credentials."
+    },
+    "set_failed": {
+      "message": "Failed to set {entity}."
+    },
+    "update_failed": {
+      "message": "Error fetching data from Aquarite."
     }
   },
   "services": {

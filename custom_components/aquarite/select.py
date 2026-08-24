@@ -1,12 +1,15 @@
 """Aquarite Select entities."""
 from __future__ import annotations
 
+from aioaquarite import AquariteError
+
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
+from .const import DOMAIN
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity
 
@@ -112,8 +115,12 @@ class AquariteSelectEntity(AquariteEntity, SelectEntity):
             await self.coordinator.async_set_values(
                 {self._value_path: self._options_map.index(option)}
             )
-        except Exception as err:
-            raise HomeAssistantError(f"Failed to select option: {err}") from err
+        except AquariteError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_failed",
+                translation_placeholders={"entity": self.entity_id},
+            ) from err
 
 
 class AquariteValueMapSelectEntity(AquariteEntity, SelectEntity):
@@ -155,8 +162,12 @@ class AquariteValueMapSelectEntity(AquariteEntity, SelectEntity):
         value = self._values[option]
         try:
             await self.coordinator.async_set_values({self._value_path: value})
-        except Exception as err:
-            raise HomeAssistantError(f"Failed to select option: {err}") from err
+        except AquariteError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_failed",
+                translation_placeholders={"entity": self.entity_id},
+            ) from err
 
 
 class AquariteLightModeSelectEntity(AquariteEntity, SelectEntity):
@@ -196,5 +207,9 @@ class AquariteLightModeSelectEntity(AquariteEntity, SelectEntity):
         updates = LIGHT_MODE_UPDATES[option]
         try:
             await self.coordinator.async_set_values(updates)
-        except Exception as err:
-            raise HomeAssistantError(f"Failed to select option: {err}") from err
+        except AquariteError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_failed",
+                translation_placeholders={"entity": self.entity_id},
+            ) from err
