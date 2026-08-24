@@ -5,7 +5,6 @@ Run with: pytest tests/test_coordinator.py (requires HA test environment)
 """
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -30,14 +29,17 @@ def coordinator(
     mock_auth.calculate_sleep_duration = MagicMock(return_value=3600)
     mock_auth.get_client = AsyncMock(return_value=(MagicMock(), False))
 
+    mock_subscription = MagicMock()
+    mock_subscription.aclose = AsyncMock()
+
     mock_api = AsyncMock()
-    mock_api.subscribe_pool = AsyncMock(return_value=MagicMock())
+    mock_api.subscribe_pool_resilient = AsyncMock(return_value=mock_subscription)
     mock_api.set_value = AsyncMock()
     mock_api.set_values = AsyncMock()
 
     mock_entry = MagicMock()
     mock_entry.entry_id = "test"
-    mock_entry.options = {}
+    mock_entry.options = {"health_check_interval": 300}
 
     coord = AquariteDataUpdateCoordinator(
         hass, mock_entry, mock_auth, mock_api, MOCK_POOL_ID
@@ -47,45 +49,26 @@ def coordinator(
 
 
 async def test_subscribe(coordinator: AquariteDataUpdateCoordinator) -> None:
-    """Test subscribe calls the API."""
+    """subscribe() opens a resilient subscription with the configured interval."""
     await coordinator.subscribe()
-    coordinator.api.subscribe_pool.assert_called_once()
+    coordinator.api.subscribe_pool_resilient.assert_awaited_once()
+    call = coordinator.api.subscribe_pool_resilient.await_args
+    assert call.args[0] == MOCK_POOL_ID
+    assert call.kwargs["health_check_interval"] == 300
+    assert coordinator.subscription is not None
 
 
-async def test_refresh_subscription(
+async def test_async_shutdown_closes_subscription(
     coordinator: AquariteDataUpdateCoordinator,
 ) -> None:
-    """Test refresh_subscription unsubscribes and resubscribes."""
-    mock_watch = MagicMock()
-    coordinator.watch = mock_watch
+    """Shutdown closes the resilient subscription."""
+    await coordinator.subscribe()
+    subscription = coordinator.subscription
 
-    with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
-        await coordinator.refresh_subscription()
+    await coordinator.async_shutdown()
 
-    mock_to_thread.assert_called_once_with(mock_watch.unsubscribe)
-    coordinator.api.subscribe_pool.assert_called_once()
-
-
-async def test_async_shutdown(
-    coordinator: AquariteDataUpdateCoordinator,
-) -> None:
-    """Test shutdown cancels tasks and unsubscribes."""
-    mock_watch = MagicMock()
-    coordinator.watch = mock_watch
-
-    async def _run_forever() -> None:
-        await asyncio.sleep(3600)
-
-    health_task = asyncio.get_running_loop().create_task(_run_forever())
-    token_task = asyncio.get_running_loop().create_task(_run_forever())
-    coordinator._health_task = health_task
-    coordinator._token_task = token_task
-
-    with patch("asyncio.to_thread", new_callable=AsyncMock):
-        await coordinator.async_shutdown()
-
-    assert health_task.cancelled()
-    assert token_task.cancelled()
+    subscription.aclose.assert_awaited_once()
+    assert coordinator.subscription is None
 
 
 async def test_async_set_values_delegates_to_api(

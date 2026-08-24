@@ -24,9 +24,6 @@ from custom_components.aquarite.const import DOMAIN  # noqa: E402
 
 PATCH_AUTH = "custom_components.aquarite.AquariteAuth"
 PATCH_CLIENT = "custom_components.aquarite.AquariteClient"
-PATCH_SETUP_TASKS = (
-    "custom_components.aquarite.coordinator.AquariteDataUpdateCoordinator.setup_tasks"
-)
 
 SAMPLE_SERIES = [[{"field": 885, "seconds": 1777447486}]]
 
@@ -35,9 +32,9 @@ SAMPLE_SERIES = [[{"field": 885, "seconds": 1777447486}]]
 async def loaded_entry(hass: HomeAssistant, mock_pool_data):
     """Set up a real Aquarite config entry with mocked auth/api.
 
-    setup_tasks is mocked to a no-op so the token-refresh/health-check
-    background loops never spawn, and the auth/API objects are fully
-    mocked so no real Firestore/gRPC machinery is touched.
+    The auth/API objects are fully mocked so no real Firestore/gRPC
+    machinery is touched; the resilient subscription is a mock handle
+    whose aclose() the unload path awaits.
     """
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -55,15 +52,17 @@ async def loaded_entry(hass: HomeAssistant, mock_pool_data):
     mock_auth.calculate_sleep_duration = MagicMock(return_value=3600)
     mock_auth.get_client = AsyncMock(return_value=(MagicMock(), False))
 
+    mock_subscription = MagicMock()
+    mock_subscription.aclose = AsyncMock()
+
     mock_api = AsyncMock()
     mock_api.fetch_pool_data = AsyncMock(return_value=mock_pool_data)
-    mock_api.subscribe_pool = AsyncMock(return_value=MagicMock())
+    mock_api.subscribe_pool_resilient = AsyncMock(return_value=mock_subscription)
     mock_api.get_pool_stats = AsyncMock(return_value=SAMPLE_SERIES)
 
     with (
         patch(PATCH_AUTH, return_value=mock_auth),
         patch(PATCH_CLIENT, return_value=mock_api),
-        patch(PATCH_SETUP_TASKS, AsyncMock()),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
