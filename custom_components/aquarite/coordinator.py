@@ -90,6 +90,26 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             health_check_interval=self.config_entry.options.get(
                 CONF_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_INTERVAL
             ),
+            on_health=self._on_health,
+        )
+
+    def _on_health(self, healthy: bool) -> None:
+        """Reflect subscription connection health in entity availability.
+
+        Invoked by the library from the supervisor's event loop (HA's
+        loop), on transitions only. While the Firestore connection is
+        down, entities show as unavailable rather than serving stale
+        state; on recovery an authoritative refresh re-fetches truth
+        (the resubscribed watch also pushes a fresh snapshot).
+        """
+        if healthy:
+            self.hass.async_create_task(self.async_refresh())
+            return
+        self.async_set_update_error(
+            UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="update_failed",
+            )
         )
 
     async def async_shutdown(self) -> None:
