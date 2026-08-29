@@ -14,7 +14,7 @@
         "aioaquarite"
     ],
     "requirements": [
-        "aioaquarite==0.8.0"
+        "aioaquarite==0.9.2"
     ],
     "supported_platforms": [
         "binary_sensor",
@@ -27,5 +27,5 @@
         "switch",
         "time"
     ],
-    "version": "3.0.0"
+    "version": "3.1.0"
 }

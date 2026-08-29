@@ -55,7 +55,34 @@ async def test_subscribe(coordinator: AquariteDataUpdateCoordinator) -> None:
     call = coordinator.api.subscribe_pool_resilient.await_args
     assert call.args[0] == MOCK_POOL_ID
     assert call.kwargs["health_check_interval"] == 300
+    assert call.kwargs["on_health"] == coordinator._on_health
     assert coordinator.subscription is not None
+
+
+async def test_unhealthy_connection_marks_entities_unavailable(
+    coordinator: AquariteDataUpdateCoordinator,
+) -> None:
+    """on_health(False) flips last_update_success so entities go unavailable."""
+    coordinator.last_update_success = True
+
+    coordinator._on_health(False)
+
+    assert coordinator.last_update_success is False
+
+
+async def test_healthy_connection_triggers_refresh(
+    coordinator: AquariteDataUpdateCoordinator, mock_pool_data
+) -> None:
+    """on_health(True) schedules an authoritative refresh restoring availability."""
+    coordinator._on_health(False)
+    assert coordinator.last_update_success is False
+
+    coordinator.api.fetch_pool_data = AsyncMock(return_value=mock_pool_data)
+    coordinator._on_health(True)
+    await coordinator.hass.async_block_till_done()
+
+    coordinator.api.fetch_pool_data.assert_awaited_once_with(MOCK_POOL_ID)
+    assert coordinator.last_update_success is True
 
 
 async def test_async_shutdown_closes_subscription(
