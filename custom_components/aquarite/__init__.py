@@ -199,10 +199,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
     # the first live snapshot is a no-op so it wouldn't clean these up.
     _async_remove_stale_devices(hass, entry, set(pools))
 
-    def _on_user_pools_snapshot(pool_ids: list[str]) -> None:
-        """Bridge the Firestore snapshot from the watch thread to the HA loop."""
-        hass.loop.call_soon_threadsafe(_schedule_reconcile, pool_ids)
-
     @callback
     def _schedule_reconcile(pool_ids: list[str]) -> None:
         entry.async_create_background_task(
@@ -216,7 +212,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
     # "already setup".
     try:
         subscription: ResilientUserPoolsSubscription = (
-            await api.subscribe_user_pools_resilient(_on_user_pools_snapshot)
+            # The library invokes the callback on the event loop (0.12+).
+            await api.subscribe_user_pools_resilient(_schedule_reconcile)
         )
     except AquariteError as exc:
         for coordinator in data.coordinators.values():
