@@ -1,8 +1,6 @@
 """Aquarite Button entities."""
 from __future__ import annotations
 
-import asyncio
-
 from aioaquarite import AquariteError
 
 from homeassistant.components.button import ButtonEntity
@@ -64,16 +62,25 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Send a pulse to the pool LED.
 
-        If the light is already on, turn it off, wait LED_PULSE_DELAY
-        seconds, then turn it back on — the physical LED fixture
-        advances to the next colour on power-on.  If the light is off,
+        If the light is already on, power-cycle it via the library's
+        flicker-free pulse (off, wait LED_PULSE_DELAY, on): both writes
+        are queued as pending before the first send, so the light entity
+        never shows the transient off and a snapshot landing inside the
+        delay is delivered carrying the final on. A failed send is
+        unwound and reconciled by the library. If the light is off,
         simply turn it on.
         """
         try:
             if self.coordinator.get_value("light.status"):
-                await self.coordinator.async_set_values({"light.status": 0})
-                await asyncio.sleep(LED_PULSE_DELAY)
-            await self.coordinator.async_set_values({"light.status": 1})
+                await self.coordinator.api.pulse(
+                    self.coordinator.pool_id,
+                    "light.status",
+                    0,
+                    1,
+                    LED_PULSE_DELAY,
+                )
+            else:
+                await self.coordinator.async_set_values({"light.status": 1})
         except AquariteError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

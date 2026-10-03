@@ -40,11 +40,11 @@ async def async_setup_entry(
 class AquariteLightEntity(AquariteEntity, LightEntity):
     """Representation of an Aquarite pool light.
 
-    Relies on the coordinator's optimistic-write tracking (see
-    AquariteDataUpdateCoordinator.apply_optimistic) for instant UI
-    feedback instead of tracking a local target state: is_on reads
-    straight from coordinator data, which async_set_values already
-    updates before the Firestore push round-trips.
+    Relies on aioaquarite's write/snapshot reconciliation (0.13.0) for
+    instant UI feedback instead of tracking a local target state: the
+    library delivers the updated pool data the moment the cloud acks a
+    write and suppresses stale pre-write snapshots, so is_on reads
+    straight from coordinator data.
     """
 
     _attr_supported_color_modes = {ColorMode.ONOFF}
