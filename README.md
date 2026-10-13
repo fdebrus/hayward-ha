@@ -11,6 +11,16 @@
   <a href="https://github.com/fdebrus/hayward-ha/actions/workflows/tests.yml"><img src="https://github.com/fdebrus/hayward-ha/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
 </p>
 
+> [!WARNING]
+> **Limited maintenance.** This custom integration has been superseded by the
+> [Vistapool integration](https://www.home-assistant.io/integrations/vistapool/)
+> built into Home Assistant, which supports the same controllers through the same
+> cloud account. New features land in the core integration first; this repository
+> only receives bug fixes. If you are setting up a pool for the first time, use
+> the core integration instead. Existing users can migrate from
+> **Settings** > **Devices & services** > **Add integration** > **Vistapool**, then
+> remove this integration; entity IDs change from the `aquarite` to the
+> `vistapool` prefix, so automations and dashboards need updating.
 
 Home Assistant custom integration for monitoring and controlling **Hayward-branded pool controllers**, including:
 
