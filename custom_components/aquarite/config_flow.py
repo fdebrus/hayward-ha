@@ -19,7 +19,14 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
-from .const import CONF_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_INTERVAL, DOMAIN
+from .const import (
+    CONF_EXPERIMENTAL_FRAGMENT_WRITES,
+    CONF_EXPERIMENTAL_LED_ENDPOINT,
+    CONF_EXPERIMENTAL_REQUEST_UPDATES,
+    CONF_HEALTH_CHECK_INTERVAL,
+    DEFAULT_HEALTH_CHECK_INTERVAL,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,7 +50,8 @@ class AquariteOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
-        current = self.config_entry.options.get(
+        options = self.config_entry.options
+        current = options.get(
             CONF_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_INTERVAL
         )
         schema = vol.Schema(
@@ -51,6 +59,18 @@ class AquariteOptionsFlow(OptionsFlow):
                 vol.Required(
                     CONF_HEALTH_CHECK_INTERVAL, default=current
                 ): vol.All(int, vol.Range(min=60, max=3600)),
+                vol.Optional(
+                    CONF_EXPERIMENTAL_FRAGMENT_WRITES,
+                    default=options.get(CONF_EXPERIMENTAL_FRAGMENT_WRITES, False),
+                ): bool,
+                vol.Optional(
+                    CONF_EXPERIMENTAL_LED_ENDPOINT,
+                    default=options.get(CONF_EXPERIMENTAL_LED_ENDPOINT, False),
+                ): bool,
+                vol.Optional(
+                    CONF_EXPERIMENTAL_REQUEST_UPDATES,
+                    default=options.get(CONF_EXPERIMENTAL_REQUEST_UPDATES, False),
+                ): bool,
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

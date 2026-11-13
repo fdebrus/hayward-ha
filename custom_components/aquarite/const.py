@@ -24,6 +24,18 @@ LED_PULSE_DELAY = 1.5  # Delay between off and on when cycling LED color
 # Options flow keys
 CONF_HEALTH_CHECK_INTERVAL = "health_check_interval"
 
+# Experimental options (aioaquarite 0.14 beta). Each one switches on
+# something the first-party web client has been observed to do, so its
+# effect can be measured on a real controller; all default to off. See
+# PROTOCOL.md in the aioaquarite repository.
+CONF_EXPERIMENTAL_FRAGMENT_WRITES = "experimental_fragment_writes"
+CONF_EXPERIMENTAL_LED_ENDPOINT = "experimental_led_endpoint"
+CONF_EXPERIMENTAL_REQUEST_UPDATES = "experimental_request_updates"
+
+# The web client repeats its update request 10 and 20 minutes after it
+# starts listening (three sends in total).
+REQUEST_UPDATES_REPEAT_DELAYS = (600, 1200)
+
 # get_pool_stats service fields
 ATTR_POOL_ID = "pool_id"
 ATTR_TYPE = "type"

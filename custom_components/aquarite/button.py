@@ -9,7 +9,12 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AquariteConfigEntry
-from .const import DOMAIN, LED_PULSE_DELAY, PATH_HASLED
+from .const import (
+    CONF_EXPERIMENTAL_LED_ENDPOINT,
+    DOMAIN,
+    LED_PULSE_DELAY,
+    PATH_HASLED,
+)
 from .coordinator import AquariteDataUpdateCoordinator
 from .entity import AquariteEntity, async_setup_pool_platform
 
@@ -71,7 +76,15 @@ class AquariteLEDPulseButtonEntity(AquariteEntity, ButtonEntity):
         simply turn it on.
         """
         try:
-            if self.coordinator.get_value("light.status"):
+            if self.coordinator.config_entry.options.get(
+                CONF_EXPERIMENTAL_LED_ENDPOINT
+            ):
+                # Experimental: the cloud's own colour-change call, as
+                # used by the first-party web client.
+                await self.coordinator.api.change_led_color(
+                    self.coordinator.pool_id
+                )
+            elif self.coordinator.get_value("light.status"):
                 await self.coordinator.api.pulse(
                     self.coordinator.pool_id,
                     "light.status",

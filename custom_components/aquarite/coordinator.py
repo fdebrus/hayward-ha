@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
 from aioaquarite import (
@@ -12,11 +13,18 @@ from aioaquarite import (
 )
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_INTERVAL, DOMAIN
+from .const import (
+    CONF_EXPERIMENTAL_REQUEST_UPDATES,
+    CONF_HEALTH_CHECK_INTERVAL,
+    DEFAULT_HEALTH_CHECK_INTERVAL,
+    DOMAIN,
+    REQUEST_UPDATES_REPEAT_DELAYS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +60,8 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.pool_id: str = pool_id
         self.pool_name: str = pool_name
         self.subscription: ResilientPoolSubscription | None = None
+        self._request_updates_unsubs: list[CALLBACK_TYPE] = []
+        self._last_present: bool | None = None
 
         super().__init__(
             hass,
@@ -94,11 +104,54 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ),
             on_health=self._on_health,
         )
+        if self.config_entry.options.get(CONF_EXPERIMENTAL_REQUEST_UPDATES):
+            self._async_start_request_updates()
 
     @callback
     def _async_handle_push(self, data: dict[str, Any]) -> None:
         """Publish library-reconciled pool data to the entities."""
+        present = data.get("present")
+        came_back = self._last_present is False and present is True
+        self._last_present = present if isinstance(present, bool) else None
         self.async_set_updated_data(data)
+        if came_back and self.config_entry.options.get(
+            CONF_EXPERIMENTAL_REQUEST_UPDATES
+        ):
+            # The web client asks again whenever a controller comes back.
+            self._async_send_request_updates()
+
+    @callback
+    def _async_start_request_updates(self) -> None:
+        """Experimental: mirror the web client's update-request schedule.
+
+        One request now, then one after each configured delay — the web
+        client sends three in total over twenty minutes.
+        """
+        self._async_send_request_updates()
+        for delay in REQUEST_UPDATES_REPEAT_DELAYS:
+            self._request_updates_unsubs.append(
+                async_call_later(self.hass, delay, self._async_repeat_request_updates)
+            )
+
+    @callback
+    def _async_repeat_request_updates(self, _now: datetime) -> None:
+        """Timer target; must be a loop callback, not a plain function."""
+        self._async_send_request_updates()
+
+    @callback
+    def _async_send_request_updates(self) -> None:
+        """Send one update request in the background; failures only log."""
+        self.config_entry.async_create_background_task(
+            self.hass,
+            self._async_request_updates(),
+            name=f"aquarite_request_updates_{self.pool_id}",
+        )
+
+    async def _async_request_updates(self) -> None:
+        try:
+            await self.api.request_updates(self.pool_id)
+        except AquariteError as err:
+            _LOGGER.debug("Update request for %s failed: %s", self.pool_id, err)
 
     def _on_health(self, healthy: bool) -> None:
         """Reflect subscription connection health in entity availability.
@@ -126,6 +179,9 @@ class AquariteDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         pending-write state for this pool (expiry timers, reconcile
         task), so nothing fires after the entry is unloaded.
         """
+        for unsub in self._request_updates_unsubs:
+            unsub()
+        self._request_updates_unsubs.clear()
         if self.subscription is not None:
             await self.subscription.aclose()
             self.subscription = None

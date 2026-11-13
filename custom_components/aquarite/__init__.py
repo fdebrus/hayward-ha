@@ -38,6 +38,7 @@ from .const import (
     ATTR_PERIOD,
     ATTR_POOL_ID,
     ATTR_TYPE,
+    CONF_EXPERIMENTAL_FRAGMENT_WRITES,
     DEFAULT_STATS_PERIOD,
     DOMAIN,
     SIGNAL_NEW_POOL,
@@ -168,7 +169,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: AquariteConfigEntry) -> 
             translation_placeholders={"error": str(exc)},
         ) from exc
 
-    api = AquariteClient(auth)
+    api = AquariteClient(
+        auth,
+        write_mode=(
+            "fragment"
+            if entry.options.get(CONF_EXPERIMENTAL_FRAGMENT_WRITES)
+            else "branch"
+        ),
+    )
     try:
         pools = await api.get_pools()
     except AquariteError as exc:

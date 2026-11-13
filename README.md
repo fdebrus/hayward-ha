@@ -22,6 +22,27 @@
 > remove this integration; entity IDs change from the `aquarite` to the
 > `vistapool` prefix, so automations and dashboards need updating.
 
+> [!NOTE]
+> **Experimental channel.** Beta releases of this integration (3.3.0b1 and
+> later) are the test bed for changes to the underlying `aioaquarite` library
+> before they reach the core integration. They add three options, all off by
+> default, under **Settings** > **Devices & services** > **Aquarite** >
+> **Configure**:
+>
+> - **Send partial writes** — send only the changed value, as the Vistapool web
+>   app does, instead of the whole settings branch.
+> - **LED button uses the cloud colour-change call** — instead of switching the
+>   light off and on.
+> - **Request updates from the controller on connect** — the web app's update
+>   request, sent on connect and again 10 and 20 minutes later.
+>
+> To install a beta, enable **Show beta versions** for this repository in HACS.
+> Run it on a Home Assistant instance where the core Vistapool integration is
+> **not** set up for the same account: the two share one installed copy of the
+> library. With debug logging on for `aioaquarite`, look for
+> `confirmed N.N s after acknowledgement` and
+> `snapshot N.N s after the previous one` to compare before and after.
+
 Home Assistant custom integration for monitoring and controlling **Hayward-branded pool controllers**, including:
 
 - AquaRite  
