@@ -40,10 +40,18 @@
     "step": {
       "init": {
         "data": {
-          "health_check_interval": "Health check interval (seconds)"
+          "health_check_interval": "Health check interval (seconds)",
+          "experimental_fragment_writes": "Experimental: send partial writes (sendEVOCommand)",
+          "experimental_led_endpoint": "Experimental: LED button uses the cloud colour-change call",
+          "experimental_request_updates": "Experimental: request updates from the controller on connect"
         },
         "description": "Configure the Aquarite integration.",
-        "title": "Options"
+        "title": "Options",
+        "data_description": {
+          "experimental_fragment_writes": "Send only the changed value instead of the whole settings branch, as the Vistapool web app does.",
+          "experimental_led_endpoint": "Use the dedicated colour-change call instead of switching the light off and on.",
+          "experimental_request_updates": "Send the web app's update request when connecting, and again 10 and 20 minutes later."
+        }
       }
     }
   },
